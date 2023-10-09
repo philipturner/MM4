@@ -1,6 +1,6 @@
 # MM4
 
-General-purpose simulator for molecular nanotechnology
+General-purpose simulator for molecular nanotechnology (work in progress)
 
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
