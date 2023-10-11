@@ -42,6 +42,20 @@ public class MM4ForceFieldDescriptor {
   /// body's overall momentum.
   public var velocities: [SIMD3<Float>]?
   
+  // TODO: Set of modes for the forcefield
+  // - "Default" - best tradeoff between accuracy and performance.
+  // - "Reduced accuracy" - cheaper alternative forcefield that omits torsions
+  //   in bulk H/C/Si. Not yet measured whether it's sufficient for replacing
+  //   "default", what the artifacts are.
+  //   - TODO: Measure and rank the stiffness of each force, and their
+  //     contributions to a set of specific quantitative properties. No matter
+  //     how cheap a force is, there should be a maximally cheap option for
+  //     situations where simulation speed vastly outweighs accuracy.
+  // - "Energy conserving" - throws an error if HMR is nonzero, uses a much
+  //   smaller timestep to minimize energy drift, no mixed precision for now.
+  // - "Energy minimizing" - disregards simulation speed, creates checkpoints to
+  //   restart the simulation if energy explodes, may use modified forces.
+  
   public init() {
     
   }
