@@ -243,10 +243,6 @@ extension MM4Parameters {
           "No parameters for electronegativity correction between F and Si.")
       }
       
-      if any(presentCodes .== 15) {
-        fatalError("There's some issues with the MM4 sulfur parameters for electronegativity correction that haven't been resolved. The paper's table may be malformatted and may be omitting all negative signs.")
-      }
-      
       switch (bondCodes.0, bondCodes.1, codeEnd, codeActing) {
         // Fluorine
       case (1, 1, 1, 11):
@@ -292,7 +288,14 @@ extension MM4Parameters {
         return (-0.004, nil, 0.62, 0.40)
         
         // Sulfur
-        // TODO: Implement (see the note above)
+      case (1, 1, 1, 15):
+        return (-0.0010, nil, 0.62, 0.40)
+      case (5, 1, 1, 15):
+        return (-0.015, nil, 0.62, 0.40)
+      case (5, 123, 123, 15):
+        return (-0.022, nil, 0.62, 0.40)
+      case (123, 123, 123, 15):
+        return (-0.015, nil, 0.62, 0.40)
         
       default:
         return nil
@@ -359,19 +362,16 @@ extension MM4Parameters {
     let electronegativeCorrections = electrostaticEffect(sign: -1)
     let electropositiveCorrections = electrostaticEffect(sign: +1)
     for i in bonds.indices.indices {
+      // We are not adding electronegativity effects to bond stiffness, due to
+      // the results being questionable. It would be quite time-consuming to
+      // implement and test whether the results were correct, using ab initio
+      // calculations performed by a different person with the appropriate
+      // expertise. In the future, this may be something to consider. For now,
+      // it creates a mostly conservative estimate of machine stiffness.
       var correction: Float = 0
       correction += electronegativeCorrections[i]
       correction += electropositiveCorrections[i]
       bonds.parameters[i].equilibriumLength += correction
-      
-      // Check whether there are any fluorines in the vicinity. If so, modify
-      // the carbon's frequency.
-      //
-      // Hydrogen doesn't need to check.
-      //
-      // TODO: The formula shouldn't be too hard to implement.
-      
-      fatalError("Stretching frequency change not yet corrected to SI units.")
     }
   }
 }

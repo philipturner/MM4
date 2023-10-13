@@ -330,4 +330,7 @@ extension MM4Parameters {
   //
   // Only apply the effect to primary or secondary carbons in a long alkane
   // chain - take the "center type" and subtract the number of bonded fluorines.
+  
+  // TODO: Bond angle corrections and special accounting for hydrogen bonding
+  // seem to need to be taken into account, to add nitrogen.
 }
