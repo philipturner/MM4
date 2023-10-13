@@ -53,26 +53,21 @@ extension MM4Parameters {
     for bondID in bonds.indices.indices {
       let bond = bonds.indices[bondID]
       let ringType = bonds.ringTypes[bondID]
-      
-      var codes: SIMD2<UInt8> = .zero
-      for lane in 0..<2 {
-        let atomID = bond[lane]
-        codes[lane] = atoms.codes[Int(atomID)].rawValue
+      let codes = with5RingsRemoved {
+        createAtomCodes(group: bond, zero: SIMD2<UInt8>.zero)
       }
-      if any(codes .== 11 .| codes .== 19 .| codes .== 25) {
-        codes.replace(with: .init(repeating: 1), where: codes .== 123)
+      let sortedCodes = sortBond(codes)
+      var sortedIDs = bond
+      if any(sortedCodes .!= codes) {
+        sortedIDs = SIMD2(bond[1], bond[0])
       }
-      let minatomCode = codes.min()
-      let maxatomCode = codes.max()
-      let minAtomID = (codes[0] == minatomCode) ? bond[0] : bond[1]
-      let maxAtomID = (codes[1] == maxatomCode) ? bond[1] : bond[0]
       
       var potentialWellDepth: Float
       var stretchingStiffness: Float
       var equilibriumLength: Float
       var dipoleMoment: Float?
       
-      switch (minatomCode, maxatomCode) {
+      switch (sortedCodes[0], sortedCodes[1]) {
         // Carbon
       case (1, 1):
         potentialWellDepth = 1.130
@@ -82,7 +77,7 @@ extension MM4Parameters {
         potentialWellDepth = 0.854
         equilibriumLength = 1.1120
         
-        let centerType = atoms.centerTypes[Int(minAtomID)]
+        let centerType = atoms.centerTypes[Int(sortedIDs[0])]
         switch centerType {
         case .tertiary:
           stretchingStiffness = 4.7400
@@ -97,7 +92,7 @@ extension MM4Parameters {
         potentialWellDepth = 0.854
         equilibriumLength = 1.1120
         
-        let centerType = atoms.centerTypes[Int(maxAtomID)]
+        let centerType = atoms.centerTypes[Int(sortedIDs[1])]
         switch centerType {
         case .tertiary:
           stretchingStiffness = 4.7000
@@ -171,7 +166,7 @@ extension MM4Parameters {
         equilibriumLength = (ringType == 5) ? 1.821 : 1.814
         dipoleMoment = (codes[1] == 15) ? +0.70 : -0.70
       default:
-        fatalError("Not recognized: (\(minatomCode), \(maxatomCode))")
+        fatalError("Unrecognized bond: \(sortedCodes)")
       }
       
       bonds.parameters.append(

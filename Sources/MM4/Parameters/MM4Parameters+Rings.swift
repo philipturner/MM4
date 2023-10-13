@@ -162,20 +162,9 @@ extension MM4Parameters {
     for ring in rings.indices {
       for lane in 0..<5 {
         let atomID = ring[lane]
-        var bond = SIMD2(atomID, ring[wrap(lane + 1)])
-        var angle = SIMD3(bond, ring[wrap(lane + 2)])
-        var torsion = SIMD4(angle, ring[wrap(lane + 3)])
-        
-        if bond[0] > bond[1] {
-          bond = SIMD2(bond[1], bond[0])
-        }
-        if angle[0] > angle[2] {
-          angle = SIMD3(angle[2], angle[1], angle[0])
-        }
-        if torsion[1] > torsion[2] ||
-            (torsion[1] == torsion[2] && torsion[0] > torsion[3]) {
-          torsion = SIMD4(torsion[3], torsion[2], torsion[1], torsion[0])
-        }
+        let bond = sortBond(SIMD2(atomID, ring[wrap(lane + 1)]))
+        let angle = sortAngle(SIMD3(bond, ring[wrap(lane + 2)]))
+        let torsion = sortTorsion(SIMD4(angle, ring[wrap(lane + 3)]))
         
         guard atomID > -1,
               let bondID = bonds.map[bond],
@@ -191,3 +180,4 @@ extension MM4Parameters {
     }
   }
 }
+

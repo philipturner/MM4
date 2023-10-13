@@ -151,12 +151,5 @@ public class MM4Parameters {
     (bondsToAtomsMap - 1).deallocate()
     (atomsToAtomsMap - 1).deallocate()
   }
-  
-  @inline(__always)
-  func other<T: FixedWidthInteger, U: FixedWidthInteger>(
-    atomID: T, bondID: U
-  ) -> Int32 {
-    let bond = bondsToAtomsMap[Int(bondID)]
-    return (bond[0] == atomID) ? bond[1] : bond[0]
-  }
 }
+

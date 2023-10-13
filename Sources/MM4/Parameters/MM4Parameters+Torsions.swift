@@ -108,27 +108,13 @@ extension MM4Parameters {
     for torsionID in torsions.indices.indices {
       let torsion = torsions.indices[torsionID]
       let ringType = torsions.ringTypes[torsionID]
-      
-      var codes: SIMD4<UInt8> = .zero
-      for lane in 0..<3 {
-        let atomID = torsion[lane]
-        codes[lane] = atoms.codes[Int(atomID)].rawValue
+      let codes = with5RingsRemoved {
+        createAtomCodes(group: torsion, zero: SIMD4<UInt8>.zero)
       }
-      if any(codes .== 11 .| codes .== 19) {
-        codes.replace(with: .init(repeating: 1), where: codes .== 123)
+      if containsTwoNonCarbons(codes) {
+        fatalError("Torsions may not contain two non-carbon atoms.")
       }
-      var sortedCodes = codes
-      if codes[1] > codes[2] ||
-          (codes[1] == codes[2] && codes[0] > codes[3]) {
-        sortedCodes = SIMD4(codes[3], codes[2], codes[1], codes[0])
-      }
-      
-      // This forcefield will not support Si-C-C-F torsions, for lack of torsion
-      // parameters and secondary Electronegativity Effect parameters.
-      if any(codes .== 11) && any(codes .== 19) {
-        // There should be a similar fatal error for torsions.
-        fatalError("Si-C-C-F torsions are not supported.")
-      }
+      var sortedCodes = sortTorsion(codes)
       
       var V1: Float = 0.000
       var Vn: Float = 0.000
@@ -303,10 +289,15 @@ extension MM4Parameters {
         V3 = 0.450
         Kbtb = 0.020
       default:
-        fatalError("Unrecognized torsion: \(sortedCodes[0]), \(sortedCodes[1]), \(sortedCodes[2]), \(sortedCodes[3])")
+        fatalError("Unrecognized torsion: \(sortedCodes)")
       }
       
       // MARK: - Off-diagonal cross-terms
+      
+      // TODO: Some torsions might actually need the information about
+      // 5-membered rings for higher level parameters.
+      sortedCodes.replace(with: .one, where: sortedCodes .== 123)
+      sortedCodes = sortTorsion(sortedCodes)
       
       // The formula from the MM4 alkene paper was ambiguous, specifying "-k":
       //   -k * Δl * Kts * (1 + cos(3ω))
@@ -325,31 +316,20 @@ extension MM4Parameters {
       // - Central TS for F-C-C-F (MM4) having 1% less peak stiffness than C-S,
       //   but a new trough with ~3.7x the magnitude of the C-S peak
       
-      var torsionCodes = codes
-      if any(torsionCodes .== 11) || any(torsionCodes .== 19) {
-        torsionCodes.replace(with: 1, where: torsionCodes .== 123)
-      }
-      if torsionCodes[1] > torsionCodes[2] ||
-          (torsionCodes[1] == torsionCodes[2] &&
-           torsionCodes[0] > torsionCodes[3]) {
-        torsionCodes = SIMD4(
-          torsionCodes[3], torsionCodes[2], torsionCodes[1], torsionCodes[0])
-      }
-      
-      if any(torsionCodes .== 11) {
+      if any(sortedCodes .== 11) {
         precondition(
-          torsionCodes[1] == 1 &&
-          torsionCodes[2] == 1 &&
-          torsionCodes[3] == 11,
+          sortedCodes[1] == 1 &&
+          sortedCodes[2] == 1 &&
+          sortedCodes[3] == 11,
           "Unrecognized fluorine torsion codes.")
         Kts = 0.000
         if codes[3] != 11 {
           swap(&Kts_l, &Kts_r)
           swap(&Ktb_l, &Ktb_r)
         }
-      } else if any(torsionCodes .== 15) {
+      } else if any(sortedCodes .== 15) {
         // TODO: Torsion-stretch for sulfur.
-      } else if torsionCodes[1] == 19 || torsionCodes[2] == 19 {
+      } else if sortedCodes[1] == 19 || sortedCodes[2] == 19 {
         // TODO: Torsion-stretch for silicon.
       }
     }

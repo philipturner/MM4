@@ -56,37 +56,25 @@ extension MM4Parameters {
     for angleID in angles.indices.indices {
       let angle = angles.indices[angleID]
       let ringType = angles.ringTypes[angleID]
-      
-      var codes: SIMD3<UInt8> = .zero
-      for lane in 0..<3 {
-        let atomID = angle[lane]
-        codes[lane] = atoms.codes[Int(atomID)].rawValue
+      let codes = with5RingsRemoved {
+        createAtomCodes(group: angle, zero: SIMD3<UInt8>.zero)
       }
-      if any(codes .== 11 .| codes .== 19) {
-        codes.replace(with: .init(repeating: 1), where: codes .== 123)
+      if containsTwoNonCarbons(codes) {
+        fatalError("Angles may not contain two non-carbon atoms.")
       }
-      let minatomCode = SIMD2(codes[0], codes[2]).min()
-      let medatomCode = codes[1]
-      let maxatomCode = SIMD2(codes[0], codes[2]).max()
-      
-      // This forcefield will not support Si-C-F angles, for lack of angle
-      // parameters and primary Electronegativity Effect parameters.
-      if any(codes .== 11) && any(codes .== 19) {
-        fatalError("Si-C-F angles are not supported.")
-      }
+      var sortedCodes = sortAngle(codes)
       
       var bendingStiffnesses: SIMD3<Float>
       var equilibriumAngles: SIMD3<Float>
-      let commonCarbonAngles: SIMD3<Float> = SIMD3(108.900, 109.470, 110.800)
       
-      switch (minatomCode, medatomCode, maxatomCode) {
+      switch (sortedCodes[0], sortedCodes[1], sortedCodes[2]) {
         // Carbon
       case (1, 1, 1):
         bendingStiffnesses = SIMD3(repeating: 0.740)
         equilibriumAngles = SIMD3(109.500, 110.400, 111.800)
       case (1, 1, 5):
         bendingStiffnesses = SIMD3(0.590, 0.560, 0.600)
-        equilibriumAngles = commonCarbonAngles
+        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
       case (5, 1, 5):
         bendingStiffnesses = SIMD3(repeating: 0.540)
         equilibriumAngles = SIMD3(107.700, 107.800, 107.700)
@@ -95,10 +83,10 @@ extension MM4Parameters {
         equilibriumAngles = SIMD3(109.500, 110.500, 111.800)
       case (1, 123, 5):
         bendingStiffnesses = SIMD3(repeating: 0.560)
-        equilibriumAngles = commonCarbonAngles
+        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
       case (5, 1, 123):
         bendingStiffnesses = SIMD3(repeating: 0.560)
-        equilibriumAngles = commonCarbonAngles
+        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
       case (5, 123, 5):
         bendingStiffnesses = SIMD3(repeating: 0.620)
         equilibriumAngles = SIMD3(107.800, 107.800, 0.000)
@@ -107,7 +95,7 @@ extension MM4Parameters {
         equilibriumAngles = SIMD3(109.500, 110.500, 111.800)
       case (5, 123, 123):
         bendingStiffnesses = SIMD3(repeating: 0.580)
-        equilibriumAngles = commonCarbonAngles
+        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
       case (123, 123, 123):
         bendingStiffnesses = SIMD3(repeating: 0.740)
         equilibriumAngles = SIMD3(108.300, 108.900, 109.000)
@@ -209,16 +197,16 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 106.2)
         }
       default:
-        fatalError("Unrecognized angle: (\(minatomCode), \(medatomCode), \(maxatomCode))")
+        fatalError("Unrecognized angle: \(sortedCodes)")
       }
       
       // Factors in both the center type and the other atoms in the angle.
       var angleType: Int
-      if medatomCode == 15 {
+      if sortedCodes[1] == 15 {
         angleType = 0
       } else {
         var matchMask: SIMD3<UInt8> = .zero
-        matchMask.replace(with: .one, where: codes .== 5)
+        matchMask.replace(with: .one, where: sortedCodes .== 5)
         let numHydrogens = Int(matchMask.wrappedSum())
         
         guard let centerType = atoms.centerTypes[Int(angle[1])] else {
@@ -238,70 +226,80 @@ extension MM4Parameters {
       
       // MARK: - Off-diagonal cross-terms
       
+      sortedCodes.replace(with: .one, where: sortedCodes .== 123)
+      sortedCodes = sortAngle(sortedCodes)
+      
       // TODO: Fill in nonexistent bend-bend parameters for certain cases, when
       // it's clear the research paper intended for some default to exist there.
       // For example, the phosphine paper.
       var bendBendStiffness: Float
       var stretchBendStiffness: Float
-      var stretchBendStiffness2: Float?
-      var stretchStretchStiffness: Float?
+      var stretchBendStiffness2: Float
+      var stretchStretchStiffness: Float
       
-      var angleCodes = codes
-      angleCodes.replace(with: .one, where: angleCodes .== 123)
-      if angleCodes[0] > angleCodes[2] {
-        angleCodes = SIMD3(angleCodes[2], angleCodes[1], angleCodes[0])
-      }
-      
-      if angleCodes[0] == 5 && angleCodes[2] == 5 {
+      if sortedCodes[0] == 5 && sortedCodes[2] == 5 {
         bendBendStiffness = 0.000
         stretchBendStiffness = 0.000
-      } else if any(angleCodes .== 11) {
-        precondition(angleCodes[2] == 11, "Unrecognized fluorine angle codes.")
-        if angleCodes[0] == 1 {
+        stretchBendStiffness2 = .nan
+        stretchStretchStiffness = .nan
+      } else if any(sortedCodes .== 11) {
+        precondition(
+          sortedCodes[2] == 11, "Unrecognized fluorine angle: \(sortedCodes)")
+        switch sortedCodes[0] {
+        case 1:
           bendBendStiffness = -0.10
           stretchBendStiffness = 0.160
           stretchBendStiffness2 = 0.000
           stretchStretchStiffness = 0.22
-        } else if angleCodes[0] == 5 {
+        case 5:
           bendBendStiffness = 0.00
           stretchBendStiffness = 0.160
           stretchBendStiffness2 = 0.000
           stretchStretchStiffness = -0.45
-        } else if angleCodes[0] == 11 {
+        case 11:
           bendBendStiffness = 0.09
           stretchBendStiffness = 0.140
           stretchBendStiffness2 = 0.275
           stretchStretchStiffness = 1.00
-        } else {
-          fatalError("Unrecognized fluorine angle codes.")
-        }
-      } else if angleCodes[1] == 15 {
-        bendBendStiffness = 0.000
-        if all(angleCodes .== SIMD3(1, 15, 1)) {
-          stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
-        } else {
-          fatalError("Unrecognized sulfur angle codes.")
-        }
-      } else if angleCodes[1] == 19 {
-        if any(angleCodes .== 5) {
-          bendBendStiffness = 0.24
-          stretchBendStiffness = 0.10
-        } else {
-          bendBendStiffness = 0.30
-          stretchBendStiffness = 0.06
-        }
-      } else if angleCodes[1] == 1 {
-        // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
-        // H-C-Si/C-C-Si/Si-C-Si.
-        if any(angleCodes .== 5) {
-          bendBendStiffness = 0.350
-          stretchBendStiffness = 0.100
-        } else {
-          bendBendStiffness = 0.204
-          stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
+        default:
+          fatalError("Unrecognized fluorine angle: \(sortedCodes)")
         }
       } else {
-        fatalError("Unrecognized atom codes for angle.")
+        switch sortedCodes[1] {
+        case 1:
+          // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
+          // H-C-Si/C-C-Si/Si-C-Si.
+          if any(sortedCodes .== 5) {
+            bendBendStiffness = 0.350
+            stretchBendStiffness = 0.100
+          } else {
+            bendBendStiffness = 0.204
+            stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
+          }
+          stretchBendStiffness2 = .nan
+          stretchStretchStiffness = .nan
+        case 15:
+          bendBendStiffness = 0.000
+          if all(sortedCodes .== SIMD3(1, 15, 1)) {
+            stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
+          } else {
+            fatalError("Unrecognized sulfur angle: \(sortedCodes)")
+          }
+          stretchBendStiffness2 = .nan
+          stretchStretchStiffness = .nan
+        case 19:
+          if any(sortedCodes .== 5) {
+            bendBendStiffness = 0.24
+            stretchBendStiffness = 0.10
+          } else {
+            bendBendStiffness = 0.30
+            stretchBendStiffness = 0.06
+          }
+          stretchBendStiffness2 = .nan
+          stretchStretchStiffness = .nan
+        default:
+          fatalError("Unrecognized angle: \(sortedCodes)")
+        }
       }
       
       angles.parameters.append(
@@ -310,11 +308,9 @@ extension MM4Parameters {
           bendingStiffness: bendingStiffnesses[angleType - 1],
           equilibriumAngle: equilibriumAngles[angleType - 1],
           stretchBendStiffness: stretchBendStiffness))
-      if any(angleCodes .== 11) {
-        guard let stretchBendStiffness2,
-              let stretchStretchStiffness else {
-          fatalError("Fluorine angle did not have extended parameters.")
-        }
+      
+      if !stretchBendStiffness2.isNaN,
+         !stretchStretchStiffness.isNaN {
         angles.extendedParameters.append(
           MM4AngleExtendedParameters(
             stretchBendStiffness: stretchBendStiffness2,
@@ -326,10 +322,9 @@ extension MM4Parameters {
   }
   
   // TODO: Before simulating hydrofluorocarbon storage tape, add the MM4
-  // Electronegativity Effect corrections to bond angles from fluorine.
-  //
-  // Only apply the effect to primary or secondary carbons in a long alkane
-  // chain - take the "center type" and subtract the number of bonded fluorines.
+  // Electronegativity Effect corrections to bond angles from fluorine. Only
+  // apply the effect to primary or secondary carbons in a long alkane chain -
+  // take the "center type" and subtract the number of bonded fluorines.
   //
   // Electronegativity effect correction to bond angles may be small, and in
   // bulk diamond, I'm not sure they would even be appropriate. They would make
