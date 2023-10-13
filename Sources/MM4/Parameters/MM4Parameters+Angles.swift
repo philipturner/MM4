@@ -241,6 +241,9 @@ extension MM4Parameters {
       
       // MARK: - Off-diagonal cross-terms
       
+      // TODO: Fill in nonexistent bend-bend parameters for certain cases, when
+      // it's clear the research paper intended for some default to exist there.
+      // For example, the phosphine paper.
       var bendBendStiffness: Float
       var stretchBendStiffness: Float
       var stretchBendStiffness2: Float?
@@ -330,7 +333,13 @@ extension MM4Parameters {
   //
   // Only apply the effect to primary or secondary carbons in a long alkane
   // chain - take the "center type" and subtract the number of bonded fluorines.
-  
-  // TODO: Bond angle corrections and special accounting for hydrogen bonding
-  // seem to need to be taken into account, to add nitrogen.
+  //
+  // Electronegativity effect correction to bond angles may be small, and in
+  // bulk diamond, I'm not sure they would even be appropriate. They would make
+  // the entire structure have a bunch of extra stiffness, because all the
+  // carbon atoms with 109.5° are out of equilibrium. As with bond stiffness,
+  // this ought to be investigated more thoroughly. For the time being, do not
+  // trust the forcefield's results with:
+  // - nitrogen
+  // - fluorine
 }

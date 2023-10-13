@@ -44,6 +44,9 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// Hydrogen
   case hydrogen = 5
   
+  /// Nitrogen
+  case nitrogen = 8
+  
   /// Fluorine
   case fluorine = 11
   
@@ -52,6 +55,9 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   
   /// Silicon
   case silicon = 19
+  
+  /// Phosphorus
+  case phosphorus = 25
   
   /// Carbon (sp3, 5-ring)
   case cyclopentaneCarbon = 123
@@ -118,39 +124,70 @@ extension MM4Parameters {
   func createAtomCodes() {
     atoms.codes = atoms.atomicNumbers.indices.map { atomID in
       let atomicNumber = atoms.atomicNumbers[atomID]
+      let map = atomsToAtomsMap[atomID]
+      var output: MM4AtomCode
+      var valenceCount: Int
+      var supportsHydrogen: Bool = false
+      
       switch atomicNumber {
       case 1:
-        let map = atomsToAtomsMap[atomID]
-        for lane in 0..<4 where map[lane] != -1 {
-          if atoms.atomicNumbers[Int(lane)] == 16 {
-            fatalError("Thiol hydrogen not allowed.")
-          }
-        }
-        return .hydrogen
+        output = .hydrogen
+        valenceCount = 1
       case 6:
         let ringType = atoms.ringTypes[atomID]
         switch ringType {
         case 6:
-          return .alkaneCarbon
+          output = .alkaneCarbon
         case 5:
-          return .cyclopentaneCarbon
+          output = .cyclopentaneCarbon
         default:
           fatalError("Unsupported carbon ring type: \(ringType)")
         }
+        valenceCount = 4
+        supportsHydrogen = true
+      case 7:
+        output = .nitrogen
+        valenceCount = 3
       case 9:
-        return .fluorine
+        output = .fluorine
+        valenceCount = 1
       case 14:
-        return .silicon
+        output = .silicon
+        valenceCount = 4
+        supportsHydrogen = true
+      case 15:
+        output = .phosphorus
+        valenceCount = 3
+      case 16:
+        output = .sulfur
+        valenceCount = 2
       default:
         fatalError("Atomic number \(atomicNumber) not recognized.")
       }
+      
+      if !supportsHydrogen {
+        for lane in 0..<4 where map[lane] != -1 {
+          if atoms.atomicNumbers[Int(lane)] == 1 {
+            fatalError(
+              "Hydrogen not allowed for atomic number \(atomicNumber).")
+          }
+        }
+      }
+      var valenceMask: SIMD4<Int32> = .zero
+      valenceMask.replace(with: .one, where: map .!= -1)
+      guard valenceMask.wrappedSum() == valenceCount else {
+        fatalError(
+          "Valence count \(valenceMask.wrappedSum()) did not match expected \(valenceCount).")
+      }
+      return output
     }
   }
   
   func createCenterTypes() {
+    let permittedAtomicNumbers: [UInt8] = [6, 7, 14, 15, 16]
     for atomID in atoms.atomicNumbers.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
-      guard atomicNumber == 6 || atomicNumber == 14 else {
+      guard permittedAtomicNumbers.contains(atomicNumber) else {
         precondition(
           atomicNumber == 1 || atomicNumber == 9,
           "Atomic number \(atomicNumber) not recognized.")
@@ -159,20 +196,21 @@ extension MM4Parameters {
       }
       
       let map = atomsToAtomsMap[atomID]
-      guard all(map .> -1) else {
-        fatalError("A carbon did not have 4 valid bonds.")
-      }
       var otherElements: SIMD4<UInt8> = .zero
       for lane in 0..<4 {
-        let otherID = map[lane]
-        otherElements[lane] = atoms.atomicNumbers[Int(otherID)]
+        if map[lane] == -1 {
+          otherElements[lane] = 1
+        } else {
+          let otherID = map[lane]
+          otherElements[lane] = atoms.atomicNumbers[Int(otherID)]
+        }
       }
       
       // In MM4, fluorine is treated like carbon when determining carbon types.
-      // Allinger notes this may be a weakness of the forcefield.
+      // Allinger notes this may be a weakness of the forcefield. This idea has
+      // been extended to encapsulate all non-hydrogen atoms.
       var matchMask: SIMD4<UInt8> = .zero
-      matchMask.replace(with: .one, where: otherElements .== 9)
-      matchMask.replace(with: .one, where: otherElements .== 14)
+      matchMask.replace(with: .one, where: otherElements .!= 1)
       
       var carbonType: MM4CenterType
       switch matchMask.wrappedSum() {
@@ -218,15 +256,29 @@ extension MM4Parameters {
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (heteroatom: 0.037, hydrogen: 0.024)
         radius = (heteroatom: 1.960, hydrogen: hydrogenRadius)
+      case 7:
+        // Parameters coming directly from the research papers:
+        // hydrogen epsilon: 0.030 -> 0.110 = (1 / 80.7%)^6
+        // hydrogen radius: 3.50 -> 3.110 = 88.9%
+        epsilon = (heteroatom: 0.054, hydrogen: 0.110)
+        radius = (heteroatom: 1.860, hydrogen: 3.110)
       case 9:
-        // Change vdW force to emulate polarization of a nearby C-H bond.
-        epsilon = (heteroatom: 0.075, hydrogen: 0.092 * pow(1 / 0.9, 6))
-        radius = (heteroatom: 1.710, hydrogen: 2.870 * 0.9)
+        // Parameters coming directly from the research papers:
+        // hydrogen epsilon: 0.036 -> 0.092 = (1 / 85.5%)^6
+        // hydrogen radius: 3.35 -> 2.870 = 85.7%
+        epsilon = (heteroatom: 0.075, hydrogen: 0.092)
+        radius = (heteroatom: 1.710, hydrogen: 2.870)
       case 14:
-        // Scale silicon-hydrogen vdW parameters by 0.94, as suggested for MM4.
-        epsilon = (heteroatom: 0.140, hydrogen: 0.046)
-        radius = (heteroatom: 2.290, hydrogen: 3.690)
+        // Scale H-Si vdW parameters by 0.94, as suggested for MM4.
+        epsilon = (heteroatom: 0.140, hydrogen: 0.0488 * pow(1 / 0.94, 6))
+        radius = (heteroatom: 2.290, hydrogen: 3.930 * 0.94)
+      case 15:
+        // Use the MM3 parameters for phosphorus, as the MM4 paper doesn't
+        // contain vdW parameters.
+        epsilon = (heteroatom: 0.168, hydrogen: 0.053 * pow(1 / 0.94, 6))
+        radius = (heteroatom: 2.220, hydrogen: 3.860 * 0.94)
       case 16:
+        // Scale H-S vdW parameters by 0.94, as suggested for MM4.
         epsilon = (heteroatom: 0.196, hydrogen: 0.0577 * pow(1 / 0.94, 6))
         radius = (heteroatom: 2.090, hydrogen: 3.730 * 0.94)
       default:
