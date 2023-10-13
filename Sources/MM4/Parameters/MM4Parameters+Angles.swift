@@ -79,9 +79,6 @@ extension MM4Parameters {
       var equilibriumAngles: SIMD3<Float>
       let commonCarbonAngles: SIMD3<Float> = SIMD3(108.900, 109.470, 110.800)
       
-      // There should be Swift unit tests to ensure generated angle parameters
-      // match the parameters from research papers, one test for every unique
-      // parameter in the forcefield.
       switch (minatomCode, medatomCode, maxatomCode) {
         // Carbon
       case (1, 1, 1):
@@ -328,8 +325,8 @@ extension MM4Parameters {
     }
   }
   
-  // TODO: Before simulating hydrofluorocarbon storage tape, you must add the
-  // MM4 Electronegativity Effect corrections to bond angles from fluorine.
+  // TODO: Before simulating hydrofluorocarbon storage tape, add the MM4
+  // Electronegativity Effect corrections to bond angles from fluorine.
   //
   // Only apply the effect to primary or secondary carbons in a long alkane
   // chain - take the "center type" and subtract the number of bonded fluorines.
@@ -338,8 +335,5 @@ extension MM4Parameters {
   // bulk diamond, I'm not sure they would even be appropriate. They would make
   // the entire structure have a bunch of extra stiffness, because all the
   // carbon atoms with 109.5° are out of equilibrium. As with bond stiffness,
-  // this ought to be investigated more thoroughly. For the time being, do not
-  // trust the forcefield's results with:
-  // - nitrogen
-  // - fluorine
+  // this ought to be investigated more thoroughly.
 }

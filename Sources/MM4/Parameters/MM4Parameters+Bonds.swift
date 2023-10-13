@@ -59,7 +59,7 @@ extension MM4Parameters {
         let atomID = bond[lane]
         codes[lane] = atoms.codes[Int(atomID)].rawValue
       }
-      if any(codes .== 11 .| codes .== 19) {
+      if any(codes .== 11 .| codes .== 19 .| codes .== 25) {
         codes.replace(with: .init(repeating: 1), where: codes .== 123)
       }
       let minatomCode = codes.min()
@@ -72,11 +72,6 @@ extension MM4Parameters {
       var equilibriumLength: Float
       var dipoleMoment: Float?
       
-      // There should be Swift unit tests to ensure generated bond parameters
-      // match the parameters from research papers, one test for every unique
-      // parameter in the forcefield.
-      //
-      // The tests should factor in Electronegativity Effect corrections.
       switch (minatomCode, maxatomCode) {
         // Carbon
       case (1, 1):
@@ -119,6 +114,18 @@ extension MM4Parameters {
         potentialWellDepth = 1.130
         stretchingStiffness = (ringType == 5) ? 4.9900 : 4.5600
         equilibriumLength = (ringType == 5) ? 1.5290 : 1.5270
+        
+        // Nitrogen
+      case (1, 8):
+        potentialWellDepth = 1.140
+        stretchingStiffness = 5.20
+        equilibriumLength = 1.4585
+        dipoleMoment = (codes[1] == 8) ? +0.64 : -0.64
+      case (8, 123):
+        potentialWellDepth = 1.140
+        stretchingStiffness = 4.90
+        equilibriumLength = (ringType == 5) ? 1.4640 : 1.4520
+        dipoleMoment = (codes[1] == 123) ? -1.40 : +1.40
       
         // Fluorine
       case (1, 11):
@@ -145,10 +152,15 @@ extension MM4Parameters {
         stretchingStiffness = 1.65
         equilibriumLength = (ringType == 5) ? 2.336 : 2.322
         
+        // Phosphorus
+      case (1, 25):
+        potentialWellDepth = 0.702
+        stretchingStiffness = 1.8514
+        equilibriumLength = 2.9273
+        dipoleMoment = (codes[1] == 25) ? +0.9254 : -0.9254
+        
         // Sulfur
       case (1, 15):
-        // Sulfur seems to be electronegative, as C-Si has the opposite sign in
-        // the MM3 reference implementation.
         potentialWellDepth = 0.651
         stretchingStiffness = 2.92
         equilibriumLength = 1.814
@@ -220,6 +232,7 @@ extension MM4Parameters {
       repeating: 0, count: bonds.indices.count)
     var bohlmannEffectSum: [Float] = Array(
       repeating: 0, count: bonds.indices.count)
+    let nonCarbonElements: [UInt8] = [8, 11, 15, 19, 25]
     
     func correction(
       atomID: Int32, endID: Int32, bondID: Int32
@@ -236,14 +249,36 @@ extension MM4Parameters {
       
       let bondCodes = (min(codeEnd, codeOther), max(codeEnd, codeOther))
       let presentCodes = SIMD3(codeActing, codeEnd, codeOther)
-      if any(presentCodes .== 11) && any(presentCodes .== 19) {
-        // Fail if there's no parameters for the electrostatic effect on a
-        // particular bond (e.g. secondary effect of fluorine on silicon).
+      var nonCarbonElementCount: Int = 0
+      for nonCarbonElement in nonCarbonElements {
+        if any(presentCodes .== nonCarbonElement) {
+          nonCarbonElementCount += 1
+        }
+      }
+      if nonCarbonElementCount > 1 {
         fatalError(
-          "No parameters for electronegativity correction between F and Si.")
+          "No parameters for electronegativity correction between two non-carbon elements.")
       }
       
       switch (bondCodes.0, bondCodes.1, codeEnd, codeActing) {
+        // Nitrogen
+      case (1, 1, 1, 8):
+        return (-0.0195, nil, 0.62, 0.20)
+      case (1, 5, 1, 8):
+        return (-0.0118, nil, 0.62, 0.20)
+      case (1, 8, 8, 1):
+        return (-0.0015, nil, 0.62, 0.20)
+      case (1, 8, 8, 123):
+        return (-0.0030, nil, 0.62, 0.40)
+      case (5, 123, 123, 8):
+        return (-0.0100, nil, 0.62, 0.20)
+      case (8, 123, 8, 1):
+        return (-0.0200, nil, 0.62, 0.20)
+      case (8, 123, 8, 123):
+        return (0.0000, nil, 0.62, 0.20)
+      case (123, 123, 123, 8):
+        return (-0.0140, nil, 0.62, 0.20)
+        
         // Fluorine
       case (1, 1, 1, 11):
         var sum: Float = 0.00
@@ -286,6 +321,14 @@ extension MM4Parameters {
         return (0.009, nil, 0.62, 0.40)
       case (1, 19, 1, 19):
         return (-0.004, nil, 0.62, 0.40)
+        
+        // Phosphorus
+      case (1, 25, 25, 1):
+        return (-0.0036, nil, 0.62, 0.40)
+      case (1, 5, 1, 15):
+        return (-0.0070, nil, 0.62, 0.40)
+      case (1, 15, 1, 1):
+        return (0.0005, nil, 0.62, 0.40)
         
         // Sulfur
       case (1, 1, 1, 15):

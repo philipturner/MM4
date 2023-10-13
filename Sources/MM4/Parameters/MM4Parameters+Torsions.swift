@@ -151,9 +151,6 @@ extension MM4Parameters {
         Kbtb = 0.000
       }
       
-      // There should be Swift unit tests to ensure generated torsion parameters
-      // match the parameters from research papers, one test for every unique
-      // parameter in the forcefield.
       switch (sortedCodes[0], sortedCodes[1], sortedCodes[2], sortedCodes[3]) {
         // Carbon
       case (1, 1, 1, 1):

@@ -269,8 +269,19 @@ extension MM4Parameters {
         epsilon = (heteroatom: 0.075, hydrogen: 0.092)
         radius = (heteroatom: 1.710, hydrogen: 2.870)
       case 14:
-        // Scale H-Si vdW parameters by 0.94, as suggested for MM4.
-        epsilon = (heteroatom: 0.140, hydrogen: 0.0488 * pow(1 / 0.94, 6))
+        // For phosphorus and sulfur, we know the electronegative lone pair will
+        // polarize hydrogens that get close. For silicon, it's more like
+        // carbon. With carbon, the energy also decreased by 0.94x, when the
+        // radius decreased that much. Instead of the formula used for H-N and
+        // H-F, where epsilon scaled in the opposite direction to radius. I
+        // think with silicon, the 0.94x correction might do more harm than
+        // good.
+        //
+        // I will not change the energy of silicon. Carbon decreased it using
+        // the factor 0.94x; more electronegative atoms increased it by an
+        // amount roughly following a r^-6 law. Not changing at all is
+        // treating silicon just like carbon, which seems reasonable.
+        epsilon = (heteroatom: 0.140, hydrogen: 0.0488)
         radius = (heteroatom: 2.290, hydrogen: 3.930 * 0.94)
       case 15:
         // Use the MM3 parameters for phosphorus, as the MM4 paper doesn't
