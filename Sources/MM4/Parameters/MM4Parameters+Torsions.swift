@@ -201,10 +201,20 @@ extension MM4Parameters {
         
         // Silicon
       case (1, 1, 1, 19):
-        Vn = 0.050
-        V3 = 0.240
-        fatalError("TODO: Check the ab initio calculations for cyclosilanes.")
-      case (19, 1, 1, 19), (1, 1, 19, 1), (19, 1, 19, 5):
+        if ringType == 5 {
+          V3 = 0.850
+        } else {
+          Vn = 0.050
+          V3 = 0.240
+        }
+      case (1, 1, 19, 1):
+        if ringType == 5 {
+          Vn = 0.800
+          V3 = 0.000
+        } else {
+          V3 = 0.167
+        }
+      case (19, 1, 1, 19), (19, 1, 19, 5):
         V3 = 0.167
       case (5, 1, 19, 1):
         V3 = 0.195
