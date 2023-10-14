@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 10/13/23.
 //
 
-import Foundation
-
 extension MM4Parameters {
   @inline(__always)
   func other<T: FixedWidthInteger, U: FixedWidthInteger>(
@@ -16,7 +14,7 @@ extension MM4Parameters {
     return (bond[0] == atomID) ? bond[1] : bond[0]
   }
   
-  /// Overshadows the function `createAtomCodes()`, but is a more elegant API,
+  /// Overloads the function `createAtomCodes()`, but is a more elegant API,
   /// that follows the de facto naming convention established for MM4 and
   /// related projects.
   @inline(__always)

@@ -1,11 +1,9 @@
 //
 //  MM4MassParameters.swift
-//  MolecularRendererApp
+//
 //
 //  Created by Philip Turner on 9/11/23.
 //
-
-import Foundation
 
 class MM4MassParameters {
   static let global = MM4MassParameters()

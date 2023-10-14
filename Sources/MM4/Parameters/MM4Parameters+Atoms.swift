@@ -1,11 +1,9 @@
 //
 //  MM4Parameters+Atoms.swift
-//  MolecularRenderer
+//
 //
 //  Created by Philip Turner on 10/7/23.
 //
-
-import Foundation
 
 // MARK: - Functions for assigning per-atom parameters.
 
@@ -286,11 +284,15 @@ extension MM4Parameters {
       case 15:
         // Use the MM3 parameters for phosphorus, as the MM4 paper doesn't
         // contain vdW parameters.
-        epsilon = (heteroatom: 0.168, hydrogen: 0.053 * pow(1 / 0.94, 6))
+        var epsilonScale: Float = 1 / (0.94 * 0.94 * 0.94)
+        epsilonScale *= epsilonScale // sixth power
+        epsilon = (heteroatom: 0.168, hydrogen: 0.053 * epsilonScale)
         radius = (heteroatom: 2.220, hydrogen: 3.860 * 0.94)
       case 16:
         // Scale H-S vdW parameters by 0.94, as suggested for MM4.
-        epsilon = (heteroatom: 0.196, hydrogen: 0.0577 * pow(1 / 0.94, 6))
+        var epsilonScale: Float = 1 / (0.94 * 0.94 * 0.94)
+        epsilonScale *= epsilonScale // sixth power
+        epsilon = (heteroatom: 0.196, hydrogen: 0.0577 * epsilonScale)
         radius = (heteroatom: 2.090, hydrogen: 3.730 * 0.94)
       default:
         fatalError("Atomic number \(atomicNumber) not recognized.")

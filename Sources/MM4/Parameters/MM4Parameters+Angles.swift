@@ -1,11 +1,9 @@
 //
 //  MM4Parameters+Angles.swift
-//  MolecularRenderer
+//
 //
 //  Created by Philip Turner on 10/7/23.
 //
-
-import Foundation
 
 // MARK: - Functions for assigning per-angle parameters.
 

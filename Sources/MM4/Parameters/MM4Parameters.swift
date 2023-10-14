@@ -1,11 +1,9 @@
 //
 //  MM4Parameters.swift
-//  MolecularRenderer
+//
 //
 //  Created by Philip Turner on 9/10/23.
 //
-
-import Foundation
 
 /// A configuration for a set of force field parameters.
 public class MM4ParametersDescriptor {

@@ -1,11 +1,9 @@
 //
 //  MM4Parameters+Rings.swift
-//  MolecularRenderer
+//
 //
 //  Created by Philip Turner on 10/7/23.
 //
-
-import Foundation
 
 // MARK: - Functions for generating rings and assigning ring types.
 
@@ -180,4 +178,3 @@ extension MM4Parameters {
     }
   }
 }
-

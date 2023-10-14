@@ -1,11 +1,9 @@
 //
 //  MM4State.swift
-//  MolecularRenderer
+//
 //
 //  Created by Philip Turner on 9/10/23.
 //
-
-import Foundation
 
 /// A configuration for a frame of a simulation.
 public class MM4StateDescriptor {
@@ -63,7 +61,7 @@ public class MM4State {
 extension MM4ForceField {
   /// Retrieve a frame of the simulation.
   ///
-  /// This should be more efficient that using the getters for `forces`,
+  /// This should be more efficient than using the getters for `forces`,
   /// `positions`, `velocities`, or either of the energies in isolation.
   /// However, the API is less expressive.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
