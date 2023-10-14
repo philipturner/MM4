@@ -231,6 +231,10 @@ extension MM4Parameters {
           bendingStiffnesses = SIMD3(repeating: 0.975)
           equilibriumAngles = SIMD3(repeating: 106.2)
         }
+      case (15, 1, 15), (15, 123, 15):
+        // Grabbing the S-C-S angle parameters from MM3.
+        bendingStiffnesses = SIMD3(repeating: 0.420)
+        equilibriumAngles = SIMD3(repeating: 110.00)
       default:
         fatalError("Unrecognized angle: \(sortedCodes)")
       }
