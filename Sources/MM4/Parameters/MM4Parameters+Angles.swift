@@ -100,6 +100,33 @@ extension MM4Parameters {
         bendingStiffnesses = SIMD3(repeating: 0.740)
         equilibriumAngles = SIMD3(108.300, 108.900, 109.000)
         
+        // Nitrogen
+      case (1, 1, 8):
+        bendingStiffnesses = SIMD3(1.175, 1.165, 1.145)
+        equilibriumAngles = SIMD3(106.4, 104.0, 104.6)
+      case (5, 1, 8):
+        bendingStiffnesses = SIMD3(0.850, 0.850, 1.110)
+        equilibriumAngles = SIMD3(104.2, 105.0, 104.6)
+      case (1, 8, 1):
+        bendingStiffnesses = SIMD3(1.050, 0.970, .nan)
+        equilibriumAngles = SIMD3(105.8, 106.6, .nan)
+      case (1, 8, 123):
+        bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
+        equilibriumAngles = SIMD3(109.4, 109.4, .nan)
+      case (5, 123, 8):
+        bendingStiffnesses = SIMD3(repeating: 0.500)
+        equilibriumAngles = SIMD3(repeating: 109.4)
+      case (8, 123, 123):
+        bendingStiffnesses = SIMD3(repeating: 1.155)
+        equilibriumAngles = SIMD3(107.1, 107.1, ringType == 5 ? 105.9 : 107.1)
+      case (123, 8, 123):
+        bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
+        if ringType == 5 {
+          equilibriumAngles = SIMD3(105.2, 108.6, .nan)
+        } else {
+          equilibriumAngles = SIMD3(109.4, 109.4, .nan)
+        }
+        
         // Fluorine
       case (1, 1, 11):
         bendingStiffnesses = SIMD3(repeating: 0.92)
@@ -169,6 +196,14 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 106.00)
         }
         
+        // Phosphorus
+      case (1, 25, 1):
+        bendingStiffnesses = SIMD3(0.900, 0.725, .nan)
+        equilibriumAngles = SIMD3(94.50, 97.90, .nan)
+      case (1, 1, 25):
+        bendingStiffnesses = SIMD3(0.750, 0.825, 0.725)
+        equilibriumAngles = SIMD3(107.05, 108.25, 109.55)
+        
         // Sulfur
       case (5, 1, 15):
         bendingStiffnesses = SIMD3(repeating: 0.782)
@@ -229,20 +264,16 @@ extension MM4Parameters {
       sortedCodes.replace(with: .one, where: sortedCodes .== 123)
       sortedCodes = sortAngle(sortedCodes)
       
-      // TODO: Fill in nonexistent bend-bend parameters for certain cases, when
-      // it's clear the research paper intended for some default to exist there.
-      // For example, the phosphine paper.
       var bendBendStiffness: Float
       var stretchBendStiffness: Float
-      var stretchBendStiffness2: Float
-      var stretchStretchStiffness: Float
+      var stretchBendStiffness2: Float?
+      var stretchStretchStiffness: Float?
       
-      if sortedCodes[0] == 5 && sortedCodes[2] == 5 {
+      if sortedCodes[0] == 5, sortedCodes[2] == 5 {
         bendBendStiffness = 0.000
         stretchBendStiffness = 0.000
-        stretchBendStiffness2 = .nan
-        stretchStretchStiffness = .nan
       } else if any(sortedCodes .== 11) {
+        // Fluorine
         precondition(
           sortedCodes[2] == 11, "Unrecognized fluorine angle: \(sortedCodes)")
         switch sortedCodes[0] {
@@ -266,6 +297,7 @@ extension MM4Parameters {
         }
       } else {
         switch sortedCodes[1] {
+          // Carbon
         case 1:
           // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
           // H-C-Si/C-C-Si/Si-C-Si.
@@ -276,17 +308,25 @@ extension MM4Parameters {
             bendBendStiffness = 0.204
             stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
           }
-          stretchBendStiffness2 = .nan
-          stretchStretchStiffness = .nan
-        case 15:
-          bendBendStiffness = 0.000
-          if all(sortedCodes .== SIMD3(1, 15, 1)) {
-            stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
+          
+          // Nitrogen
+        case 8:
+          bendBendStiffness = 0.204
+          if codes[0] == 1, codes[2] == 1 {
+            stretchBendStiffness = 0.04
+          } else if codes[0] == 1, codes[0] == 123 {
+            stretchBendStiffness = 0.30
+          } else if codes[0] == 123, codes[2] == 123 {
+            // The very large 0.30 parameter for 1-8-123 seems suspicious. I'm
+            // going to set the default to 123-8-123 outside of a 5-membered
+            // ring to that of 1-8-1. Often, the value inside the ring is larger
+            // than in typical bonds. Not an order of magnitude smaller.
+            stretchBendStiffness = (ringType == 5) ? 0.04 : 0.04
           } else {
-            fatalError("Unrecognized sulfur angle: \(sortedCodes)")
+            fatalError("Unrecognized nitrogen angle: \(sortedCodes)")
           }
-          stretchBendStiffness2 = .nan
-          stretchStretchStiffness = .nan
+          
+          // Silicon
         case 19:
           if any(sortedCodes .== 5) {
             bendBendStiffness = 0.24
@@ -295,8 +335,37 @@ extension MM4Parameters {
             bendBendStiffness = 0.30
             stretchBendStiffness = 0.06
           }
-          stretchBendStiffness2 = .nan
-          stretchStretchStiffness = .nan
+          
+          // Exception for the nitrogen-containing bond C-C-N.
+          if sortedCodes[0] == 1, sortedCodes[2] == 8 {
+            stretchBendStiffness2 = 0
+            stretchStretchStiffness = -0.10
+          }
+          
+          // Phosphorus
+        case 25:
+          // There's no stretch-bend or bend-bend parameters in the phosphines
+          // research paper. It seems some generic parameters were uniformly
+          // applied to Si, P, and PO4 in MM3. They were removed from the MM4
+          // paper, except a new bend-bend parameter for H-P-H. I don't allow
+          // H-P-H angles in this forcefield.
+          //
+          // I assume this omission was intentional. The creators knew the
+          // parameters existed, and they talked with Allinger about it. They
+          // made a decision that the parameters weren't necessary, which is
+          // generally good practice to avoid overfitting a forcefield.
+          bendBendStiffness = 0
+          stretchBendStiffness = 0
+          
+          // Sulfur
+        case 15:
+          bendBendStiffness = 0.000
+          if all(sortedCodes .== SIMD3(1, 15, 1)) {
+            stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
+          } else {
+            fatalError("Unrecognized sulfur angle: \(sortedCodes)")
+          }
+          
         default:
           fatalError("Unrecognized angle: \(sortedCodes)")
         }
@@ -309,12 +378,11 @@ extension MM4Parameters {
           equilibriumAngle: equilibriumAngles[angleType - 1],
           stretchBendStiffness: stretchBendStiffness))
       
-      if !stretchBendStiffness2.isNaN,
-         !stretchStretchStiffness.isNaN {
+      if stretchBendStiffness2 != nil || stretchStretchStiffness != nil {
         angles.extendedParameters.append(
           MM4AngleExtendedParameters(
-            stretchBendStiffness: stretchBendStiffness2,
-            stretchStretchStiffness: stretchStretchStiffness))
+            stretchBendStiffness: stretchBendStiffness2 ?? 0,
+            stretchStretchStiffness: stretchStretchStiffness ?? 0))
       } else {
         angles.extendedParameters.append(nil)
       }

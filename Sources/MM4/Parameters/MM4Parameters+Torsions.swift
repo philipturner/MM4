@@ -302,7 +302,7 @@ extension MM4Parameters {
       // The formula from the MM4 alkene paper was ambiguous, specifying "-k":
       //   -k * Δl * Kts * (1 + cos(3ω))
       // The formula from the MM3 original paper was:
-      //    11.995 * (Kts/2) * (1 + cos(3ω))
+      //   11.995 * (Kts/2) * (1 + cos(3ω))
       // After running several parameters through Desmos, and comparing similar
       // ones (https://www.desmos.com/calculator/p5wqbw7tku), I think I have
       // identified a typo. "-k" was supposed to be "K_s^-1" or "1/K_s". This
