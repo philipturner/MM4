@@ -30,7 +30,7 @@
 /// For example, in the note below, bond stretching forces don't actually
 /// execute at the quoted '2 fs'.
 ///
-/// > Note: To maximize the simulation step, hydrogen mass repetitioning (HMR)
+/// > Note: To maximize the simulation speed, hydrogen mass repartitioning (HMR)
 ///   is enabled by default. This method makes hydrogens heaver and makes
 ///   non-hydrogen atoms lighter, to decrease the C-H or Si-H stretching
 ///   frequency. You can, and should, disable HMR for energy-conserving

@@ -63,7 +63,7 @@ public class MM4Parameters {
   /// Map from bonds to atoms that can be efficiently traversed.
   var bondsToAtomsMap: UnsafeMutablePointer<SIMD2<Int32>>
   
-  /// Map from atoms to connected atoms that can be efficienty traversed.
+  /// Map from atoms to connected atoms that can be efficiently traversed.
   var atomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
   
   /// Create a set of parameters using the specified configuration.
