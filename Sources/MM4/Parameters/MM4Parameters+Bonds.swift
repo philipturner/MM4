@@ -27,8 +27,7 @@ public struct MM4Bonds {
   public var ringTypes: [UInt8] = []
 }
 
-/// Morse stretching parameters for a covalent bond. The bond's electric dipole
-/// is also included in these parameters.
+/// Morse stretching parameters for a covalent bond.
 public struct MM4BondParameters {
   /// Units: millidyne \* angstrom
   ///

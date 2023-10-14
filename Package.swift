@@ -12,7 +12,8 @@ let package = Package(
       targets: ["MM4"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/philipturner/swift-openmm", branch: "main")
+    .package(url: "https://github.com/philipturner/swift-openmm", branch: "main"),
+    .package(url: "https://github.com/apple/swift-docc-plugin", branch: "main"),
   ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.

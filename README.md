@@ -25,4 +25,4 @@ General-purpose simulator for molecular nanotechnology (work in progress)
 Key:
 - X = nonpolar covalent bond
 - O = polar covalent bond
-- blank means not supported
+- blank = not supported

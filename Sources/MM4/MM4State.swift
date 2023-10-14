@@ -51,7 +51,7 @@ public class MM4State {
   /// The system's total potential energy.
   public internal(set) var potentialEnergy: Double?
   
-  /// The velocity (in nanometers per picosecond), of each atom at the start of
+  /// The velocity (in nanometers per picosecond) of each atom at the start of
   /// the simulation.
   public internal(set) var velocities: [SIMD3<Float>]?
   
