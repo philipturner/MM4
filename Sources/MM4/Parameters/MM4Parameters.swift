@@ -49,7 +49,7 @@ public class MM4Parameters {
   /// Parameters for a group of 5 atoms.
   public internal(set) var rings: MM4Rings = MM4Rings()
   
-  /// The amount of mass (in amu) redistrbuted from a substituent atom to each
+  /// The amount of mass (in amu) redistributed from a substituent atom to each
   /// covalently bonded hydrogen.
   var hydrogenMassRepartitioning: Float = -1
   
@@ -144,6 +144,10 @@ public class MM4Parameters {
     createBondParameters()
     addElectrostaticCorrections()
     createPartialCharges()
+    
+    // Other Parameters
+    createAngleParameters()
+    createTorsionParameters()
   }
   
   deinit {

@@ -9,6 +9,21 @@ import Foundation
 
 /// A configuration for a force field simulator.
 public class MM4ForceFieldDescriptor {
+  // TODO: Allow these properties to be changed without making a new object.
+  //
+  // externalForces
+  //   - setParticleParameters, updateParametersInContext
+  //   - setIntegrationForceGroups
+  // maximumTimeStep
+  //   - setStepSize
+  // positions
+  //   - setState
+  // stationaryAtoms
+  //   - setParticleParameters, updateParametersInContext
+  //   - setIntegrationForceGroups
+  // velocities
+  //   - setState
+  
   /// Optional. The force (in piconewtons) exerted on each atom.
   public var externalForces: [SIMD3<Float>]?
   
@@ -28,6 +43,8 @@ public class MM4ForceFieldDescriptor {
   public var rigidBodies: [[UInt32]] = []
   
   /// Optional. Whether each atom's absolute position should never change.
+  ///
+  /// This is implemented by setting the particle's mass and velocity to zero.
   public var stationaryAtoms: [Bool]?
   
   /// Required. The temperature (in Kelvin) to initialize thermal velocities at.
@@ -42,15 +59,15 @@ public class MM4ForceFieldDescriptor {
   /// body's overall momentum.
   public var velocities: [SIMD3<Float>]?
   
-  // TODO: Set of modes for the forcefield
+  // Idea: Set of modes for the forcefield
   // - "Default" - best tradeoff between accuracy and performance.
   // - "Reduced accuracy" - cheaper alternative forcefield that omits torsions
   //   in bulk H/C/Si. Not yet measured whether it's sufficient for replacing
   //   "default", what the artifacts are.
-  //   - TODO: Measure and rank the stiffness of each force, and their
-  //     contributions to a set of specific quantitative properties. No matter
-  //     how cheap a force is, there should be a maximally cheap option for
-  //     situations where simulation speed vastly outweighs accuracy.
+  //   - Measure and rank the stiffness of each force, and their contributions
+  //     to a set of specific quantitative properties. No matter how cheap a
+  //     force is, there should be a maximally cheap option for situations where
+  //     simulation speed vastly outweighs accuracy.
   // - "Energy conserving" - throws an error if HMR is nonzero, uses a much
   //   smaller timestep to minimize energy drift, no mixed precision for now.
   // - "Energy minimizing" - disregards simulation speed, creates checkpoints to
@@ -67,8 +84,8 @@ public class MM4ForceField {
   public init(descriptor: MM4ForceFieldDescriptor) {
     MM4Plugins.global.load()
     
-    // Separate the atoms into two groups of "small" vs "large" atoms, creating
-    // different zones of internally contiguous tiles within the atom list.
+    // Eventually, separate the atoms into two groups of "small" vs "large"
+    // atoms, creating different zones of internally contiguous tiles.
   }
   
   /// Simulate the system's evolution for the specified time interval (in
@@ -77,30 +94,5 @@ public class MM4ForceField {
     // If the time doesn't divide evenly into 100 fs, compile a temporary
     // integrator that executes the remainder, potentially with a slightly
     // scaled-down timestep.
-  }
-  
-  /// Retrieve a frame of the simulation.
-  public func state(descriptor: MM4StateDescriptor) -> MM4State {
-    if descriptor.positions {
-      // Add the positions flag to the OpenMM state data type.
-    }
-    if descriptor.velocities {
-      // Add the velocities flag to the OpenMM state data type.
-    }
-    if descriptor.energy {
-      // Add the energy flag to the OpenMM state data type.
-    }
-    
-    let state = MM4State()
-    if descriptor.positions {
-      // Set the positions.
-    }
-    if descriptor.velocities {
-      // Set the velocities.
-    }
-    if descriptor.energy {
-      // Set the kinetic and potential energy.
-    }
-    return state
   }
 }
