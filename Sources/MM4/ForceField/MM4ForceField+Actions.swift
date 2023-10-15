@@ -39,7 +39,7 @@ extension MM4ForceField {
   /// Minimize the system's energy using the L-BFGS algorithm.
   ///
   /// This is one of few such algorithms with O(n) computational complexity. It
-  /// is a limited-memory version of BFGS, and O(n^2) algorithm. BFGS, in turn,
+  /// is a limited-memory version of BFGS, an O(n^2) algorithm. BFGS, in turn,
   /// is an improvement on O(n^3) methods such as Newton's method and the
   /// conjugate gradient method.
   ///
