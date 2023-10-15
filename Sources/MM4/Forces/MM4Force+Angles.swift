@@ -70,6 +70,7 @@ class MM4BendForce: MM4Force {
       stretchBend = stretchBendStiffness * deltaTheta * (
         deltaLengthLeft + deltaLengthRight
       );
+      
       deltaTheta = angle(p1, p2, p3) - equilibriumAngle;
       deltaLengthLeft = distance(p1, p2) - equilibriumLengthLeft;
       deltaLengthRight = distance(p1, p2) - equilibriumLengthRight;

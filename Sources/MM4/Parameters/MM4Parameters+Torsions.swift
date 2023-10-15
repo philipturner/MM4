@@ -25,10 +25,7 @@ public struct MM4Torsions {
   public var ringTypes: [UInt8] = []
 }
 
-/// Parameters for a torsion among carbon or hydrogen atoms, and
-/// the first few terms of a fluorine torsion.
-///
-/// > WARNING: Convert radians to degrees.
+/// Parameters for a torsion among hydrogen, carbon, and silicon atoms.
 ///
 /// V1 term:
 /// - zeroed out for X-C-C-H
@@ -56,7 +53,7 @@ public struct MM4Torsions {
 public struct MM4TorsionParameters {
   /// Units: kilocalorie / mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var V1: Float
   
   /// Units: kilocalorie / mole
@@ -80,10 +77,10 @@ public struct MM4TorsionParameters {
   public var Kts3: Float
 }
 
-/// Parameters for the various torsion forces unique to fluorine-containing
-/// compounds (V4, V6, 3-term torsion-stretch, torsion-bend).
-///
-/// > WARNING: Convert radians to degrees.
+/// Parameters for the various torsion forces unique to non-H/C/Si-containing
+/// compounds (V4, V6, 3-term torsion-stretch, torsion-bend). This also includes
+/// the bend-torsion-bend force, which is omitted from C-H torsions for
+/// efficiency.
 public struct MM4TorsionExtendedParameters {
   /// Units: kilocalorie / mole
   ///
@@ -112,20 +109,28 @@ public struct MM4TorsionExtendedParameters {
   
   /// The V1-like term contributing to torsion-bend stiffness.
   ///
+  /// > WARNING: Convert radians to degrees.
+  ///
   /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Ktb1: (left: Float, right: Float)
   
   /// The V2-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert radians to degrees.
   ///
   /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Ktb2: (left: Float, right: Float)
   
   /// The V3-like term contributing to torsion-bend stiffness.
   ///
+  /// > WARNING: Convert radians to degrees.
+  ///
   /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Ktb3: (left: Float, right: Float)
   
   /// Bend-torsion-bend constant.
+  ///
+  /// > WARNING: Convert radians to degrees.
   ///
   /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Kbtb: Float
@@ -427,12 +432,8 @@ extension MM4Parameters {
         // quantities. Place Ktb_r before Ktb_l in this section. Not all cases
         // have reversed order, but pay careful attention to the ones that do.
       case (5, 1, 25, 1):
-        // Although compressing V6 into the same force as regular carbon
-        // torsions won't improve performance, it should be common practice to
-        // perform the compression for clarity.
         V3 = 0.300
-        Vn = -0.050
-        n = 6
+        V6 = -0.050
         
         Ktb_r = SIMD3(0.000, 0.000, -0.001)
         Ktb_l = SIMD3(-0.001, -0.004, -0.001)

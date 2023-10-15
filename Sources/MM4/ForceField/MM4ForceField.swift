@@ -11,7 +11,7 @@
 /// The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
 /// restrictions on permitted bond types. For example, only C and Si may bond to
 /// hydrogen. The remaining elements (except silicon) must have all covalent
-/// bonds shared with a carbon atom. In addition, no dissimilar non-C/H atoms
+/// bonds shared with a carbon atom. In addition, no dissimilar non-H/C atoms
 /// may be separated by a bond once removed. Within these restrictions, there
 /// exists a large variety of permissible structures, more than with exclusively
 /// carbon and hydrogen.
@@ -144,16 +144,6 @@ public class MM4ForceFieldDescriptor {
   /// These are added to thermal velocities in a way that conserves each rigid
   /// body's overall momentum.
   public var velocities: [SIMD3<Float>]?
-  
-  // Idea: Set of modes for the force field
-  // - "Default" - best tradeoff between accuracy and performance.
-  // - "Reduced accuracy" - cheaper alternative forcefield that omits torsions
-  //   in bulk H/C/Si. Not yet measured whether it's sufficient for replacing
-  //   "default", what the artifacts are, how much it speeds up execution.
-  //   - Measure and rank the stiffness of each force, and their contributions
-  //     to a set of specific quantitative properties. No matter how cheap a
-  //     force is, there should be a maximally cheap option for situations where
-  //     simulation speed vastly outweighs accuracy.
   
   public init() {
     

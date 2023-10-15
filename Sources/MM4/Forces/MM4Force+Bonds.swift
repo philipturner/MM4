@@ -15,11 +15,9 @@ class MM4StretchForce: MM4Force {
     //
     // beta = sqrt(ks / 2De)
     let force = OpenMM_CustomBondForce(energy: """
-      stretch;
-      stretch = potentialWellDepth * (
-        1 - exp(-beta * deltaLength)
+      potentialWellDepth * (
+        1 - exp(-beta * (r - equilibriumLength))
       )^2 - 1);
-      deltaLength = r - equilibriumLength;
       """)
     force.addPerBondParameter(name: "potentialWellDepth")
     force.addPerBondParameter(name: "beta")

@@ -49,7 +49,7 @@ public struct MM4AngleParameters {
   public var stretchBendStiffness: Float
 }
 
-/// Parameters for the various angle forces unique to fluorine-containing
+/// Parameters for the various angle forces unique to non-H/C/Si-containing
 /// compounds.
 public struct MM4AngleExtendedParameters {
   /// Stiffness for type 2 stretch-bend forces, affecting bonds not directly

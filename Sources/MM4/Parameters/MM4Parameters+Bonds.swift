@@ -46,6 +46,7 @@ public struct MM4BondParameters {
   public var equilibriumLength: Float
 }
 
+/// Parameters for covalent bonds that create partial charges.
 public struct MM4BondExtendedParameters {
   /// Units: debye
   public var dipoleMoment: Float
