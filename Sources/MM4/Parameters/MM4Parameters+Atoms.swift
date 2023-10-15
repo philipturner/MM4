@@ -66,7 +66,7 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 19
   case silicon = 19
   
-  /// Phosphorus
+  /// Phosphorus (trivalent)
   ///
   /// MM4 atom code: 25
   case phosphorus = 25
