@@ -8,12 +8,12 @@
 /// The MM2 force field used to create _Nanosystems (1992)_, but updated with
 /// modern ab initio calculations.
 ///
-/// The simulator supports the atoms enumerated by <doc:MM4AtomCode> with some
+/// The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
 /// restrictions on permitted bond types. For example, only C and Si may bond to
 /// hydrogen. The remaining elements (except silicon) must have all covalent
-/// bonds be shared with a carbon atom. In addition, no dissimilar non-C/H atoms
+/// bonds shared with a carbon atom. In addition, no dissimilar non-C/H atoms
 /// may be separated by a bond once removed. Within these restrictions, there
-/// is a large variety of permissible structures, more than with exclusively
+/// exists a large variety of permissible structures, more than with exclusively
 /// carbon and hydrogen.
 ///
 /// All major platforms (Mac, Linux, Windows) and all major GPU architectures
@@ -26,6 +26,19 @@
 /// [minimizer](<doc:MM4ForceField/minimize(tolerance:maxIterations:)>) uses
 /// limited-memory BFGS as a faster alternative to conjugate gradient
 /// minimization.
+///
+/// > Note: Throughout the entire software stack, from setup to minimization to
+///   simulation, this simulator is O(n). Linear scaling exists at every system
+///   size and material composition. This is a rarity among simulation
+///   algorithms, most of which are inherently O(n^2) or
+///   [employ sparse O(n^2) matrix factorizations](https://xtb-docs.readthedocs.io/en/latest/gfnff.html).
+///   MM4 is one of the few simulation techniques that can simulate
+///   supermassive million-atom nanosystems on affordable hardware. There are
+///   hypotheses about O(n) game physics-like simulators employing static
+///   analysis, which can significantly reduce the constant factor to linear
+///   scaling. However, there are not yet any verified implementations that
+///   project the inherently digital nanoscale onto a macroscale continuous
+///   (analog) representation.
 ///
 /// This is an NVE simulator, using 32-bit single precision and a massive
 /// timestep. Energy is not conserved to the precision of kT. It fluctuates
@@ -125,7 +138,7 @@ public class MM4ForceFieldDescriptor {
   /// nonsensical. This needs to be investigated further.
   public var stationaryAtoms: [Bool]?
   
-  /// Optional. The velocity (in nanometers per picosecond), of each atom at the
+  /// Optional. The velocity (in nanometers per picosecond) of each atom at the
   /// start of the simulation.
   ///
   /// These are added to thermal velocities in a way that conserves each rigid

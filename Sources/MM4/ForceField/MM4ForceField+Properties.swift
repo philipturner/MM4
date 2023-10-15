@@ -78,7 +78,7 @@ extension MM4ForceField {
     get { fatalError("Not implemented.") }
   }
   
-  /// The bulk + thermal velocity (in nanometers per picosecond), of each atom.
+  /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
   /// functions <doc:MM4ForceField/update(descriptor:)> and

@@ -93,12 +93,12 @@ public enum MM4CenterType: UInt8 {
 
 /// Parameters for the van der Waals force on a specific atom, with an
 /// alternative value for use in hydrogen interactions. This force does not
-/// include electric forces, which are handled separately in a bond-bond based
-/// dipole interaction.
+/// include electrostatic forces, which are handled separately in a bond-based
+/// dipole-dipole interaction.
 public struct MM4NonbondedParameters {
   /// Units:  kilocalorie / mole
   ///
-  /// "Heteroatom" includes carbon; the term was simply chosen as an antonym to
+  /// `heteroatom` includes carbon; the term was simply chosen as an antonym to
   /// hydrogen. Epsilons are computed using the geometric mean for heteroatoms,
   /// otherwise substitute directly with the hydrogen epsilon.
   ///
@@ -107,9 +107,11 @@ public struct MM4NonbondedParameters {
   
   /// Units: angstrom
   ///
-  /// "Heteroatom" includes carbon; the term was simply chosen as an antonym to
+  /// `heteroatom` includes carbon; the term was simply chosen as an antonym to
   /// hydrogen. Radii are computed using the arithmetic sum for heteroatoms,
   /// otherwise substitute directly with the hydrogen radius.
+  ///
+  /// > WARNING: Convert angstroms to nanometers.
   public var radius: (heteroatom: Float, hydrogen: Float)
 }
 
