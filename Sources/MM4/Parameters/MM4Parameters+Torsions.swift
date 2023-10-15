@@ -139,7 +139,6 @@ public struct MM4TorsionExtendedParameters {
 extension MM4Parameters {
   func createTorsionParameters() {
     for torsionID in torsions.indices.indices {
-      #if false
       let torsion = torsions.indices[torsionID]
       let ringType = torsions.ringTypes[torsionID]
       let codes = with5RingsRemoved {
@@ -165,6 +164,7 @@ extension MM4Parameters {
       ///   the first attempt succeeded.
       /// - Returns: Whether the sorted codes are different from the original
       ///   ones.
+      @discardableResult
       func with5RingAttempt(_ closure: (SIMD4<UInt8>) -> Bool) -> Bool {
         var sortedCodes = sortTorsion(codes)
         if closure(sortedCodes) {
@@ -191,7 +191,7 @@ extension MM4Parameters {
       var V6: Float?
       var Kbtb: Float?
       
-      let swappedCodesForTorsion = with5RingAttempt { codes in
+      with5RingAttempt { codes in
         switch (codes[0], codes[1], codes[2], codes[3]) {
           // Carbon
         case (1, 1, 1, 1):   (V1, Vn, V3) = (0.239, 0.024, 0.637)
@@ -238,11 +238,6 @@ extension MM4Parameters {
           /**/                       Kbtb = -0.06
           
           // Silicon
-          //
-          // TODO: Remove this warning for sections that don't have Kts.
-          //
-          // For silicon, take the MM3 torsion-stretch constant, multiply by
-          // 11.995 / 2, then multiply by bond stiffness.
         case (19, 1, 1, 19):  V3 = 0.167
         case ( 5, 1, 19, 1):  V3 = 0.195
         case ( 5, 1, 19, 5):  V3 = 0.177
@@ -266,42 +261,36 @@ extension MM4Parameters {
           else {              V3 = 0.125 }
           
           // Phosphorus
-          //
-          // TODO: Remove this warning for sections that don't have Ktb.
-          //
-          // WARNING: Entering phosphorus in the reverse order that it appears
-          // in the research paper. This may cause mistakes from confusing two
-          // quantities. Place Ktb_r before Ktb_l in this section. Not all cases
-          // have reversed order, but pay careful attention to the ones that do.
         case (5, 1, 25, 1):     (V3, V6) = (0.300, -0.050)
         case (5, 1, 1, 25):     (Vn, V3) = (0.200, 0.360)
         case (1, 1, 25, 1): (V1, Vn, V3) = (0.800, -0.400, 0.100)
           
           // Sulfur
           //
-          // Grabbing the S-C-S-C torsion parameters from MM3.
-        case (5, 1, 15, 1):     (V3, Kbtb) = (0.540, 0.135)
-        case (1, 1, 15, 1): (V1, V3, Kbtb) = (0.410, 0.600, 0.080)
+          // Grabbing the 15-1-15-1 torsion parameters from MM3.
+        case (15, 1, 15, 1):      (Vn, V3) = (-0.900, 0.300)
+        case (5, 1, 15, 1):     (V3, Kbtb) = (0.540, 0.080)
+        case (1, 1, 15, 1): (V1, V3, Kbtb) = (0.410, 0.600, 0.004)
         case (15, 1, 1, 15):  (V1, Vn, V3) = (0.461, 0.144, 1.511)
           /**/                        Kbtb = 0.130
         case (5, 1, 1, 15):     (V3, Kbtb) = (0.460, 0.050)
         case (1, 1, 1, 15):   (V1, Vn, V3) = (0.420, 0.100, 0.200)
           /**/                        Kbtb = 0.090
-        case (5, 123, 123, 5):  (V3, Kbtb) = (0.200, 0.020)
+        case (5, 123, 123, 15): (V3, Kbtb) = (0.200, 0.020)
         case (123, 15, 123, 1):   (V1, V3) = (0.100, 0.200)
         case (5, 1, 123, 15):     (Vn, V3) = (0.330, 0.200)
           /**/                        Kbtb = 0.050
         case (123, 15, 123, 5): (V3, Kbtb) = (0.450, 0.020)
-        case (15, 1, 15, 1):      (Vn, V3) = (-0.900, 0.300)
-        case (123, 15, 123, 123):
-          if ringType == 5 {  (V1, Vn, V3) = (0.440, 0.300, 0.500) }
-          else {                  (V1, V3) = (0.100, 0.200) }
         case (15, 123, 123, 123):
           if ringType == 5 {
             (V1, Vn, V3, Kbtb) = (0.040, 0.200, 0.300, 0.100)
           } else {
             (V1, Vn, V3, Kbtb) = (0.520, 0.080, 0.250, 0.100)
           }
+        case (123, 15, 123, 123):
+          if ringType == 5 {  (V1, Vn, V3) = (0.440, 0.300, 0.500) }
+          else { return false }
+          
         default:
           return false
         }
@@ -313,8 +302,101 @@ extension MM4Parameters {
       var Ktb_l: SIMD3<Float>?
       var Ktb_r: SIMD3<Float>?
       
-      // TODO: Either copy directly from torsion-stretch or recycle some of
-      // the shortened code from torsion.
+      let swappedCodesForTorsionBend = with5RingAttempt { codes in
+        switch (codes[0], codes[1], codes[2], codes[3]) {
+          // Carbon
+        case (1, 1, 1, 1): fallthrough
+        case (1, 1, 1, 5): fallthrough
+        case (5, 1, 1, 5): fallthrough
+        case (1, 123, 123, 1): fallthrough
+        case (1, 123, 123, 123): fallthrough
+        case (5, 123, 123, 5): fallthrough
+        case (5, 123, 123, 123): fallthrough
+        case (5, 1, 123, 123): fallthrough
+        case (1, 123, 123, 5): fallthrough
+        case (5, 1, 123, 5): fallthrough
+        case (123, 123, 123, 123): break
+          
+          // Nitrogen
+        case (1, 1, 1, 8):       Ktb_l = SIMD3(0.007, 0.000, -0.005)
+          /**/                   Ktb_r = SIMD3(0.010, -0.004, -0.006)
+        case (5, 1, 1, 8):       Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+        case (8, 1, 1, 8):       Ktb_l = SIMD3(-0.008, 0.008, -0.018)
+          /**/                   Ktb_r = SIMD3(-0.008, 0.008, -0.018)
+        case (1, 1, 8, 1):       Ktb_l = SIMD3(-0.028, -0.020, 0.007)
+          /**/                   Ktb_r = SIMD3(0.003, -0.004, -0.009)
+        case (5, 1, 8, 1):       Ktb_l = SIMD3(-0.010, -0.025, 0.000)
+          /**/                   Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+        case (5, 1, 8, 123):     Ktb_l = SIMD3(-0.003, -0.003, 0.000)
+        case (1, 8, 123, 5):     Ktb_r = SIMD3(-0.015, -0.028, 0.000)
+        case (1, 8, 123, 123):   Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+        case (123, 8, 123, 5):   Ktb_r = SIMD3(-0.015, -0.028, 0.000)
+        case (5, 123, 123, 8):   Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+        case (123, 8, 123, 123):
+          if ringType == 5 {     Ktb_r = SIMD3(-0.008, -0.004, 0.000) }
+          else { return false }
+        case (8, 123, 123, 123): Ktb_l = SIMD3(-0.008, -0.004, 0.000)
+          
+          // Fluorine
+        case (1, 1, 1, 11):  Ktb_l = SIMD3(0.000, -0.012, -0.009)
+          /**/               Ktb_r = SIMD3(0.005, 0.004, 0.003)
+        case (5, 1, 1, 11):  Ktb_l = SIMD3(0.002, -0.022, 0.000)
+          /**/               Ktb_r = SIMD3(0.000, 0.000, -0.001)
+        case (11, 1, 1, 11): Ktb_l = SIMD3(0.000, -0.015, -0.003)
+          /**/               Ktb_r = SIMD3(0.000, -0.015, -0.003)
+          
+          // Silicon
+        case (19, 1, 1, 19): fallthrough
+        case ( 5, 1, 19, 1): fallthrough
+        case ( 5, 1, 19, 5): fallthrough
+        case (19, 1, 19, 1): fallthrough
+        case (19, 1, 19, 5): fallthrough
+        case ( 1, 1, 19, 19): fallthrough
+        case ( 5, 1, 19, 19): fallthrough
+        case (1, 19, 19, 5): fallthrough
+        case (1, 19, 19, 1): fallthrough
+        case (1, 19, 19, 19): fallthrough
+        case (5, 19, 19, 5): fallthrough
+        case (5, 19, 19, 19): fallthrough
+        case (1, 1, 1, 19): fallthrough
+        case (1, 1, 19, 1): fallthrough
+        case (19, 19, 19, 19): break
+          
+          // Phosphorus
+          //
+          // WARNING: Entering phosphorus in the reverse order that it appears
+          // in the research paper. This may cause mistakes from confusing two
+          // quantities. Place Ktb_r before Ktb_l in this section. Not all cases
+          // have reversed order, but pay careful attention to the ones that do.
+        case (5, 1, 25, 1): Ktb_r = SIMD3(0.000, 0.000, -0.001)
+          /**/              Ktb_l = SIMD3(-0.001, -0.004, -0.001)
+        case (5, 1, 1, 25): Ktb_r = SIMD3(0.005, 0.000, 0.000)
+        case (1, 1, 25, 1): Ktb_r = SIMD3(-0.002, -0.003, -0.001)
+          /**/              Ktb_l = SIMD3(-0.015, 0.007, -0.006)
+          
+          // Sulfur
+          //
+          // The 15-1-1-15 torsion is symmetric, so setting only one of the
+          // angles to 0.003 seems suspicious. I will set both angles.
+        case (15, 1, 15, 1): break
+        case (5, 1, 15, 1):  Ktb_l = SIMD3(0.006, 0.020, 0.000)
+        case (1, 1, 15, 1):  Ktb_l = SIMD3(0.030, 0.023, 0.000)
+        case (15, 1, 1, 15): Ktb_l = SIMD3(0.000, 0.003, 0.000)
+          /**/               Ktb_r = SIMD3(0.000, 0.003, 0.000)
+        case (5, 1, 1, 15): fallthrough
+        case (1, 1, 1, 15): fallthrough
+        case (5, 123, 123, 15): fallthrough
+        case (123, 15, 123, 1): fallthrough
+        case (5, 1, 123, 15): fallthrough
+        case (123, 15, 123, 5): fallthrough
+        case (15, 123, 123, 123): fallthrough
+        case (123, 15, 123, 123): break
+        
+        default:
+          return false
+        }
+        return true
+      }
       
       if swappedCodesForTorsionBend {
         swap(&Ktb_l, &Ktb_r)
@@ -342,369 +424,169 @@ extension MM4Parameters {
       // New formula:
       //   Δl * (Kts / Ks) * (1 + cos(3ω))
       
-      var Kts: Float = 0.000
       var Kts_l: SIMD3<Float>?
       var Kts_c: SIMD3<Float>?
       var Kts_r: SIMD3<Float>?
       
-      if swappedCodesForTorsionStretch {
-        swap(&Kts_l, &Kts_r)
-      }
-      
-      let swappedCodesForTorsionStretch = with5RingAttempt { sortedCodes in
-        switch (
-          sortedCodes[0], sortedCodes[1], sortedCodes[2], sortedCodes[3]
-        ) {
+      let swappedCodesForTorsionStretch = with5RingAttempt { codes in
+        let middle = SIMD2(codes[1], codes[2])
+        var middle6Ring = middle.replacing(with: .one, where: middle .== 123)
+        middle6Ring = sortBond(middle6Ring)
+        
+        if all(middle .== 123) {
+          Kts_c = SIMD3(0.000, 0.000, 0.840)
+        } else {
+          switch (middle6Ring[0], middle6Ring[1]) {
+          case (1, 1): Kts_c = SIMD3(0.000, 0.000, 0.640)
+          case (1, 19): Kts_c = SIMD3(0.000, 0.000, 0.036)
+          case (19, 19): Kts_c = SIMD3(0.000, 0.000, 0.012)
+          case (1, 15): Kts_c = SIMD3(0.000, 0.000, 1.559)
+            
+          default: break
+          }
+          
+          // For silicon, take the MM3 torsion-stretch constant, multiply by
+          // 11.995 / 2, then multiply by bond stiffness.
+          if any(middle6Ring .== 19), Kts_c != nil {
+            Kts_c! *= 11.995 / 2 * bondStiffness
+          }
+        }
+        
+        switch (codes[0], codes[1], codes[2], codes[3]) {
           // Carbon
-        case (1, 1, 1, 1):
-          (V1, Vn, V3) = (0.239, 0.024, 0.637)
-          Kts = 0.660
-        case (1, 1, 1, 5):
-          V3 = 0.290
-          Kts = 0.660
-        case (5, 1, 1, 5), (5, 1, 123, 5):
-          V3 = 0.260
-          Vn = 0.008
-          n = 6
-          Kts = 0.660
-        case (1, 123, 123, 1), (1, 123, 123, 123):
-          (V1, V3) = (0.160, 0.550)
-          Kts = 0.840
-        case (5, 123, 123, 5):
-          V3 = 0.300
-          Kts = 0.840
-        case (5, 123, 123, 123):
-          V3 = 0.290
-          Kts = 0.840
-        case (123, 123, 123, 123):
-          V1 = (ringType == 5) ? -0.150 : -0.120
-          V3 = (ringType == 5) ? 0.160 : 0.550
-          Kts = 0.840
-        case (5, 1, 123, 123), (123, 1, 123, 5):
-          V3 = 0.306
-          Kts = 0.640
-        case (1, 123, 123, 5):
-          V3 = 0.306
-          Kts = 0.840
-        case (5, 1, 123, 5):
-          V3 = 0.260
-          Kts = 0.660
+        case (1, 1, 1, 1): fallthrough
+        case (1, 1, 1, 5): fallthrough
+        case (5, 1, 1, 5): fallthrough
+        case (1, 123, 123, 1): fallthrough
+        case (1, 123, 123, 123): fallthrough
+        case (5, 123, 123, 5): fallthrough
+        case (5, 123, 123, 123): fallthrough
+        case (5, 1, 123, 123): fallthrough
+        case (1, 123, 123, 5): fallthrough
+        case (5, 1, 123, 5): fallthrough
+        case (123, 123, 123, 123): break
+          
+          // Deviating from the convention of making everything tabular, for
+          // both nitrogen and fluorine. This makes it easier to read and/or
+          // less effort to format than tabular form.
           
           // Nitrogen
         case (1, 1, 1, 8):
-          (V1, Vn, V3) = (1.139, 1.348, 1.582)
-          (V4, V6) = (-0.140, 0.172)
-          
-          Ktb_l = SIMD3(0.007, 0.000, -0.005)
-          Ktb_r = SIMD3(0.010, -0.004, -0.006)
-          Kbtb = -0.05
-          
           Kts_l = SIMD3(0.000, 0.000, 1.300)
           Kts_c = SIMD3(3.000, -3.100, 2.860)
           Kts_r = SIMD3(-0.600, 1.000, 1.500)
-        case (5, 1, 1, 8):
-          V3 = 0.455
-          
-          Ktb_r = SIMD3(-0.003, -0.003, 0.000)
-          Kbtb = -0.05
+        case (5, 1, 1, 8): break
         case (8, 1, 1, 8):
-          (V1, Vn, V3) = (2.545, -2.520, 3.033)
-          
-          Ktb_l = SIMD3(-0.008, 0.008, -0.018)
-          Ktb_r = SIMD3(-0.008, 0.008, -0.018)
-          
           Kts_l = SIMD3(0.000, 5.000, 0.000)
           Kts_c = SIMD3(4.000, -5.560, 2.660)
           Kts_r = SIMD3(0.000, 5.000, 0.000)
         case (1, 1, 8, 1):
-          (V1, Vn, V3) = (1.193, -0.337, 0.870)
-          (V4, V6) = (0.228, -0.028)
-          
-          Ktb_l = SIMD3(-0.028, -0.020, 0.007)
-          Ktb_r = SIMD3(0.003, -0.004, -0.009)
-          
           Kts_l = SIMD3(5.000, 5.000, 0.000)
           Kts_c = SIMD3(1.000, 0.000, 4.580)
         case (5, 1, 8, 1):
-          (V1, Vn, V3) = (0.072, -0.512, 0.562)
-          
-          Ktb_l = SIMD3(-0.010, -0.025, 0.000)
-          Ktb_r = SIMD3(-0.003, -0.003, 0.000)
-          Kbtb = 0.05
-          
           Kts_l = SIMD3(3.100, 8.200, 0.000)
           Kts_c = SIMD3(0.000, -1.100, 0.580)
-        case (5, 1, 8, 123):
-          (Vn, V3) = (-0.450, 0.170)
-          
-          Ktb_l = SIMD3(-0.003, -0.003, 0.000)
-          Kbtb = -0.12
-        case (1, 8, 123, 5):
-          (Vn, V3) = (0.550, 0.100)
-          
-          Ktb_r = SIMD3(-0.015, -0.028, 0.000)
-        case (1, 8, 123, 123):
-          (Vn, V3) = (-0.520, 0.180)
-          
-          Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+        case (5, 1, 8, 123): return false
+        case (1, 8, 123, 5): return false
+        case (1, 8, 123, 123): return false
         case (123, 8, 123, 5):
-          (V1, Vn, V3) = (0.072, -0.012, 0.597)
-          
-          Ktb_r = SIMD3(-0.015, -0.028, 0.000)
-          
           Kts_c = SIMD3(0.000, 0.000, 0.580)
           Kts_r = SIMD3(0.000, 8.038, 0.000)
-        case (5, 123, 123, 8):
-          V3 = 0.374
-          
-          Ktb_r = SIMD3(-0.003, -0.003, 0.000)
-          Kbtb = -0.09
-        case (123, 8, 123, 123):
-          if ringType == 5 {
-            (V1, Vn, V3) = (1.150, -0.040, 0.860)
-            Ktb_r = SIMD3(-0.008, -0.004, 0.000)
-          } else {
-            (Vn, V3) = (-0.520, 0.180)
-            Ktb_r = SIMD3(-0.003, -0.003, 0.000)
-          }
+        case (5, 123, 123, 8): return false
+        case (123, 8, 123, 123): return false
         case (8, 123, 123, 123):
-          if ringType == 5 {
-            V3 = 0.699
-            Ktb_l = SIMD3(-0.008, -0.004, 0.000)
-          } else {
-            (Vn, V3) = (-0.850, 0.200)
-            Ktb_l = SIMD3(-0.008, -0.004, 0.000)
-          }
-          
           Kts_l = SIMD3(1.250, 1.200, 0.000)
           Kts_c = SIMD3(4.000, -3.000, 2.660)
           Kts_r = SIMD3(1.500, 0.000, 2.500)
           
           // Fluorine
         case (1, 1, 1, 11):
-          (V1, Vn, V3) = (-0.360, 0.380, 0.978)
-          (V4, V6) = (0.240, 0.010)
-          
-          Ktb_l = SIMD3(0.000, -0.012, -0.009)
-          Ktb_r = SIMD3(0.005, 0.004, 0.003)
-          Kbtb = -0.06
-          
           Kts_c = SIMD3(5.300, -4.800, 4.500)
         case (5, 1, 1, 11):
-          (V1, Vn, V3) = (-0.460, 1.190, 0.420)
-          (V4, V6) = (0.000, 0.000)
-          
-          Ktb_l = SIMD3(0.002, -0.022, 0.000)
-          Ktb_r = SIMD3(0.000, 0.000, -0.001)
-          Kbtb = 0.06
-          
           Kts_c = SIMD3(0.000, -1.650, 2.400)
           Kts_r = SIMD3(0.000, 0.000, 0.550)
         case (11, 1, 1, 11):
-          (V1, Vn, V3) = (-1.350, 0.305, 0.355)
-          (V4, V6) = (0.000, 0.000)
-          
-          Ktb_l = SIMD3(0.000, -0.015, -0.003)
-          Ktb_r = SIMD3(0.000, -0.015, -0.003)
-          Kbtb = -0.06
-          
           Kts_l = SIMD3(-5.550, 4.500, 0.000)
           Kts_c = SIMD3(4.800, -5.000, 1.559)
           Kts_r = SIMD3(-5.550, 4.500, 0.000)
           
           // Silicon
-          //
-          // TODO: Remove this warning for sections that don't have Kts.
-          //
-          // For silicon, take the MM3 torsion-stretch constant, multiply by
-          // 11.995 / 2, then multiply by bond stiffness.
-        case (1, 1, 1, 19):
-          if ringType == 5 {
-            V3 = 0.850
-            Kts = 0.840
-          } else {
-            Vn = 0.050
-            V3 = 0.240
-            Kts = 0.660
-          }
-        case (1, 1, 19, 1):
-          if ringType == 5 {
-            Vn = 0.800
-            V3 = 0.000
-          } else {
-            V3 = 0.167
-          }
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (19, 1, 1, 19):
-          V3 = 0.167
-          Kts = 0.660
-        case (19, 1, 19, 5):
-          V3 = 0.167
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (5, 1, 19, 1):
-          V3 = 0.195
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (5, 1, 19, 5):
-          V3 = 0.177
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (19, 1, 19, 1):
-          V3 = 0.100
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (1, 1, 19, 19):
-          V3 = 0.300
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (5, 1, 19, 19):
-          V3 = 0.270
-          Kts = 0.036 * 11.995 / 2 * bondStiffness
-        case (1, 19, 19, 5):
-          V3 = 0.127
-          Kts = 0.012 * 11.995 / 2 * bondStiffness
-        case (1, 19, 19, 1):
-          V3 = 0.107
-          Kts = 0.012 * 11.995 / 2 * bondStiffness
-        case (1, 19, 19, 19):
-          V3 = 0.350
-          Kts = 0.012 * 11.995 / 2 * bondStiffness
-        case (5, 19, 19, 5):
-          V3 = 0.132
-          Kts = 0.012 * 11.995 / 2 * bondStiffness
-        case (5, 19, 19, 19):
-          V3 = 0.070
-          Kts = 0.012 * 11.995 / 2 * bondStiffness
-        case (19, 19, 19, 19):
-          V3 = (ringType == 5) ? 0.175 : 0.125
-          Kts = 0.012 * 11.995 / 2 * bondStiffness
+        case (19, 1, 1, 19): fallthrough
+        case ( 5, 1, 19, 1): fallthrough
+        case ( 5, 1, 19, 5): fallthrough
+        case (19, 1, 19, 1): fallthrough
+        case (19, 1, 19, 5): fallthrough
+        case ( 1, 1, 19, 19): fallthrough
+        case ( 5, 1, 19, 19): fallthrough
+        case (1, 19, 19, 5): fallthrough
+        case (1, 19, 19, 1): fallthrough
+        case (1, 19, 19, 19): fallthrough
+        case (5, 19, 19, 5): fallthrough
+        case (5, 19, 19, 19): fallthrough
+        case (1, 1, 1, 19): fallthrough
+        case (1, 1, 19, 1): fallthrough
+        case (19, 19, 19, 19): break
           
           // Phosphorus
-          //
-          // TODO: Remove this warning for sections that don't have Ktb.
-          //
-          // WARNING: Entering phosphorus in the reverse order that it appears
-          // in the research paper. This may cause mistakes from confusing two
-          // quantities. Place Ktb_r before Ktb_l in this section. Not all cases
-          // have reversed order, but pay careful attention to the ones that do.
-        case (5, 1, 25, 1):
-          V3 = 0.300
-          V6 = -0.050
-          
-          Ktb_r = SIMD3(0.000, 0.000, -0.001)
-          Ktb_l = SIMD3(-0.001, -0.004, -0.001)
-        case (5, 1, 1, 25):
-          (Vn, V3) = (0.200, 0.360)
-          
-          Ktb_r = SIMD3(0.005, 0.000, 0.000)
-        case (1, 1, 25, 1):
-          (V1, Vn, V3) = (0.800, -0.400, 0.100)
-          
-          Ktb_r = SIMD3(-0.002, -0.003, -0.001)
-          Ktb_l = SIMD3(-0.015, 0.007, -0.006)
+        case (5, 1, 25, 1): fallthrough
+        case (5, 1, 1, 25): fallthrough
+        case (1, 1, 25, 1): Kts_c = SIMD3(0.000, 0.000, 0.000)
           
           // Sulfur
-          //
-          // I am assigning torsion-stretch parameters from 6-ring sulfur torsions
-          // to the equivalent 5-ring sulfur torsions, when I spot any missing
-          // permutations of 5-ring vs. 6-ring carbons. There are likely some
-          // cases that I missed, which will reveal themselves when encountered.
-        case (5, 1, 15, 1), (5, 1, 15, 123), (1, 15, 123, 5):
-          V3 = 0.540
+        case (15, 1, 15, 1): break
+        case (5, 1, 15, 1):  Kts_l = SIMD3(0.000, 0.900, 0.000)
+        case (1, 1, 15, 1):  Kts_l = SIMD3(0.000, 1.439, 0.000)
+        case (15, 1, 1, 15): Kts_l = SIMD3(1.919, 1.919, 0.000)
+          /**/               Kts_r = SIMD3(1.919, 1.919, 0.000)
+        case (5, 1, 1, 15):  break
+        case (1, 1, 1, 15):  Kts_l = SIMD3(4.798, 4.798, 0.000)
+        case (5, 123, 123, 15): fallthrough
+        case (123, 15, 123, 1): fallthrough
+        case (5, 1, 123, 15): fallthrough
+        case (123, 15, 123, 5): fallthrough
+        case (15, 123, 123, 123): fallthrough
+        case (123, 15, 123, 123): return false
           
-          Ktb_l = SIMD3(0.012, 0.016, 0.000)
-          Ktb_r = SIMD3(0.003, 0.000, 0.000)
-          Kbtb = 0.135
-          
-          if sortedCodes[2] == 15 {
-            Kts_l = SIMD3(0.000, 0.900, 0.000)
-          } else {
-            Kts_r = SIMD3(0.000, 0.900, 0.000)
-          }
-        case (1, 1, 15, 1), (1, 1, 15, 123), (123, 1, 15, 1), (123, 1, 15, 123):
-          (V1, V3) = (0.410, 0.600)
-          
-          Ktb_l = SIMD3(0.006, 0.020, 0.000)
-          Kbtb = 0.080
-          
-          Kts_l = SIMD3(0.000, 1.439, 0.000)
-          Kts_c = SIMD3(0.000, 0.000, 1.559)
-        case (15, 1, 1, 15), (15, 1, 123, 15), (15, 123, 123, 15):
-          (V1, Vn, V3) = (0.461, 0.144, 1.511)
-          
-          // This torsion is symmetric, so setting only one of the angles to 0.003
-          // seems suspicious. I will set both angles.
-          Ktb_l = SIMD3(0.000, 0.003, 0.000)
-          Ktb_r = SIMD3(0.000, 0.003, 0.000)
-          Kbtb = 0.130
-          
-          Kts_l = SIMD3(1.919, 1.919, 0.000)
-          Kts_r = SIMD3(1.919, 1.919, 0.000)
-        case (5, 1, 1, 15):
-          V3 = 0.460
-          Kbtb = 0.050
-        case
-          (1, 1, 1, 15), (15, 1, 1, 123),
-          (1, 1, 123, 15), (15, 1, 123, 1),
-          (1, 123, 123, 15):
-          (V1, Vn, V3) = (0.420, 0.100, 0.200)
-          Kbtb = 0.090
-          
-          if sortedCodes[3] == 15 {
-            Kts_l = SIMD3(4.798, 4.798, 0)
-          } else {
-            Kts_r = SIMD3(4.798, 4.798, 0)
-          }
-        case (5, 123, 123, 5):
-          V3 = 0.200
-          Kbtb = 0.020
-        case (123, 15, 123, 1), (1, 15, 123, 123), (123, 15, 123, 123):
-          if ringType == 5 && all(sortedCodes .== SIMD4(123, 15, 123, 123)) {
-            (V1, Vn, V3) = (0.440, 0.300, 0.500)
-          } else {
-            (V1, V3) = (0.100, 0.200)
-          }
-        case (5, 1, 123, 15):
-          (Vn, V3) = (0.330, 0.200)
-          Kbtb = 0.050
-        case (15, 123, 123, 123):
-          if ringType == 5 {
-            (V1, Vn, V3) = (0.040, 0.200, 0.300)
-            Kbtb = 0.100
-          } else {
-            (V1, Vn, V3) = (0.520, 0.080, 0.250)
-            Kbtb = 0.100
-          }
-          
-          Kts_r = SIMD3(4.798, 4.798, 0)
-        case (123, 15, 123, 5):
-          V3 = 0.450
-          Kbtb = 0.020
-        case (15, 1, 15, 1), (15, 1, 15, 123),
-          (1, 15, 123, 15), (123, 15, 123, 15):
-          // Grabbing the S-C-S-C torsion parameters from MM3.
-          (Vn, V3) = (-0.900, 0.300)
         default:
           return false
         }
         return true
       }
       
-      torsions.parameters.append(
-        MM4TorsionParameters(
-          V1: V1, Vn: Vn, V3: V3, n: n, Kts3: Kts))
+      if swappedCodesForTorsionStretch {
+        swap(&Kts_l, &Kts_r)
+      }
+      guard let Kts_c else {
+        fatalError("Central torsion-stretch parameter was missing.")
+      }
       
-      if V4 != nil || V6 != nil ||
-          Ktb_l != nil || Ktb_r != nil || Kbtb != nil ||
-          Kts_l != nil || Kts_c != nil || Kts_r != nil {
+      // If all parameters besides Kts_c[2] are zero, send this to the cheaper
+      // non-extended torsion force.
+      var Kts3: Float
+      if Kts_l == nil, Kts_c[0] == 0, Kts_c[1] == 0, Kts_r == nil {
+        Kts3 = Kts_c[2]
+      } else {
+        Kts3 = 0.000
+        
+        let Ks_l = Kts_l ?? .zero
+        let Ks_c = Kts_c
+        let Ks_r = Kts_r ?? .zero
+        let Kb_l = Ktb_l ?? .zero
+        let Kb_r = Ktb_r ?? .zero
         torsions.extendedParameters.append(
           MM4TorsionExtendedParameters(
             V4: V4 ?? 0, V6: V6 ?? 0,
-            Kts1: (Kts_l?[0] ?? 0, Kts_c?[0] ?? 0, Kts_r?[0] ?? 0),
-            Kts2: (Kts_l?[1] ?? 0, Kts_c?[1] ?? 0, Kts_r?[1] ?? 0),
-            Kts3: (Kts_l?[2] ?? 0, Kts_c?[2] ?? 0, Kts_r?[2] ?? 0),
-            Ktb1: (Ktb_l?[0] ?? 0, Ktb_r?[0] ?? 0),
-            Ktb2: (Ktb_l?[1] ?? 0, Ktb_r?[1] ?? 0),
-            Ktb3: (Ktb_l?[2] ?? 0, Ktb_r?[2] ?? 0),
+            Kts1: (Ks_l[0], Ks_c[0], Ks_r[0]),
+            Kts2: (Ks_l[1], Ks_c[1], Ks_r[1]),
+            Kts3: (Ks_l[2], Ks_c[2], Ks_r[2]),
+            Ktb1: (Kb_l[0], Kb_r[0]),
+            Ktb2: (Kb_l[1], Kb_r[1]),
+            Ktb3: (Kb_l[2], Kb_r[2]),
             Kbtb: Kbtb ?? 0))
       }
-      #endif
+      torsions.parameters.append(
+        MM4TorsionParameters(
+          V1: V1, Vn: Vn, V3: V3, n: n, Kts3: Kts3))
     }
   }
 }

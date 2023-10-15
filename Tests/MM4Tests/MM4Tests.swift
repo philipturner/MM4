@@ -17,4 +17,7 @@ final class MM4ParametersTests: XCTestCase {
   // TODO: Test that the torsion-stretch parameter actually increases system
   // energy by the expected amount. We can't rule out an error in unit
   // conversions with the custom formula.
+  
+  // TODO: Some profiling tests. See whether multicore CPU could help for
+  // setting up quick energy minimizations of large nanosystems.
 }
