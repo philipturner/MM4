@@ -9,7 +9,7 @@ import OpenMM
 
 /// Angle bend and stretch-bend force.
 class MM4BendForce: MM4Force {
-  init(system: MM4System) {
+  required init(system: MM4System) {
     // https://www.desmos.com/calculator/shl9ovintw
     //
     // Leaving the formula as-is doesn't create a monotonically increasing
@@ -59,6 +59,7 @@ class MM4BendForce: MM4Force {
     let sexticTerm = 2.2e-8  * correction * correction * correction * correction
     
     let force = OpenMM_CustomCompoundBondForce(numParticles: 3, energy: """
+      bend + stretchBend;
       bend = bendingStiffness * deltaTheta^2 * (
         1
         - \(cubicTerm) * deltaTheta
@@ -120,8 +121,9 @@ class MM4BendForce: MM4Force {
         return equilibriumLength
       }
       
+      let reorderedAngle = system.reorder(angle)
       for lane in 0..<3 {
-        particles[lane] = Int(system.reorderedIndices[Int(angle[lane])])
+        particles[lane] = reorderedAngle[lane]
       }
       array[0] = bendingStiffness
       array[1] = equilibriumAngle

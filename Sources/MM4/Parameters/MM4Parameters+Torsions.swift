@@ -61,22 +61,22 @@ public struct MM4TorsionParameters {
   
   /// Units: kilocalorie / mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Vn: Float
   
   /// Units: kilocalorie / mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var V3: Float
   
   /// The factor to multiply the angle with inside the cosine term for Vn.
   ///
-  /// The value of `n` is most often 2.
+  /// The value of `n` is most often 2. It must be an even integer.
   public var n: Float
   
-  /// Units: kilocalorie / angstrom \* mole^2
+  /// Units: kilocalorie / angstrom \* mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Kts3: Float
 }
 
@@ -87,47 +87,47 @@ public struct MM4TorsionParameters {
 public struct MM4TorsionExtendedParameters {
   /// Units: kilocalorie / mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var V4: Float
   
   /// Units: kilocalorie / mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var V6: Float
   
   /// The V1-like term contributing to torsion-stretch stiffness.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Kts1: (left: Float, central: Float, right: Float)
   
   /// The V2-like term contributing to torsion-stretch stiffness.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Kts2: (left: Float, central: Float, right: Float)
   
   /// The V3-like term contributing to torsion-stretch stiffness.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Kts3: (left: Float, central: Float, right: Float)
   
   /// The V1-like term contributing to torsion-bend stiffness.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Ktb1: (left: Float, right: Float)
   
   /// The V2-like term contributing to torsion-bend stiffness.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Ktb2: (left: Float, right: Float)
   
   /// The V3-like term contributing to torsion-bend stiffness.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Ktb3: (left: Float, right: Float)
   
   /// Bend-torsion-bend constant.
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var Kbtb: Float
 }
 
@@ -149,6 +149,22 @@ extension MM4Parameters {
         fatalError("Could not fetch bond for torsion.")
       }
       let bondStiffness = bonds.parameters[Int(bondID)].stretchingStiffness
+      
+      // We need to double-check that we've been following this formula
+      // consistently, for both angles and torsions: "Note that unless they are
+      // explicitly in the table, parameters involving five-membered ring atom
+      // types (122 and 123) are assigned parmeters which involve the regular
+      // atom types (types 2 and 1). This is true for all parameters. I guess
+      // this means parameters only contained in a 5-membered ring must
+      // sometimes be dropped entirely, using the 6-membered ring parameters as
+      // if zero atoms were 122 or 123.
+      //
+      // We should also clean up the parameters for torsion-stretch, assigning
+      // them in a separate 'switch' statement. Don't try to list all
+      // combinatorial permutations of 1 vs. 123.
+      if Float.random(in: 0..<1) < 2 {
+        fatalError("Fix the parameters for 5-membered rings.")
+      }
       
       var V1: Float = 0.000
       var Vn: Float = 0.000
@@ -177,6 +193,9 @@ extension MM4Parameters {
       //   new trough with ~2x the magnitude of the C-S peak
       // - Central TS for F-C-C-F (MM4) having 1% less peak stiffness than C-S,
       //   but a new trough with ~3.7x the magnitude of the C-S peak
+      //
+      // New formula:
+      //   Δl * (Kts / Ks) * (1 + cos(3ω))
       
       var Kts: Float = 0.000
       var Kts_l: SIMD3<Float>?

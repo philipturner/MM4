@@ -27,12 +27,29 @@ class MM4System {
 
 extension MM4System {
   @inline(__always)
-  func reorder<T: SIMD>(_ indices: T) -> T
-  where T.Scalar == Int32 {
-    var output = indices
-    for i in 0..<T.scalarCount {
+  func reorder(_ indices: SIMD2<Int32>) -> SIMD2<Int> {
+    var output: SIMD2<Int32> = .zero
+    for i in 0..<indices.scalarCount {
       output[i] = reorderedIndices[Int(output[i])]
     }
-    return output
+    return SIMD2(truncatingIfNeeded: output)
+  }
+  
+  @inline(__always)
+  func reorder(_ indices: SIMD3<Int32>) -> SIMD3<Int> {
+    var output: SIMD3<Int32> = .zero
+    for i in 0..<indices.scalarCount {
+      output[i] = reorderedIndices[Int(output[i])]
+    }
+    return SIMD3(truncatingIfNeeded: output)
+  }
+  
+  @inline(__always)
+  func reorder(_ indices: SIMD4<Int32>) -> SIMD4<Int> {
+    var output: SIMD4<Int32> = .zero
+    for i in 0..<indices.scalarCount {
+      output[i] = reorderedIndices[Int(output[i])]
+    }
+    return SIMD4(truncatingIfNeeded: output)
   }
 }

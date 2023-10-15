@@ -9,13 +9,14 @@ import OpenMM
 
 /// Morse bond stretch force.
 class MM4StretchForce: MM4Force {
-  init(system: MM4System) {
+  required init(system: MM4System) {
     // Using "beta" instead of "alpha", as it's the character used in
     // Nanosystems 3.3.3(a).
     //
     // beta = sqrt(ks / 2De)
     let force = OpenMM_CustomBondForce(energy: """
-      potentialWellDepth * (
+      stretch;
+      stretch = potentialWellDepth * (
         1 - exp(-beta * deltaLength)
       )^2 - 1);
       deltaLength = r - equilibriumLength;
@@ -48,7 +49,7 @@ class MM4StretchForce: MM4Force {
       var equilibriumLength = Double(parameters.equilibriumLength)
       equilibriumLength *= OpenMM_NmPerAngstrom
       
-      let particles = SIMD2<Int>(truncatingIfNeeded: system.reorder(bond))
+      let particles = system.reorder(bond)
       array[0] = potentialWellDepth
       array[1] = beta
       array[2] = equilibriumLength

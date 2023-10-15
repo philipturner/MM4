@@ -18,4 +18,8 @@ class MM4Force {
     self.force = force
     self.forceGroup = forceGroup
   }
+  
+  required init(system: MM4System) {
+    fatalError("Not implemented.")
+  }
 }
