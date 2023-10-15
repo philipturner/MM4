@@ -403,15 +403,4 @@ extension MM4Parameters {
       }
     }
   }
-  
-  // TODO: Before simulating hydrofluorocarbon storage tape, add the MM4
-  // Electronegativity Effect corrections to bond angles from fluorine. Only
-  // apply the effect to primary or secondary carbons in a long alkane chain -
-  // take the "center type" and subtract the number of bonded fluorines.
-  //
-  // Electronegativity effect correction to bond angles may be small, and in
-  // bulk diamond, I'm not sure they would even be appropriate. They would make
-  // the entire structure have a bunch of extra stiffness, because all the
-  // carbon atoms with 109.5° are out of equilibrium. As with bond stiffness,
-  // this ought to be investigated more thoroughly.
 }

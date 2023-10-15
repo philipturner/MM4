@@ -194,9 +194,10 @@ class MM4TorsionExtendedForce: MM4Force {
       
       // WARNING: Divide all Vn torsion parameters by 2.
       //
-      // Bend-torsion-bend should remain unchanged (0.043828 converts directly to
-      // attojoules, and should not be divided by 2. Same with torsion-bend,
+      // Bend-torsion-bend should remain unchanged (0.043828 converts directly
+      // to attojoules, and should not be divided by 2. Same with torsion-bend,
       // which converts directly without dividing by 2.
+      
     }
     
     fatalError("Not implemented.")

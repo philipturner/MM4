@@ -399,6 +399,11 @@ extension MM4Parameters {
       // calculations performed by a different person with the appropriate
       // expertise. In the future, this may be something to consider. For now,
       // it creates a mostly conservative estimate of machine stiffness.
+      //
+      // There are also electronegativity effect corrections to equilibrium
+      // bond angle. The best approach would be to omit them, but consider
+      // which structures would be affected by the term. The greatest example
+      // may be hydrofluorocarbon storage tapes.
       var correction: Float = 0
       correction += electronegativeCorrections[i]
       correction += electropositiveCorrections[i]

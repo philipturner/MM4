@@ -16,6 +16,12 @@
 /// exists a large variety of permissible structures, more than with exclusively
 /// carbon and hydrogen.
 ///
+/// All force terms from MM3, and most terms from MM4, are included, except:
+/// - Electronegativity effect correction to equilibrium bond angle
+/// - Electronegativity effect correction to bond stretching stiffness
+/// - Torsion-torsion interaction
+/// - Bend-torsion-bend interaction in bulk diamond
+///
 /// All major platforms (Mac, Linux, Windows) and all major GPU architectures
 /// (Apple, AMD, Intel, Nvidia) are supported. This includes multi-GPU systems
 /// with up to around a dozen GPUs (e.g. a single supercomputer node). This is
