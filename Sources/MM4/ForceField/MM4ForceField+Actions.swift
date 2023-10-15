@@ -58,8 +58,8 @@ extension MM4ForceField {
     // finished.
   }
   
-  /// Create random thermal velocities, while conserving the total momentum of
-  /// each rigid body.
+  /// Create random thermal velocities, while conserving the total (bulk)
+  /// momentum of each rigid body.
   ///
   /// - Parameter temperature: The temperature to randomize thermal velocites
   ///   at, in kelvin.
