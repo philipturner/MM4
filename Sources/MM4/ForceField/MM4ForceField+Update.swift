@@ -7,7 +7,7 @@
 
 /// A configuration for an update to a simulated system.
 public class MM4ForceFieldUpdateDescriptor {
-  /// The force (in piconewtons) exerted on each atom.
+  /// The constant force (in piconewtons) exerted on each atom.
   public var externalForces: [SIMD3<Float>]?
   
   /// The position (in nanometers) of each atom's nucleus.
@@ -16,7 +16,11 @@ public class MM4ForceFieldUpdateDescriptor {
   /// Whether each atom's absolute position should never change.
   public var stationaryAtoms: [Bool]?
   
-  /// The velocity (in nanometers per picosecond), of each atom.
+  /// The bulk velocity (in nanometers per picosecond), of each atom.
+  ///
+  /// If you set this, it is a good idea to
+  /// [re-thermalize](<doc:MM4ForceField/thermalize(temperature:atoms:)>) the
+  /// system.
   public var velocities: [SIMD3<Float>]?
   
   // In the future, "force field mode" may be updatable too.

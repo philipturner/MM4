@@ -63,11 +63,17 @@ extension MM4ForceField {
   ///
   /// - Parameter temperature: The temperature to randomize thermal velocites
   ///   at, in kelvin.
+  /// - Parameter atoms: Indices of the atoms to thermalize.
   ///
   /// Thermalizing is recommended for any simulation that replicates macroscale
   /// conditions. The default is 298.15 K, but other useful temperatures include
   /// liquid nitrogen (77.00 K) and liquid helium (4.15 K).
-  public func thermalize(temperature: Double = 298.15) {
+  ///
+  /// If the list of atoms is not specified, it will thermalize the entire system.
+  public func thermalize(
+    temperature: Double = 298.15,
+    atoms: [Int]? = nil
+  ) {
     
   }
 }

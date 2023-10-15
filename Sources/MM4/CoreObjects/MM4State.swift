@@ -35,7 +35,7 @@ public class MM4StateDescriptor {
 
 /// A frame of a simulation.
 public class MM4State {
-  /// The total force (in piconewtons) exerted on each atom.
+  /// The net varying force (in piconewtons) exerted on each atom.
   ///
   /// This is converted from kJ/mol/nm to piconewtons.
   public internal(set) var forces: [SIMD3<Float>]?
@@ -49,8 +49,7 @@ public class MM4State {
   /// The system's total potential energy.
   public internal(set) var potentialEnergy: Double?
   
-  /// The velocity (in nanometers per picosecond) of each atom at the start of
-  /// the simulation.
+  /// The bulk + thermal velocity (in nanometers per picosecond), of each atom.
   public internal(set) var velocities: [SIMD3<Float>]?
   
   internal init() {

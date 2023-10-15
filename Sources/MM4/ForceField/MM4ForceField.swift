@@ -7,6 +7,9 @@
 
 /// A force field simulator.
 ///
+/// The MM2 forcefield used to create _Nanosystems (1992)_, but updated with
+/// modern ab initio calculations.
+///
 /// The simulator supports the atoms enumerated by <doc:MM4AtomCode> with some
 /// restrictions on permitted bond types. For example, only C and Si may bond to
 /// hydrogen. The remaining elements (except silicon) must have all covalent
@@ -92,7 +95,7 @@ public class MM4ForceField {
 
 /// A configuration for a force field simulator.
 public class MM4ForceFieldDescriptor {
-  /// Optional. The force (in piconewtons) exerted on each atom.
+  /// Optional. The constant force (in piconewtons) exerted on each atom.
   public var externalForces: [SIMD3<Float>]?
   
   /// Required. The set of parameters defining the forcefield.
