@@ -75,6 +75,8 @@ extension MM4Parameters {
       }
       var sortedCodes = sortAngle(codes)
       
+      // MARK: - Bend
+      
       var bendingStiffnesses: SIMD3<Float>
       var equilibriumAngles: SIMD3<Float>
       
@@ -274,7 +276,7 @@ extension MM4Parameters {
         }
       }
       
-      // MARK: - Off-diagonal cross-terms
+      // MARK: - Bend-Bend, Stretch-Bend, Stretch-Stretch
       
       sortedCodes.replace(with: .one, where: sortedCodes .== 123)
       sortedCodes = sortAngle(sortedCodes)

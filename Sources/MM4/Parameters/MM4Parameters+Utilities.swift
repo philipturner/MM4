@@ -28,7 +28,7 @@ extension MM4Parameters {
     return codes
   }
   
-  private static let excluding5RingElements: [UInt8] = [11, 19, 25]
+  static let excluding5RingElements: [UInt8] = [11, 19, 25]
   
   @inline(__always)
   func with5RingsRemoved<T: SIMD>(_ codes: () -> T) -> T
@@ -42,7 +42,7 @@ extension MM4Parameters {
     return output
   }
   
-  private static let nonCarbonElements: [UInt8] = [8, 11, 15, 19, 25]
+  static let nonCarbonElements: [UInt8] = [6, 8, 11, 15, 19, 25]
   
   @inline(__always)
   func containsTwoNonCarbons<T: SIMD>(_ codes: T) -> Bool
