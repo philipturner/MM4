@@ -40,13 +40,13 @@ public class MM4State {
   /// This is converted from kJ/mol/nm to piconewtons.
   public internal(set) var forces: [SIMD3<Float>]?
   
-  /// The system's total kinetic energy.
+  /// The system's total kinetic energy, in zeptojoules.
   public internal(set) var kineticEnergy: Double?
   
   /// The position (in nanometers) of each atom's nucleus.
   public internal(set) var positions: [SIMD3<Float>]?
   
-  /// The system's total potential energy.
+  /// The system's total potential energy, in zeptojoules.
   public internal(set) var potentialEnergy: Double?
   
   /// The bulk + thermal velocity (in nanometers per picosecond), of each atom.

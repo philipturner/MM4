@@ -40,7 +40,7 @@ extension MM4ForceField {
     get { fatalError("Not implemented.") }
   }
   
-  /// The system's total kinetic energy.
+  /// The system's total kinetic energyy, in zeptojoules.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
   /// functions <doc:MM4ForceField/update(descriptor:)> and
@@ -59,7 +59,7 @@ extension MM4ForceField {
     get { fatalError("Not implemented.") }
   }
   
-  /// The system's total potential energy.
+  /// The system's total potential energyy, in zeptojoules.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
   /// functions <doc:MM4ForceField/update(descriptor:)> and
