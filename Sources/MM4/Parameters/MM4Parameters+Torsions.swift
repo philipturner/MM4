@@ -441,7 +441,6 @@ extension MM4Parameters {
           case (1, 19): Kts_c = SIMD3(0.000, 0.000, 0.036)
           case (19, 19): Kts_c = SIMD3(0.000, 0.000, 0.012)
           case (1, 15): Kts_c = SIMD3(0.000, 0.000, 1.559)
-            
           default: break
           }
           
@@ -540,11 +539,11 @@ extension MM4Parameters {
           /**/               Kts_r = SIMD3(1.919, 1.919, 0.000)
         case (5, 1, 1, 15):  break
         case (1, 1, 1, 15):  Kts_l = SIMD3(4.798, 4.798, 0.000)
-        case (5, 123, 123, 15): fallthrough
-        case (123, 15, 123, 1): fallthrough
-        case (5, 1, 123, 15): fallthrough
-        case (123, 15, 123, 5): fallthrough
-        case (15, 123, 123, 123): fallthrough
+        case (5, 123, 123, 15): return false
+        case (123, 15, 123, 1): return false
+        case (5, 1, 123, 15): return false
+        case (123, 15, 123, 5): return false
+        case (15, 123, 123, 123): return false
         case (123, 15, 123, 123): return false
           
         default:

@@ -46,6 +46,11 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 5
   case hydrogen = 5
   
+  /// Oxygen
+  ///
+  /// MM4 atom code: 6
+  case oxygen = 6
+  
   /// Nitrogen
   ///
   /// MM4 atom code: 8
@@ -78,6 +83,9 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
 }
 
 /// The number of hydrogens surrounding the carbon or silicon.
+///
+/// For non-carbon atoms, the center type reflects what it would be, if the atom
+/// were replaced with a carbon, and its lone pairs replaced with hydrogens.
 ///
 /// Methane carbons are disallowed in the simulator, as they will be simulated
 /// very inaccurately. The fluorine parameters struggle with the edge case of
@@ -280,6 +288,42 @@ extension MM4Parameters {
         // hydrogen radius: 3.50 -> 3.110 = 88.9%
         epsilon = (heteroatom: 0.054, hydrogen: 0.110)
         radius = (heteroatom: 1.860, hydrogen: 3.110)
+      case 8:
+        // Extrapolating the missing MM4 parameters for oxygen:
+        // - MM3 parameter for heteroatom epsilon/radius is likely the same. It
+        //   is exactly the same for F, but slightly different for N. The
+        //   hydrogen vdW paper specifically said "MM3/MM4 parameter",
+        //   indicating that MM3(2000) used the same one as MM4.
+        // - Tinker's parameters do not include the special C-H pairs outside of
+        //   hydrogen bonding. But, I can extrapolate. The hydrogen vdW paper
+        //   showed N having 2.8 A for MM4, but then changed that to 3.1 A for
+        //   the final amines paper (~6 years later). Fluorine has 2.87 A, very
+        //   close to the 2.9 A in hydrogen vdW (which used only 1 s.f.).
+        // - Combine using the fluorine heuristic, decided upon at the end of
+        //   the hydrogen vdW paper. Combine O + H with the usual method, but
+        //   scale by 0.85 and 2.6.
+        //
+        // hydrogen epsilon: 0.032 -> 0.084 = (1 / 85.0%)^6
+        // hydrogen radius: 3.46 -> 2.941 = 85.0%
+        //   - 0.054 < 0.0590 < 0.075
+        //   - 0.110 > 0.084 is NOT greater than 0.092
+        //   - 1.860 > 1.8200 > 1.710
+        //   - 3.110 > 2.941 > 2.870
+        //
+        // This attempt seems to have failed. Interpolate the scaling factors
+        // between nitrogen and fluorine. The energy is rather large for N/O/F,
+        // but potentially not from regular vdW interactions. This could be
+        // emulating the absent induced polarization from electronegativity,
+        // which is a good thing. Second-row elements and first-row carbon are
+        // not very electronegative; it seems reasonable they should follow a
+        // different trend for nonbonded hydrogen epsilons.
+        //
+        // hydrogen epsilon: 0.032 -> 0.098 = (1 / 82.9)^6
+        // hydrogen radius: 3.46 -> 3.010 = 87.0%
+        //   - 0.110 > 0.098 > 0.092
+        //   - 3.110 > 3.010 > 2.870
+        epsilon = (heteroatom: 0.059, hydrogen: 0.098)
+        radius = (heteroatom: 1.820, hydrogen: 3.010)
       case 9:
         // Parameters coming directly from the research papers:
         // hydrogen epsilon: 0.036 -> 0.092 = (1 / 85.5%)^6
