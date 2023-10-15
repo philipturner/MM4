@@ -5,9 +5,7 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
-/// A force field simulator.
-///
-/// The MM2 forcefield used to create _Nanosystems (1992)_, but updated with
+/// The MM2 force field used to create _Nanosystems (1992)_, but updated with
 /// modern ab initio calculations.
 ///
 /// The simulator supports the atoms enumerated by <doc:MM4AtomCode> with some
@@ -26,7 +24,8 @@
 /// multiple vendors. OpenMM avoids any O(n^3) algorithms and provides the
 /// flexibility to opt out of O(n^2) algorithms. For example, the
 /// [minimizer](<doc:MM4ForceField/minimize(tolerance:maxIterations:)>) uses
-/// low-memory BFGS as a faster alternative to conjugate gradient minimization.
+/// limited-memory BFGS as a faster alternative to conjugate gradient
+/// minimization.
 ///
 /// This is an NVE simulator, using 32-bit single precision and a massive
 /// timestep. Energy is not conserved to the precision of kT. It fluctuates
@@ -39,15 +38,16 @@
 /// > Note: Accuracy (whether an archer hits the right target) is orthogonal
 ///   to precision (whether the arrows hit the same place every time).
 ///   Conservation of energy only affects the number of significant figures of
-///   measured energy. It does not make system dynamics more accurate, except
-///   in the case where energy systematically drifts upward (explodes).
+///   measured energy (precision). It does not make system dynamics more
+///   accurate, except in the case where energy systematically drifts upward
+///   (explodes).
 ///
 /// The integrator uses a multiple time-stepping (MTS) scheme. Cheaper bonded
 /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
 /// without constraints. Expensive forces like torsions, nonbonded, and
 /// electrostatic can execute at double the timestep. The value you enter for
 /// [`maximumTimeStep`](<doc:MM4ForceField/simulate(time:maximumTimeStep:)>)
-/// specifies the execution rate of larger forces. Always
+/// specifies the execution rate of expensive forces. Always
 /// assume the C-H stretching forces execute at half the specified timestep.
 /// For example, in the note below, bond stretching forces don't actually
 /// execute at the quoted '2 fs'.

@@ -40,6 +40,15 @@ extension MM4ForceField {
     get { fatalError("Not implemented.") }
   }
   
+  /// The system's total kinetic energy.
+  ///
+  /// > Note: This is a more ergonomic API, but less efficient than the batched
+  /// functions <doc:MM4ForceField/update(descriptor:)> and
+  /// <doc:MM4ForceField/state(descriptor:)>.
+  public var kineticEnergy: Double {
+    get { fatalError("Not implemented.") }
+  }
+  
   /// The position (in nanometers) of each atom's nucleus.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
@@ -47,6 +56,15 @@ extension MM4ForceField {
   /// <doc:MM4ForceField/state(descriptor:)>.
   public var positions: [SIMD3<Float>] {
     set { fatalError("Not implemented.") }
+    get { fatalError("Not implemented.") }
+  }
+  
+  /// The system's total potential energy.
+  ///
+  /// > Note: This is a more ergonomic API, but less efficient than the batched
+  /// functions <doc:MM4ForceField/update(descriptor:)> and
+  /// <doc:MM4ForceField/state(descriptor:)>.
+  public var potentialEnergy: Double {
     get { fatalError("Not implemented.") }
   }
   
