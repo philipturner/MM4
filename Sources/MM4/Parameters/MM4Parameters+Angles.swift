@@ -29,23 +29,36 @@ public struct MM4Angles {
 /// and multiplicative contribution to bend-bend stiffness.
 public struct MM4AngleParameters {
   /// Units: millidyne^2 / radian^2
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var bendBendStiffness: Float
   
   /// Units: millidyne \* angstrom / radian^2
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var bendingStiffness: Float
   
-  /// Units: radian
+  /// Units: degree
+  ///
+  /// > WARNING: Convert degrees to radians.
   public var equilibriumAngle: Float
   
   /// Units: millidyne / radian \* mole
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var stretchBendStiffness: Float
 }
 
+/// Parameters for the various angle forces unique to fluorine-containing
+/// compounds.
 public struct MM4AngleExtendedParameters {
   /// Stiffness for type 2 stretch-bend forces, affecting bonds not directly
   /// involved in this angle.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var stretchBendStiffness: Float
   
+  /// > WARNING: Convert aJ to kJ/mol.
   public var stretchStretchStiffness: Float
 }
 

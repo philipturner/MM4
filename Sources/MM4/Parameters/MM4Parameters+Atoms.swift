@@ -37,27 +37,43 @@ public struct MM4Atoms {
 /// MM4 codes for an element or an atom in a specific functional group.
 public enum MM4AtomCode: UInt8, RawRepresentable {
   /// Carbon (sp3)
+  ///
+  /// MM4 atom code: 1
   case alkaneCarbon = 1
   
   /// Hydrogen
+  ///
+  /// MM4 atom code: 5
   case hydrogen = 5
   
   /// Nitrogen
+  ///
+  /// MM4 atom code: 8
   case nitrogen = 8
   
   /// Fluorine
+  ///
+  /// MM4 atom code: 11
   case fluorine = 11
   
   /// Sulfur
+  ///
+  /// MM4 atom code: 15
   case sulfur = 15
   
   /// Silicon
+  ///
+  /// MM4 atom code: 19
   case silicon = 19
   
   /// Phosphorus
+  ///
+  /// MM4 atom code: 25
   case phosphorus = 25
   
   /// Carbon (sp3, 5-ring)
+  ///
+  /// MM4 atom code: 123
   case cyclopentaneCarbon = 123
 }
 
@@ -85,6 +101,8 @@ public struct MM4NonbondedParameters {
   /// "Heteroatom" includes carbon; the term was simply chosen as an antonym to
   /// hydrogen. Epsilons are computed using the geometric mean for heteroatoms,
   /// otherwise substitute directly with the hydrogen epsilon.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var epsilon: (heteroatom: Float, hydrogen: Float)
   
   /// Units: angstrom

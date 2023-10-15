@@ -28,6 +28,8 @@ public struct MM4Torsions {
 /// Parameters for a torsion among carbon or hydrogen atoms, and
 /// the first few terms of a fluorine torsion.
 ///
+/// > WARNING: Convert radians to degrees.
+///
 /// V1 term:
 /// - zeroed out for X-C-C-H
 /// - present for C-C-C-C
@@ -53,12 +55,18 @@ public struct MM4Torsions {
 /// - zeroed out for X-C-C-F, to prioritize conciseness over performance
 public struct MM4TorsionParameters {
   /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var V1: Float
   
   /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Vn: Float
   
   /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var V3: Float
   
   /// The factor to multiply the angle with inside the cosine term for Vn.
@@ -67,37 +75,59 @@ public struct MM4TorsionParameters {
   public var n: Float
   
   /// Units: kilocalorie / angstrom \* mole^2
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Kts3: Float
 }
 
 /// Parameters for the various torsion forces unique to fluorine-containing
 /// compounds (V4, V6, 3-term torsion-stretch, torsion-bend).
+///
+/// > WARNING: Convert radians to degrees.
 public struct MM4TorsionExtendedParameters {
   /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var V4: Float
   
   /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var V6: Float
   
   /// The V1-like term contributing to torsion-stretch stiffness.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Kts1: (left: Float, central: Float, right: Float)
   
   /// The V2-like term contributing to torsion-stretch stiffness.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Kts2: (left: Float, central: Float, right: Float)
   
   /// The V3-like term contributing to torsion-stretch stiffness.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Kts3: (left: Float, central: Float, right: Float)
   
   /// The V1-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Ktb1: (left: Float, right: Float)
   
   /// The V2-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Ktb2: (left: Float, right: Float)
   
   /// The V3-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Ktb3: (left: Float, right: Float)
   
   /// Bend-torsion-bend constant.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var Kbtb: Float
 }
 

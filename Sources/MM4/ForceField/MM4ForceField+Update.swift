@@ -23,6 +23,7 @@ public class MM4ForceFieldUpdateDescriptor {
 }
 
 extension MM4ForceField {
+  /// Update the state of the system, while the simulation is being interrupted.
   public func update(descriptor: MM4ForceFieldUpdateDescriptor) {
     // Take the OpenMM object backing the `MM4System`, and call the respective
     // APIs to update it.

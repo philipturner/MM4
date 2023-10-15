@@ -22,9 +22,8 @@ extension MM4ForceField {
     // integrator for the remainder, potentially with a slightly scaled-down
     // timestep.
     //
-    // Dynamically switch between the integrators below, or lazily initialized
-    // variants with external forces. There should be multiple OpenMM contexts
-    // surrounding the same system.
+    // Dynamically switch between the integrators below. There should be
+    // multiple OpenMM contexts surrounding the same system.
     // - minimization integrator
     // - single-step custom MTS integrator
     //   - 2, 3, 4-step variants created on demand to encompass a remainder

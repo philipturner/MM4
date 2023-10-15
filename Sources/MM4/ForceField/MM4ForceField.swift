@@ -7,6 +7,24 @@
 
 /// A force field simulator.
 ///
+/// The simulator supports the atoms enumerated by <doc:MM4AtomCode> with some
+/// restrictions on permitted bond types. For example, only C and Si may bond to
+/// hydrogen. The remaining elements (except silicon) must have all covalent
+/// bonds be shared with a carbon atom. In addition, no dissimilar non-C/H atoms
+/// may be separated by a bond once removed. Within these restrictions, there
+/// is a large variety of permissible structures, more than with exclusively
+/// carbon and hydrogen.
+///
+/// All major platforms (Mac, Linux, Windows) and all major GPU architectures
+/// (Apple, AMD, Intel, Nvidia) are supported. This includes multi-GPU systems
+/// with up to around a dozen GPUs (e.g. a single supercomputer node). This is
+/// because it delegates all of the computation to OpenMM, an existing,
+/// well-tested framework for easily porting molecular simulation algorithms to
+/// multiple vendors. OpenMM avoids any O(n^3) algorithms and provides the
+/// flexibility to opt out of O(n^2) algorithms. For example, the
+/// [minimizer](<doc:MM4ForceField/minimize(tolerance:maxIterations:)>) uses
+/// low-memory BFGS as a faster alternative to conjugate gradient minimization.
+///
 /// This is an NVE simulator, using 32-bit single precision and a massive
 /// timestep. Energy is not conserved to the precision of kT. It fluctuates
 /// wildly, but shouldn't systematically drift upward or downward (unless the
@@ -25,7 +43,8 @@
 /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
 /// without constraints. Expensive forces like torsions, nonbonded, and
 /// electrostatic can execute at double the timestep. The value you enter for
-/// `maximumTimeStep` specifies the execution rate of larger forces. Always
+/// [`maximumTimeStep`](<doc:MM4ForceField/simulate(time:maximumTimeStep:)>)
+/// specifies the execution rate of larger forces. Always
 /// assume the C-H stretching forces execute at half the specified timestep.
 /// For example, in the note below, bond stretching forces don't actually
 /// execute at the quoted '2 fs'.
@@ -35,7 +54,7 @@
 ///   non-hydrogen atoms lighter, to decrease the C-H or Si-H stretching
 ///   frequency. You can, and should, disable HMR for energy-conserving
 ///   simulations where timestep falls below 2 fs. This can be done by setting
-///   `hydrogenMassRepartitioning` in the `MM4ParametersDescriptor` to `0`.
+/// <doc:MM4ParametersDescriptor/hydrogenMassRepartitioning> to `0`.
 ///   Note that changing the repartitioning will shift the center of mass,
 ///   which is where bulk angular momentum is applied.
 ///
@@ -124,3 +143,5 @@ public class MM4ForceFieldDescriptor {
     
   }
 }
+
+

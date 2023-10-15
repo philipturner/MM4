@@ -31,12 +31,18 @@ public struct MM4BondParameters {
   ///
   /// The parameter's name originates from its description in
   /// Nanosystems 3.3.3(a).
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var potentialWellDepth: Float
   
   /// Units: millidyne / angstrom
+  ///
+  /// > WARNING: Convert nanometers to angstroms.
   public var stretchingStiffness: Float
   
   /// Units: angstrom
+  ///
+  /// > WARNING: Convert nanometers to angstroms.
   public var equilibriumLength: Float
 }
 
@@ -181,17 +187,6 @@ extension MM4Parameters {
     }
   }
   
-  // TODO: Create a counterforce at short range that corrects for 1/2 of a
-  // dipole falling on the 1-3 border. In the paper about fluorine, Allinger
-  // mentioned some 1-4 fluorines on fluoroethane having a repulsive effect
-  // from their dipoles. This suggests 1-4 interactions ("sclfac = 1.000") are
-  // included, but perhaps not the 1-3 interactions.
-  //
-  // The counterforce should simply minus out the charge from bond in question
-  // (on the 1-4 atoms) and remove the charge completely on the 1-3 atoms. Then,
-  // evaluate repulsion from the two bonds formed by the 1-4 torsion, using the
-  // exact dipole-dipole formula. I'm not entirely sure how to decide which
-  // torsions to include, and which dipoles will interact with which, just yet.
   func createPartialCharges() {
     // Units: proton charge * angstrom
     //
