@@ -229,6 +229,34 @@ extension MM4Parameters {
           if ringType == 5 {             V3 = 0.699 }
           else {                   (Vn, V3) = (-0.850, 0.200) }
           
+          // Oxygen
+        case (1, 1, 1, 6):       (V1, Vn, V3) = (-0.333, 0.037, 0.552)
+        case (5, 1, 1, 6):       (V1, Vn, V3) = (-0.593, 0.554, 0.474)
+          /**/                     (V6, Kbtb) = (0.070, -0.100)
+        case (6, 1, 1, 6):       (V1, Vn, V3) = (-0.917, -0.631, 0.641)
+          /**/                             V6 = -0.100
+        case (1, 1, 6, 1):       (V1, Vn, V3) = (1.900, -0.500, 1.250)
+        case (5, 1, 6, 1):     (V3, V6, Kbtb) = (0.730, 0.028, -0.050)
+        case (6, 1, 6, 1):       (V1, Vn, V3) = (-0.350, -0.900, -0.020)
+          /**/                     (V4, Kbtb) = (0.503, -0.150)
+        case (123, 6, 123, 5): return false
+        case (123, 6, 123, 6):
+          if ringType == 5 {     (V1, Vn, V3) = (0.350, -1.900, 1.550) }
+          else {                 (V1, Vn, V3) = (-0.350, -0.900, -1.550)
+            /**/                         Kbtb = 0.150 }
+        case (5, 123, 123, 6): (V1, V3, Kbtb) = (0.200, 0.480, -0.100)
+        case (6, 123, 123, 6):
+          if ringType == 5 {     (V1, Vn, V3) = (0.846, -2.314, 1.653)
+            /**/                     (V4, V6) = (-0.101, 0.350) }
+          else {                 (V1, Vn, V3) = (-0.217, -0.851, 0.441)
+            /**/               (V4, V6, Kbtb) = (-0.101, 0.350, 0.080) }
+        case (6, 123, 123, 123):
+          if ringType == 5 {         (Vn, V3) = (0.500, 0.930) }
+          else {                 (V1, Vn, V3) = (-0.128, -0.645, 0.934) }
+        case (123, 6, 123, 123):
+          if ringType == 5 {         (V1, V3) = (-0.900, 0.460) }
+          else { return false }
+          
           // Fluorine
         case (1, 1, 1, 11):  (V1, Vn, V3) = (-0.360, 0.380, 0.978)
           /**/             (V4, V6, Kbtb) = (0.240, 0.010, -0.06)
@@ -336,6 +364,36 @@ extension MM4Parameters {
           if ringType == 5 {     Ktb_r = SIMD3(-0.008, -0.004, 0.000) }
           else { return false }
         case (8, 123, 123, 123): Ktb_l = SIMD3(-0.008, -0.004, 0.000)
+          
+          // Oxygen
+        case (1, 1, 1, 6):       Ktb_l = SIMD3(-0.003, -0.003, 0.000)
+          /**/                   Ktb_r = SIMD3(0.005, -0.002, 0.001)
+        case (5, 1, 1, 6):       Ktb_l = SIMD3(0.006, -0.006, 0.000)
+          /**/                   Ktb_r = SIMD3(0.008, -0.010, 0.000)
+        case (6, 1, 1, 6):       Ktb_l = SIMD3(-0.004, -0.010, 0.000)
+          /**/                   Ktb_r = SIMD3(-0.004, -0.010, 0.000)
+        case (1, 1, 6, 1):       Ktb_l = SIMD3(-0.043, -0.013, -0.002)
+          /**/                   Ktb_r = SIMD3(-0.015, 0.017, -0.014)
+        case (5, 1, 6, 1):       Ktb_l = SIMD3(-0.018, -0.008, 0.000)
+          /**/                   Ktb_r = SIMD3(-0.005, 0.006, 0.000)
+        case (6, 1, 6, 1):       Ktb_l = SIMD3(0.030, -0.040, 0.009)
+          /**/                   Ktb_r = SIMD3(-0.003, -0.001, 0.000)
+        case (123, 6, 123, 5):   Ktb_l = SIMD3(-0.005, 0.006, 0.000)
+          /**/                   Ktb_r = SIMD3(-0.018, -0.008, 0.000)
+        case (123, 6, 123, 6):
+          if ringType == 5 {     Ktb_l = SIMD3(0.000, 0.000, 0.001) }
+          else {                 Ktb_l = SIMD3(0.030, -0.001, 0.000)
+            /**/                 Ktb_r = SIMD3(0.030, -0.040, 0.009) }
+        case (5, 123, 123, 6):   Ktb_l = SIMD3(0.008, -0.010, 0.000)
+          /**/                   Ktb_r = SIMD3(0.006, -0.006, 0.000)
+        case (6, 123, 123, 6):   Ktb_l = SIMD3(-0.005, -0.014, 0.000)
+            /**/                 Ktb_r = SIMD3(-0.005, -0.014, 0.000)
+        case (6, 123, 123, 123): Ktb_l = SIMD3(0.005, -0.002, 0.001)
+            /**/                 Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+        case (123, 6, 123, 123):
+          if ringType == 5 {     Ktb_l = SIMD3(-0.010, 0.017, 0.000)
+            /**/                 Ktb_r = SIMD3(-0.043, -0.013, -0.002) }
+          else { return false }
           
           // Fluorine
         case (1, 1, 1, 11):  Ktb_l = SIMD3(0.000, -0.012, -0.009)
@@ -466,7 +524,7 @@ extension MM4Parameters {
         case (123, 123, 123, 123): break
           
           // Deviating from the convention of making everything tabular, for
-          // both nitrogen and fluorine. This makes it easier to read and/or
+          // nitrogen, oxygen, and fluorine. This makes it easier to read and/or
           // less effort to format than tabular form.
           
           // Nitrogen
@@ -497,6 +555,43 @@ extension MM4Parameters {
           Kts_l = SIMD3(1.250, 1.200, 0.000)
           Kts_c = SIMD3(4.000, -3.000, 2.660)
           Kts_r = SIMD3(1.500, 0.000, 2.500)
+          
+          // Oxygen
+        case (1, 1, 1, 6):
+          Kts_l = SIMD3(1.000, -1.000, 4.500)
+          Kts_c = SIMD3(0.000, 0.000, 0.660)
+          Kts_r = SIMD3(-0.500, 2.000, 0.700)
+        case (5, 1, 1, 6):
+          Kts_c = SIMD3(0.000, 0.000, 0.660)
+        case (6, 1, 1, 6):
+          Kts_l = SIMD3(-5.000, 6.000, 0.000)
+          Kts_c = SIMD3(0.000, -7.000, 3.800)
+          Kts_r = SIMD3(-5.000, 6.000, 0.000)
+        case (1, 1, 6, 1):
+          Kts_l = SIMD3(-1.500, 3.500, 4.500)
+          Kts_c = SIMD3(0.000, 0.000, 1.559)
+          Kts_r = SIMD3(0.000, 2.000, 0.000)
+        case (5, 1, 6, 1):
+          Kts_l = SIMD3(5.997, 7.798, 0.000)
+          Kts_c = SIMD3(0.000, 0.000, 1.559)
+        case (6, 1, 6, 1):
+          Kts_l = SIMD3(5.300, 9.650, 0.000)
+          Kts_c = SIMD3(-7.000, -6.520, 1.559)
+        case (123, 6, 123, 6):
+          Kts_l = SIMD3(0.000, 14.000, 0.000)
+          Kts_c = SIMD3(0.000, -6.920, -2.200)
+          Kts_r = SIMD3(5.300, 9.650, 0.000)
+        case (123, 6, 123, 123):
+          Kts_l = SIMD3(0.000, 9.000, -5.000)
+          Kts_c = SIMD3(0.000, 0.000, 1.559)
+        case (6, 123, 123, 6):
+          Kts_l = SIMD3(5.000, 0.000, 0.000)
+          Kts_c = SIMD3(12.000, -7.000, 3.800)
+          Kts_r = SIMD3(5.000, 0.000, 0.000)
+        case (6, 123, 123, 123):
+          Kts_l = SIMD3(-0.500, 2.000, 0.700)
+          Kts_c = SIMD3(0.000, 0.000, 5.000)
+          Kts_r = SIMD3(1.000, -1.000, 4.500)
           
           // Fluorine
         case (1, 1, 1, 11):
@@ -562,7 +657,10 @@ extension MM4Parameters {
       // If all parameters besides Kts_c[2] are zero, send this to the cheaper
       // non-extended torsion force.
       var Kts3: Float
-      if Kts_l == nil, Kts_c[0] == 0, Kts_c[1] == 0, Kts_r == nil {
+      if V4 == nil, V6 == nil, Kbtb == nil,
+         Ktb_l == nil, Ktb_r == nil,
+         Kts_l == nil, Kts_r == nil,
+         Kts_c[0] == 0, Kts_c[1] == 0 {
         Kts3 = Kts_c[2]
       } else {
         Kts3 = 0.000
@@ -589,4 +687,5 @@ extension MM4Parameters {
     }
   }
 }
+
 
