@@ -154,3 +154,9 @@ public class MM4ForceFieldDescriptor {
     
   }
 }
+
+// MARK: - C Bindings
+
+// The parameters may need to be arranged into different contiguous arrays,
+// slightly more difficult than in the Swift API. Swift optionals and tuples are
+// not compatible with C.

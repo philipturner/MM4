@@ -4,6 +4,10 @@ General-purpose simulator for molecular nanotechnology (work in progress)
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
+C Bindings: TODO
+
+Python Bindings: TODO
+
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
 | H               | 5   | n/a | n/a           | n/a           |
