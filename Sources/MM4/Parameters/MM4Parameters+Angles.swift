@@ -327,6 +327,8 @@ extension MM4Parameters {
             bendingStiffnesses = SIMD3(repeating: 0.450)
             equilibriumAngles = SIMD3(repeating: 109.4)
           }
+          // TODO: Add self-bonding parameters from Tinker. Extrapolate the
+          // 31-1-31 parameter using silicon.
         default:
           break
         }

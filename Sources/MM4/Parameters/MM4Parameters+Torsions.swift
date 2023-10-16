@@ -333,6 +333,9 @@ extension MM4Parameters {
         case (1, 1, 1, 31):
           if ringType == 5 {          V3 = 0.520 }
           else {                (V1, V3) = (-0.200, 0.112) }
+          // TODO: Add self-bonding parameters from Tinker, treat the
+          // nonexistent 1-31-31-31 torsion like a genuine torsion with zero
+          // for every coefficient, and/or extrapolate from silicon.
           
         default:
           return false

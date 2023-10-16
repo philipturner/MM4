@@ -26,7 +26,7 @@ Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 | Si              | X | O |   |   |   | X |   |   |   |
 | P               |   | O |   |   |   |   |   |   |   |
 | S               |   | O |   |   |   |   |   |   |   |
-| Ge              | X | O |   |   |   |   |   |   |   |
+| Ge              | X | O |   |   |   |   |   |   | X |
 
 Key:
 - X = nonpolar covalent bond
