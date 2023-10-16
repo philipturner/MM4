@@ -12,7 +12,7 @@ final class MM4Tests: XCTestCase {
 }
 
 final class MM4ParametersTests: XCTestCase {
-  // TODO: Double check the new parameters for O and B-N.
+  // TODO: Double check the new parameters for oxygen.
   
   // TODO: Use cyclosilane ab initio structures as a test case.
   

@@ -76,20 +76,10 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 25
   case phosphorus = 25
   
-  /// Boron (tetravalent)
-  ///
-  /// MM4 atom code: 27
-  case dativeBoron = 27
-  
   /// Carbon (sp3, 5-ring)
   ///
   /// MM4 atom code: 123
   case cyclopentaneCarbon = 123
-  
-  /// Nitrogen (tetravalent)
-  ///
-  /// MM4 atom code: 198
-  case dativeNitrogen = 198
 }
 
 /// The number of hydrogens surrounding the carbon or silicon.
@@ -176,8 +166,8 @@ extension MM4Parameters {
         let nitrogenCount = nitrogenMask.wrappedSum()
         
         if nitrogenCount == 1 {
-          output = .dativeBoron
           valenceCount = 4
+          fatalError("B-N dative bond not supported.")
         } else {
           fatalError("Boron had invalid number of nitrogen bonds.")
         }
@@ -203,8 +193,8 @@ extension MM4Parameters {
           output = .nitrogen
           valenceCount = 3
         } else if boronCount == 1 {
-          output = .dativeNitrogen
           valenceCount = 4
+          fatalError("B-N dative bond not supported.")
         } else {
           fatalError("Too many borons on a nitrogen.")
         }
