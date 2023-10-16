@@ -10,19 +10,19 @@
 /// Parameters for a group of 2 atoms.
 public class MM4Bonds {
   /// Each value corresponds to the bond at the same array index.
-  public var extendedParameters: [MM4BondExtendedParameters?] = []
+  public internal(set) var extendedParameters: [MM4BondExtendedParameters?] = []
   
   /// Groups of atom indices that form a bond.
-  public var indices: [SIMD2<Int32>] = []
+  public internal(set) var indices: [SIMD2<Int32>] = []
   
   /// Map from a group of atoms to a bond index.
-  public var map: [SIMD2<Int32>: Int32] = [:]
+  public internal(set) var map: [SIMD2<Int32>: Int32] = [:]
   
   /// Each value corresponds to the bond at the same array index.
-  public var parameters: [MM4BondParameters] = []
+  public internal(set) var parameters: [MM4BondParameters] = []
   
   /// The smallest ring this is involved in.
-  public var ringTypes: [UInt8] = []
+  public internal(set) var ringTypes: [UInt8] = []
 }
 
 /// Morse stretching parameters for a covalent bond.

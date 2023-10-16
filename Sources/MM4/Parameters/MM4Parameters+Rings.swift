@@ -14,13 +14,13 @@
 /// 3-atom and 4-atom rings.
 public class MM4Rings {
   /// Groups of atom indices that form a ring.
-  public var indices: [SIMD8<Int32>] = []
+  public internal(set) var indices: [SIMD8<Int32>] = []
   
   /// Map from a group of atoms to a ring index.
-  public var map: [SIMD8<Int32>: Int32] = [:]
+  public internal(set) var map: [SIMD8<Int32>: Int32] = [:]
   
   /// The number of atoms in the ring.
-  public var ringTypes: [UInt8] = []
+  public internal(set) var ringTypes: [UInt8] = []
 }
 
 extension MM4Parameters {

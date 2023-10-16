@@ -27,5 +27,7 @@ final class MM4ParametersTests: XCTestCase {
   // up correctly.
   
   // TODO: Some profiling tests. See whether multicore CPU could help for
-  // setting up quick energy minimizations of large nanosystems.
+  // setting up quick energy minimizations of large nanosystems. The test suite
+  // should be compiled in release mode for performance tests, otherwise they
+  // will be disabled using '#if DEBUG'.
 }

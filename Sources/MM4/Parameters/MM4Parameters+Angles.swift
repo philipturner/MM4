@@ -10,19 +10,19 @@
 /// Parameters for a group of 3 atoms.
 public class MM4Angles {
   /// Each value corresponds to the angle at the same array index.
-  public var extendedParameters: [MM4AngleExtendedParameters?] = []
+  public internal(set) var extendedParameters: [MM4AngleExtendedParameters?] = []
   
   /// Groups of atom indices that form an angle.
-  public var indices: [SIMD3<Int32>] = []
+  public internal(set) var indices: [SIMD3<Int32>] = []
   
   /// Map from a group of atoms to an angle index.
-  public var map: [SIMD3<Int32>: Int32] = [:]
+  public internal(set) var map: [SIMD3<Int32>: Int32] = [:]
   
   /// Each value corresponds to the angle at the same array index.
-  public var parameters: [MM4AngleParameters] = []
+  public internal(set) var parameters: [MM4AngleParameters] = []
   
   /// The smallest ring this is involved in.
-  public var ringTypes: [UInt8] = []
+  public internal(set) var ringTypes: [UInt8] = []
 }
 
 /// Parameters for an angle between two bonds, including bending stiffness

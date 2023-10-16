@@ -10,19 +10,19 @@
 /// Parameters for a group of 4 atoms.
 public class MM4Torsions {
   /// Each value corresponds to the torsion at the same array index.
-  public var extendedParameters: [MM4TorsionExtendedParameters?] = []
+  public internal(set) var extendedParameters: [MM4TorsionExtendedParameters?] = []
   
   /// Groups of atom indices that form a torsion.
-  public var indices: [SIMD4<Int32>] = []
+  public internal(set) var indices: [SIMD4<Int32>] = []
   
   /// Map from a group of atoms to a torsion index.
-  public var map: [SIMD4<Int32>: Int32] = [:]
+  public internal(set) var map: [SIMD4<Int32>: Int32] = [:]
   
   /// Each value corresponds to the torsion at the same array index.
-  public var parameters: [MM4TorsionParameters] = []
+  public internal(set) var parameters: [MM4TorsionParameters] = []
   
   /// The smallest ring this is involved in.
-  public var ringTypes: [UInt8] = []
+  public internal(set) var ringTypes: [UInt8] = []
 }
 
 /// Parameters for a torsion among hydrogen, carbon, and silicon atoms.

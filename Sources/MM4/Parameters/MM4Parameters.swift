@@ -30,42 +30,31 @@ public class MM4ParametersDescriptor {
   }
 }
 
+// Owning classes like 'MM4Atoms' have immutable properties, but the structs
+// themselves (e.g. 'MM4NonbondedParameters' are mutable. This creates
+// consistent behavior with the C API, where a copy of the struct's data is
+// returned. It is possible to modify the copy, which will not affect the source
+// of truth.
+//
+// Another note, both the Swift and C APIs might have function call overhead to
+// access a single element of any parameters array.
+
 /// A set of force field parameters.
 public class MM4Parameters {
   /// Parameters for one atom.
-  ///
-  /// > Warning: This property is mutable, but changing forcefield parameters
-  ///   can have several unintended consequences. It is generally considered bad
-  ///   practice.
-  public var atoms: MM4Atoms = MM4Atoms()
+  public internal(set) var atoms: MM4Atoms = MM4Atoms()
   
   /// Parameters for a group of 2 atoms.
-  ///
-  /// > Warning: This property is mutable, but changing forcefield parameters
-  ///   can have several unintended consequences. It is generally considered bad
-  ///   practice.
-  public var bonds: MM4Bonds = MM4Bonds()
+  public internal(set) var bonds: MM4Bonds = MM4Bonds()
   
   /// Parameters for a group of 3 atoms.
-  ///
-  /// > Warning: This property is mutable, but changing forcefield parameters
-  ///   can have several unintended consequences. It is generally considered bad
-  ///   practice.
-  public var angles: MM4Angles = MM4Angles()
+  public internal(set) var angles: MM4Angles = MM4Angles()
   
   /// Parameters for a group of 4 atoms.
-  ///
-  /// > Warning: This property is mutable, but changing forcefield parameters
-  ///   can have several unintended consequences. It is generally considered bad
-  ///   practice.
-  public var torsions: MM4Torsions = MM4Torsions()
+  public internal(set) var torsions: MM4Torsions = MM4Torsions()
   
   /// Parameters for a group of 5 atoms.
-  ///
-  /// > Warning: This property is mutable, but changing forcefield parameters
-  ///   can have several unintended consequences. It is generally considered bad
-  ///   practice.
-  public var rings: MM4Rings = MM4Rings()
+  public internal(set) var rings: MM4Rings = MM4Rings()
   
   /// The amount of mass (in amu) redistributed from a substituent atom to each
   /// covalently bonded hydrogen.

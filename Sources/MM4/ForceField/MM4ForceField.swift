@@ -157,11 +157,7 @@ public class MM4ForceFieldDescriptor {
 
 // MARK: - C Bindings
 
-// The parameters may need to be arranged into different contiguous arrays,
-// slightly more difficult than in the Swift API. Swift optionals and tuples are
-// not compatible with C.
-//
-// Do something similar to OpenMM, with a different wrapper type for every
-// type name. Create a data layout for bridging to C. Request that the user
-// enter a pointer to write the data to. If the value is 'nil', return 'false'
-// from the function to indicate failure.
+// The parameters must be arranged in a different way than the Swift API. Swift
+// optionals and tuples are not compatible with C. Create a data layout for
+// bridging to C. Request that the user enter a pointer to write the data to. If
+// the value is 'nil', return 'false' from the function to indicate failure.

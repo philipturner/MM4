@@ -10,28 +10,25 @@
 /// Parameters for one atom.
 public class MM4Atoms {
   /// The number of protons in the atom's nucleus.
-  public var atomicNumbers: [UInt8] = []
+  public internal(set) var atomicNumbers: [UInt8] = []
   
   /// The center type used to assign different parameters.
-  ///
-  /// This is useful for debugging the assignment of parameters, to ensure the
-  /// exact parameter as specified by the forcefield paper gets assigned.
-  public var centerTypes: [MM4CenterType?] = []
+  public internal(set) var centerTypes: [MM4CenterType?] = []
   
   /// The MM4 code for each atom in the system.
-  public var codes: [MM4AtomCode] = []
+  public internal(set) var codes: [MM4AtomCode] = []
   
   /// Each value corresponds to the atom at the same array index.
-  public var extendedParameters: [MM4AtomExtendedParameters?] = []
+  public internal(set) var extendedParameters: [MM4AtomExtendedParameters?] = []
   
   /// The mass of each atom after hydrogen mass repartitioning.
-  public var masses: [Float] = []
+  public internal(set) var masses: [Float] = []
   
   /// Each value corresponds to the atom at the same array index.
-  public var nonbondedParameters: [MM4NonbondedParameters] = []
+  public internal(set) var nonbondedParameters: [MM4NonbondedParameters] = []
   
   /// The smallest ring this is involved in.
-  public var ringTypes: [UInt8] = []
+  public internal(set) var ringTypes: [UInt8] = []
 }
 
 /// MM4 codes for an element or an atom in a specific functional group.
