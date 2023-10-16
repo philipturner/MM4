@@ -14,6 +14,9 @@ final class MM4Tests: XCTestCase {
 final class MM4ParametersTests: XCTestCase {
   // TODO: Double check the recently added parameters for O and Ge.
   
+  // TODO: Measure material properties of solid germanium to check that the
+  // Ge-Ge-Ge equilibrium angle is correct.
+  
   // TODO: Use cyclosilane ab initio structures as a test case.
   
   // TODO: Test that the torsion-stretch parameter actually increases system

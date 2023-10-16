@@ -302,12 +302,14 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 110.00)
           
           // Germanium
-        case (5, 31, 5):
-          bendingStiffnesses = SIMD3(repeating: 0.423)
-          equilibriumAngles = SIMD3(107.5, 108.5, 109.5)
-        case (1, 31, 5):
-          bendingStiffnesses = SIMD3(repeating: 0.390)
-          equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
+        case (1, 1, 31):
+          if ringType == 5 {
+            bendingStiffnesses = SIMD3(repeating: 0.680)
+            equilibriumAngles = SIMD3(repeating: 105.5)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.450)
+            equilibriumAngles = SIMD3(repeating: 109.4)
+          }
         case (5, 1, 31):
           bendingStiffnesses = SIMD3(repeating: 0.420)
           equilibriumAngles = SIMD3(110.0, 111.9, 110.0)
@@ -319,16 +321,37 @@ extension MM4Parameters {
             bendingStiffnesses = SIMD3(repeating: 0.500)
             equilibriumAngles = SIMD3(109.5, 109.8, 110.5)
           }
-        case (1, 1, 31):
-          if ringType == 5 {
-            bendingStiffnesses = SIMD3(repeating: 0.680)
-            equilibriumAngles = SIMD3(repeating: 105.5)
-          } else {
-            bendingStiffnesses = SIMD3(repeating: 0.450)
-            equilibriumAngles = SIMD3(repeating: 109.4)
-          }
-          // TODO: Add self-bonding parameters from Tinker. Extrapolate the
-          // 31-1-31 parameter using silicon.
+        case (31, 1, 31):
+          // There are no parameters for 31-1-31 in the MM3 forcefield. It looks
+          // like silicon is a good first-order approximation for the other
+          // angles. Therefore, I will use the silicon values here.
+          bendingStiffnesses = SIMD3(repeating: 0.350)
+          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+        case (1, 31, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.390)
+          equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
+        case (5, 31, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.423)
+          equilibriumAngles = SIMD3(107.5, 108.5, 109.5)
+        case (1, 31, 31):
+          bendingStiffnesses = SIMD3(repeating: 0.350)
+          equilibriumAngles = SIMD3(repeating: 111.50)
+        case (5, 31, 31):
+          bendingStiffnesses = SIMD3(repeating: 0.350)
+          equilibriumAngles = SIMD3(repeating: 114.5)
+        case (31, 31, 31):
+          // Silicon has some numbers similar to 112.50 when not in the
+          // quaternary configuration: equilibriumAngles = SIMD3(109.50, 110.80,
+          // 111.20). The MM3 paper had an explicit parameter "111.3" for the
+          // quaternary case. I need to do some benchmarks of solid germanium,
+          // to see whether changing the type-1 interaction constant will
+          // improve accuracy.
+          //
+          // The angle might need to be a variable of how many carbon atoms are
+          // connected to the germanium.
+          bendingStiffnesses = SIMD3(repeating: 0.300)
+          equilibriumAngles = SIMD3(repeating: 112.50)
+          
         default:
           break
         }

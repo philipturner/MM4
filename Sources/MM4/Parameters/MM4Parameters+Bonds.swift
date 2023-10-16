@@ -203,6 +203,10 @@ extension MM4Parameters {
         potentialWellDepth = 0.689
         stretchingStiffness = 2.55
         equilibriumLength = 1.529
+      case (31, 31):
+        potentialWellDepth = 0.542
+        stretchingStiffness = 1.45
+        equilibriumLength = 2.404
         
       default:
         fatalError("Unrecognized bond: \(sortedCodes)")

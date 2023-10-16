@@ -266,7 +266,9 @@ extension MM4Parameters {
           /**/                       Kbtb = -0.06
           
           // Silicon
+        case (5, 1, 1, 19):   V3 = 0.200
         case (19, 1, 1, 19):  V3 = 0.167
+        case (1, 1, 19, 5):   V3 = 0.295
         case ( 5, 1, 19, 1):  V3 = 0.195
         case ( 5, 1, 19, 5):  V3 = 0.177
         case (19, 1, 19, 1):  V3 = 0.100
@@ -325,17 +327,53 @@ extension MM4Parameters {
           // one is from the preliminary MM3(1996), but doesn't explicitly state
           // which. The Tinker implementation suggests the one without the "b"
           // footnote.
-        case (5, 1, 31, 1):           V3 = 0.127
-        case (5, 1, 31, 5):           V3 = 0.132
-        case (1, 1, 31, 5):           V3 = 0.172
-        case (5, 1, 1, 31):           V3 = 0.185
-        case (1, 1, 31, 1): (V1, Vn, V3) = (-0.200, 0.085, 0.112)
-        case (1, 1, 1, 31):
-          if ringType == 5 {          V3 = 0.520 }
-          else {                (V1, V3) = (-0.200, 0.112) }
+          //
           // TODO: Add self-bonding parameters from Tinker, treat the
           // nonexistent 1-31-31-31 torsion like a genuine torsion with zero
           // for every coefficient, and/or extrapolate from silicon.
+        case (5, 1, 1, 31):           V3 = 0.185
+        case (31, 1, 1, 31): fatalError()
+        case (1, 1, 31, 5):           V3 = 0.172
+        case (5, 1, 31, 1):           V3 = 0.127
+        case (5, 1, 31, 5):           V3 = 0.132
+        case (31, 1, 31, 1): fatalError()
+        case (31, 1, 31, 5): fatalError()
+        case (1, 1, 31, 31): fatalError()
+        case (5, 1, 31, 31): fatalError()
+        case (1, 31, 31, 5): fatalError()
+        case (1, 31, 31, 1): fatalError()
+        case (1, 31, 31, 31): fatalError()
+        case (31, 31, 31, 31): fatalError()
+        case (1, 1, 1, 31):
+          if ringType == 5 {          V3 = 0.520 }
+          else {                (V1, V3) = (-0.200, 0.112) }
+        case (1, 1, 31, 1):
+          if ringType == 5 {    (V1, V3) = (-0.200, 0.100) }
+          else {            (V1, Vn, V3) = (-0.200, 0.085, 0.112) }
+        
+        case (5, 1, 1, 19):   V3 = 0.200
+        case (19, 1, 1, 19):  V3 = 0.167
+        case (1, 1, 19, 5):   V3 = 0.295
+        case ( 5, 1, 19, 1):  V3 = 0.195
+        case ( 5, 1, 19, 5):  V3 = 0.177
+        case (19, 1, 19, 1):  V3 = 0.100
+        case (19, 1, 19, 5):  V3 = 0.167
+        case ( 1, 1, 19, 19): V3 = 0.300
+        case ( 5, 1, 19, 19): V3 = 0.270
+        case (1, 19, 19, 5):  V3 = 0.127
+        case (1, 19, 19, 1):  V3 = 0.107
+        case (1, 19, 19, 19): V3 = 0.350
+        case (5, 19, 19, 5):  V3 = 0.132
+        case (5, 19, 19, 19): V3 = 0.070
+        case (1, 1, 1, 19):
+          if ringType == 5 {  V3 = 0.850 }
+          else {        (Vn, V3) = (0.050, 0.240) }
+        case (1, 1, 19, 1):
+          if ringType == 5 {  Vn = 0.800 }
+          else {              V3 = 0.167 }
+        case (19, 19, 19, 19):
+          if ringType == 5 {  V3 = 0.175 }
+          else {              V3 = 0.125 }
           
         default:
           return false
