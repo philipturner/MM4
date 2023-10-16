@@ -154,5 +154,3 @@ public class MM4ForceFieldDescriptor {
     
   }
 }
-
-

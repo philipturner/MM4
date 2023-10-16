@@ -33,19 +33,39 @@ public class MM4ParametersDescriptor {
 /// A set of force field parameters.
 public class MM4Parameters {
   /// Parameters for one atom.
-  public internal(set) var atoms: MM4Atoms = MM4Atoms()
+  ///
+  /// > Warning: This property is mutable, but changing forcefield parameters
+  ///   can have several unintended consequences. It is generally considered bad
+  ///   practice.
+  public var atoms: MM4Atoms = MM4Atoms()
   
   /// Parameters for a group of 2 atoms.
-  public internal(set) var bonds: MM4Bonds = MM4Bonds()
+  ///
+  /// > Warning: This property is mutable, but changing forcefield parameters
+  ///   can have several unintended consequences. It is generally considered bad
+  ///   practice.
+  public var bonds: MM4Bonds = MM4Bonds()
   
   /// Parameters for a group of 3 atoms.
-  public internal(set) var angles: MM4Angles = MM4Angles()
+  ///
+  /// > Warning: This property is mutable, but changing forcefield parameters
+  ///   can have several unintended consequences. It is generally considered bad
+  ///   practice.
+  public var angles: MM4Angles = MM4Angles()
   
   /// Parameters for a group of 4 atoms.
-  public internal(set) var torsions: MM4Torsions = MM4Torsions()
+  ///
+  /// > Warning: This property is mutable, but changing forcefield parameters
+  ///   can have several unintended consequences. It is generally considered bad
+  ///   practice.
+  public var torsions: MM4Torsions = MM4Torsions()
   
   /// Parameters for a group of 5 atoms.
-  public internal(set) var rings: MM4Rings = MM4Rings()
+  ///
+  /// > Warning: This property is mutable, but changing forcefield parameters
+  ///   can have several unintended consequences. It is generally considered bad
+  ///   practice.
+  public var rings: MM4Rings = MM4Rings()
   
   /// The amount of mass (in amu) redistributed from a substituent atom to each
   /// covalently bonded hydrogen.
