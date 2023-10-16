@@ -20,3 +20,9 @@ public let MM4KJPerMolPerAJ: Double = 1e-18 * 6.02214076e23 / 1000
 
 /// 0.602214
 public let MM4KJPerMolPerZJ: Double = 1e-21 * 6.02214076e23 / 1000
+
+/// 0.001
+public let MM4AJPerZJ: Double = 0.001
+
+/// 1000
+public let MM4ZJPerAJ: Double = 1000
