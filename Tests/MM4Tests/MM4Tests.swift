@@ -18,6 +18,9 @@ final class MM4ParametersTests: XCTestCase {
   // energy by the expected amount. We can't rule out an error in unit
   // conversions with the custom formula.
   
+  // TODO: Look the most unusual edge cases in the parameters, ensure they show
+  // up correctly.
+  
   // TODO: Some profiling tests. See whether multicore CPU could help for
   // setting up quick energy minimizations of large nanosystems.
 }

@@ -77,178 +77,235 @@ extension MM4Parameters {
       
       // MARK: - Bend
       
-      var bendingStiffnesses: SIMD3<Float>
-      var equilibriumAngles: SIMD3<Float>
+      var bendingStiffnesses: SIMD3<Float>?
+      var equilibriumAngles: SIMD3<Float>?
       
-      switch (sortedCodes[0], sortedCodes[1], sortedCodes[2]) {
-        // Carbon
-      case (1, 1, 1):
-        bendingStiffnesses = SIMD3(repeating: 0.740)
-        equilibriumAngles = SIMD3(109.500, 110.400, 111.800)
-      case (1, 1, 5):
-        bendingStiffnesses = SIMD3(0.590, 0.560, 0.600)
-        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
-      case (5, 1, 5):
-        bendingStiffnesses = SIMD3(repeating: 0.540)
-        equilibriumAngles = SIMD3(107.700, 107.800, 107.700)
-      case (1, 1, 123):
-        bendingStiffnesses = SIMD3(repeating: 0.740)
-        equilibriumAngles = SIMD3(109.500, 110.500, 111.800)
-      case (1, 123, 5):
-        bendingStiffnesses = SIMD3(repeating: 0.560)
-        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
-      case (5, 1, 123):
-        bendingStiffnesses = SIMD3(repeating: 0.560)
-        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
-      case (5, 123, 5):
-        bendingStiffnesses = SIMD3(repeating: 0.620)
-        equilibriumAngles = SIMD3(107.800, 107.800, 0.000)
-      case (1, 123, 123):
-        bendingStiffnesses = SIMD3(repeating: 0.740)
-        equilibriumAngles = SIMD3(109.500, 110.500, 111.800)
-      case (5, 123, 123):
-        bendingStiffnesses = SIMD3(repeating: 0.580)
-        equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
-      case (123, 123, 123):
-        bendingStiffnesses = SIMD3(repeating: 0.740)
-        equilibriumAngles = SIMD3(108.300, 108.900, 109.000)
-        
-        // Nitrogen
-      case (1, 1, 8):
-        bendingStiffnesses = SIMD3(1.175, 1.165, 1.145)
-        equilibriumAngles = SIMD3(106.4, 104.0, 104.6)
-      case (5, 1, 8):
-        bendingStiffnesses = SIMD3(0.850, 0.850, 1.110)
-        equilibriumAngles = SIMD3(104.2, 105.0, 104.6)
-      case (1, 8, 1):
-        bendingStiffnesses = SIMD3(1.050, 0.970, .nan)
-        equilibriumAngles = SIMD3(105.8, 106.6, .nan)
-      case (1, 8, 123):
-        bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
-        equilibriumAngles = SIMD3(109.4, 109.4, .nan)
-      case (5, 123, 8):
-        bendingStiffnesses = SIMD3(repeating: 0.500)
-        equilibriumAngles = SIMD3(repeating: 109.4)
-      case (8, 123, 123):
-        bendingStiffnesses = SIMD3(repeating: 1.155)
-        equilibriumAngles = SIMD3(107.1, 107.1, ringType == 5 ? 105.9 : 107.1)
-      case (123, 8, 123):
-        bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
-        if ringType == 5 {
-          equilibriumAngles = SIMD3(105.2, 108.6, .nan)
+      var continueAttempt = false
+      for attemptID in 0..<2 {
+        var codes: SIMD3<UInt8>
+        if attemptID == 0 {
+          codes = sortedCodes
+        } else if continueAttempt {
+          codes = sortedCodes.replacing(with: .one, where: sortedCodes .== 123)
+          codes = sortAngle(codes)
         } else {
+          continue
+        }
+        
+        switch (codes[0], codes[1], codes[2]) {
+          // Carbon
+        case (1, 1, 1):
+          bendingStiffnesses = SIMD3(repeating: 0.740)
+          equilibriumAngles = SIMD3(109.500, 110.400, 111.800)
+        case (1, 1, 5):
+          bendingStiffnesses = SIMD3(0.590, 0.560, 0.600)
+          equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
+        case (5, 1, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.540)
+          equilibriumAngles = SIMD3(107.700, 107.800, 107.700)
+        case (1, 1, 123):
+          bendingStiffnesses = SIMD3(repeating: 0.740)
+          equilibriumAngles = SIMD3(109.500, 110.500, 111.800)
+        case (1, 123, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.560)
+          equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
+        case (5, 1, 123):
+          bendingStiffnesses = SIMD3(repeating: 0.560)
+          equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
+        case (5, 123, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.620)
+          equilibriumAngles = SIMD3(107.800, 107.800, 0.000)
+        case (1, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 0.740)
+          equilibriumAngles = SIMD3(109.500, 110.500, 111.800)
+        case (5, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 0.580)
+          equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
+        case (123, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 0.740)
+          equilibriumAngles = SIMD3(108.300, 108.900, 109.000)
+          
+          // Nitrogen
+        case (1, 1, 8):
+          bendingStiffnesses = SIMD3(1.175, 1.165, 1.145)
+          equilibriumAngles = SIMD3(106.4, 104.0, 104.6)
+        case (5, 1, 8):
+          bendingStiffnesses = SIMD3(0.850, 0.850, 1.110)
+          equilibriumAngles = SIMD3(104.2, 105.0, 104.6)
+        case (1, 8, 1):
+          bendingStiffnesses = SIMD3(1.050, 0.970, .nan)
+          equilibriumAngles = SIMD3(105.8, 106.6, .nan)
+        case (1, 8, 123):
+          bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
           equilibriumAngles = SIMD3(109.4, 109.4, .nan)
-        }
-        
-        // Fluorine
-      case (1, 1, 11):
-        bendingStiffnesses = SIMD3(repeating: 0.92)
-        equilibriumAngles = SIMD3(106.90, 108.20, 109.30)
-      case (5, 1, 11):
-        bendingStiffnesses = SIMD3(0.82, 0.88, 0.98)
-        equilibriumAngles = SIMD3(107.95, 107.90, 108.55)
-      case (11, 1, 11):
-        bendingStiffnesses = SIMD3(1.95, 2.05, 1.62)
-        equilibriumAngles = SIMD3(104.30, 105.90, 108.08)
-        
-        // Silicon
-      case (1, 1, 19):
-        if ringType == 6 {
-          bendingStiffnesses = SIMD3(repeating: 0.400)
-          equilibriumAngles = SIMD3(109.00, 112.70, 111.50)
-        } else {
-          bendingStiffnesses = SIMD3(repeating: 0.550)
-          equilibriumAngles = SIMD3(repeating: 107.20)
-        }
-      case (5, 1, 19):
-        bendingStiffnesses = SIMD3(repeating: 0.540)
-        equilibriumAngles = SIMD3(109.50, 110.00, 108.90)
-      case (1, 19, 1):
-        if ringType == 6 {
-          bendingStiffnesses = SIMD3(repeating: 0.480)
-          equilibriumAngles = SIMD3(109.50, 110.40, 109.20)
-        } else {
-          bendingStiffnesses = SIMD3(repeating: 0.650)
-          equilibriumAngles = SIMD3(102.80, 103.80, 99.50)
-        }
-      case (19, 1, 19):
-        bendingStiffnesses = SIMD3(repeating: 0.350)
-        equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
-      case (1, 19, 5):
-        bendingStiffnesses = SIMD3(repeating: 0.400)
-        equilibriumAngles = SIMD3(109.30, 107.00, 110.00)
-      case (5, 19, 5):
-        bendingStiffnesses = SIMD3(repeating: 0.460)
-        equilibriumAngles = SIMD3(106.50, 108.70, 109.50)
-      case (1, 19, 19):
-        bendingStiffnesses = SIMD3(repeating: 0.450)
-        equilibriumAngles = SIMD3(repeating: 109.00)
-      case (5, 19, 19):
-        bendingStiffnesses = SIMD3(repeating: 0.350)
-        equilibriumAngles = SIMD3(repeating: 109.40)
-      case (19, 19, 19):
-        if ringType == 6 {
-          // Typo from the MM3 silicon paper and retained in the MM3(2000)
-          // implementation donated to Tinker. Quaternary sp3 carbon has the
-          // parameters 109.5-112.7-111.5, while sp3 silicon *should* have
-          // something similar: 109.5-110.8-111.2. I think 118.00 was a typo
-          // from the column four cells below: 19-22-22. Anything connected to
-          // the other side of a cyclopropane carbon (60°) should have an angle
-          // like 120°. This is not the first typo I have caught in one of
-          // Allinger's research papers, see the note about the MM4 formula for
-          // the Torsion-Stretch cross-term.
-          //
-          // The stiffness does match up. Extrapolating the ratios of 1-1-19 :
-          // 19-19-19 and 1-19-1 : 19-19-19 from 5-membered ring variants, one
-          // gets 0.233 and 0.236 respectively for 19-19-19. That is very close
-          // to 0.25, so I don't think that was messed up.
-          bendingStiffnesses = SIMD3(repeating: 0.250)
-          equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
-        } else {
-          bendingStiffnesses = SIMD3(repeating: 0.320)
-          equilibriumAngles = SIMD3(repeating: 106.00)
-        }
-        
-        // Phosphorus
-      case (1, 25, 1):
-        bendingStiffnesses = SIMD3(0.900, 0.725, .nan)
-        equilibriumAngles = SIMD3(94.50, 97.90, .nan)
-      case (1, 1, 25):
-        bendingStiffnesses = SIMD3(0.750, 0.825, 0.725)
-        equilibriumAngles = SIMD3(107.05, 108.25, 109.55)
-        
-        // Sulfur
-      case (5, 1, 15):
-        bendingStiffnesses = SIMD3(repeating: 0.782)
-        equilibriumAngles = SIMD3(108.9, 108.8, 105.8)
-      case (1, 15, 1):
-        bendingStiffnesses = SIMD3(0.920, .nan, .nan)
-        equilibriumAngles = SIMD3(97.2, .nan, .nan)
-      case (1, 1, 15):
-        bendingStiffnesses = SIMD3(repeating: 0.975)
-        equilibriumAngles = SIMD3(102.6, 105.7, 107.7)
-      case (5, 123, 5):
-        bendingStiffnesses = SIMD3(0.680, 0.680, .nan)
-        equilibriumAngles = SIMD3(109.1, 107.5, .nan)
-      case (1, 123, 15):
-        bendingStiffnesses = SIMD3(repeating: 0.975)
-        equilibriumAngles = SIMD3(102.6, 110.8, 107.7)
-      case (123, 15, 123):
-        bendingStiffnesses = SIMD3(0.920, .nan, .nan)
-        equilibriumAngles = SIMD3(ringType == 5 ? 96.5 : 97.2, .nan, .nan)
-      case (15, 123, 123):
-        if ringType == 5 {
+        case (5, 123, 8):
+          bendingStiffnesses = SIMD3(repeating: 0.500)
+          equilibriumAngles = SIMD3(repeating: 109.4)
+        case (8, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 1.155)
+          equilibriumAngles = SIMD3(repeating: 107.1)
+          if ringType == 5 {
+            equilibriumAngles![2] = 105.9
+          }
+        case (123, 8, 123):
+          bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
+          if ringType == 5 {
+            equilibriumAngles = SIMD3(105.2, 108.6, .nan)
+          } else {
+            continueAttempt = true
+          }
+          
+          // Oxygen
+        case (1, 1, 6):
+          bendingStiffnesses = SIMD3(repeating: 1.275)
+          equilibriumAngles = SIMD3(105.5, 106.2, 107.9)
+        case (5, 1, 6):
+          bendingStiffnesses = SIMD3(0.970, 0.870, 1.120)
+          equilibriumAngles = SIMD3(106.9, 107.2, 106.6)
+        case (6, 1, 6):
           bendingStiffnesses = SIMD3(repeating: 1.050)
-          equilibriumAngles = SIMD3(108.0, 108.0, 108.5)
-        } else {
+          equilibriumAngles = SIMD3(108.0, 107.0, 107.1)
+        case (1, 6, 1):
+          bendingStiffnesses = SIMD3(repeating: 0.920)
+          equilibriumAngles = SIMD3(repeating: 107.6)
+        case (5, 123, 6):
+          bendingStiffnesses = SIMD3(1.120, .nan, .nan)
+          equilibriumAngles = SIMD3(106.5, .nan, .nan)
+        case (6, 123, 6):
+          bendingStiffnesses = SIMD3(repeating: 1.050)
+          equilibriumAngles = SIMD3(110.0, 110.0, 107.1)
+          if ringType == 5 {
+            equilibriumAngles![2] = 107.7
+          }
+        case (6, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 1.275)
+          equilibriumAngles = SIMD3(105.5, 106.5, 107.9)
+          if ringType == 5 {
+            equilibriumAngles![1] = 105.5
+            equilibriumAngles![2] = 105.9
+          }
+        case (123, 6, 123):
+          if ringType == 5 {
+            bendingStiffnesses = SIMD3(repeating: 0.920)
+            equilibriumAngles = SIMD3(repeating: 110.0)
+          } else {
+            continueAttempt = true
+          }
+          
+          // Fluorine
+        case (1, 1, 11):
+          bendingStiffnesses = SIMD3(repeating: 0.92)
+          equilibriumAngles = SIMD3(106.90, 108.20, 109.30)
+        case (5, 1, 11):
+          bendingStiffnesses = SIMD3(0.82, 0.88, 0.98)
+          equilibriumAngles = SIMD3(107.95, 107.90, 108.55)
+        case (11, 1, 11):
+          bendingStiffnesses = SIMD3(1.95, 2.05, 1.62)
+          equilibriumAngles = SIMD3(104.30, 105.90, 108.08)
+          
+          // Silicon
+        case (1, 1, 19):
+          if ringType == 6 {
+            bendingStiffnesses = SIMD3(repeating: 0.400)
+            equilibriumAngles = SIMD3(109.00, 112.70, 111.50)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.550)
+            equilibriumAngles = SIMD3(repeating: 107.20)
+          }
+        case (5, 1, 19):
+          bendingStiffnesses = SIMD3(repeating: 0.540)
+          equilibriumAngles = SIMD3(109.50, 110.00, 108.90)
+        case (1, 19, 1):
+          if ringType == 6 {
+            bendingStiffnesses = SIMD3(repeating: 0.480)
+            equilibriumAngles = SIMD3(109.50, 110.40, 109.20)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.650)
+            equilibriumAngles = SIMD3(102.80, 103.80, 99.50)
+          }
+        case (19, 1, 19):
+          bendingStiffnesses = SIMD3(repeating: 0.350)
+          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+        case (1, 19, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.400)
+          equilibriumAngles = SIMD3(109.30, 107.00, 110.00)
+        case (5, 19, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.460)
+          equilibriumAngles = SIMD3(106.50, 108.70, 109.50)
+        case (1, 19, 19):
+          bendingStiffnesses = SIMD3(repeating: 0.450)
+          equilibriumAngles = SIMD3(repeating: 109.00)
+        case (5, 19, 19):
+          bendingStiffnesses = SIMD3(repeating: 0.350)
+          equilibriumAngles = SIMD3(repeating: 109.40)
+        case (19, 19, 19):
+          if ringType == 6 {
+            // Typo from the MM3 silicon paper and retained in the MM3(2000)
+            // implementation donated to Tinker. Quaternary sp3 carbon has the
+            // parameters 109.5-112.7-111.5, while sp3 silicon *should* have
+            // something similar: 109.5-110.8-111.2. I think 118.00 was a typo
+            // from the column four cells below: 19-22-22. Anything connected to
+            // the other side of a cyclopropane carbon (60°) should have an angle
+            // like 120°. This is not the first typo I have caught in one of
+            // Allinger's research papers, see the note about the MM4 formula for
+            // the Torsion-Stretch cross-term.
+            //
+            // The stiffness does match up. Extrapolating the ratios of 1-1-19 :
+            // 19-19-19 and 1-19-1 : 19-19-19 from 5-membered ring variants, one
+            // gets 0.233 and 0.236 respectively for 19-19-19. That is very close
+            // to 0.25, so I don't think that was messed up.
+            bendingStiffnesses = SIMD3(repeating: 0.250)
+            equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.320)
+            equilibriumAngles = SIMD3(repeating: 106.00)
+          }
+          
+          // Phosphorus
+        case (1, 25, 1):
+          bendingStiffnesses = SIMD3(0.900, 0.725, .nan)
+          equilibriumAngles = SIMD3(94.50, 97.90, .nan)
+        case (1, 1, 25):
+          bendingStiffnesses = SIMD3(0.750, 0.825, 0.725)
+          equilibriumAngles = SIMD3(107.05, 108.25, 109.55)
+          
+          // Sulfur
+        case (5, 1, 15):
+          bendingStiffnesses = SIMD3(repeating: 0.782)
+          equilibriumAngles = SIMD3(108.9, 108.8, 105.8)
+        case (1, 15, 1):
+          bendingStiffnesses = SIMD3(0.920, .nan, .nan)
+          equilibriumAngles = SIMD3(97.2, .nan, .nan)
+        case (1, 1, 15):
           bendingStiffnesses = SIMD3(repeating: 0.975)
-          equilibriumAngles = SIMD3(repeating: 106.2)
+          equilibriumAngles = SIMD3(102.6, 105.7, 107.7)
+        case (5, 123, 5):
+          bendingStiffnesses = SIMD3(0.680, 0.680, .nan)
+          equilibriumAngles = SIMD3(109.1, 107.5, .nan)
+        case (1, 123, 15):
+          bendingStiffnesses = SIMD3(repeating: 0.975)
+          equilibriumAngles = SIMD3(102.6, 110.8, 107.7)
+        case (123, 15, 123):
+          bendingStiffnesses = SIMD3(0.920, .nan, .nan)
+          equilibriumAngles = SIMD3(ringType == 5 ? 96.5 : 97.2, .nan, .nan)
+        case (15, 123, 123):
+          if ringType == 5 {
+            bendingStiffnesses = SIMD3(repeating: 1.050)
+            equilibriumAngles = SIMD3(108.0, 108.0, 108.5)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.975)
+            equilibriumAngles = SIMD3(repeating: 106.2)
+          }
+        case (15, 1, 15), (15, 123, 15):
+          // Grabbing the S-C-S angle parameters from MM3.
+          bendingStiffnesses = SIMD3(repeating: 0.420)
+          equilibriumAngles = SIMD3(repeating: 110.00)
+        default:
+          break
         }
-      case (15, 1, 15), (15, 123, 15):
-        // Grabbing the S-C-S angle parameters from MM3.
-        bendingStiffnesses = SIMD3(repeating: 0.420)
-        equilibriumAngles = SIMD3(repeating: 110.00)
-      default:
+      }
+      guard let bendingStiffnesses,
+            let equilibriumAngles else {
         fatalError("Unrecognized angle: \(sortedCodes)")
       }
       
@@ -278,6 +335,7 @@ extension MM4Parameters {
       
       // MARK: - Bend-Bend, Stretch-Bend, Stretch-Stretch
       
+      let originalCodes = sortedCodes
       sortedCodes.replace(with: .one, where: sortedCodes .== 123)
       sortedCodes = sortAngle(sortedCodes)
       
@@ -289,6 +347,40 @@ extension MM4Parameters {
       if sortedCodes[0] == 5, sortedCodes[2] == 5 {
         bendBendStiffness = 0.000
         stretchBendStiffness = 0.000
+      } else if any(sortedCodes .== 6) {
+        // Oxygen
+        if sortedCodes[1] == 1 {
+          if sortedCodes[0] == 5 && sortedCodes[2] == 6 {
+            bendBendStiffness = 0.20
+          } else if any(sortedCodes .== 5) {
+            bendBendStiffness = 0.24
+          } else {
+            bendBendStiffness = 0.30
+          }
+        } else {
+          // If oxygen is in the center, it's impossible to have a bend-bend
+          // interaction.
+          bendBendStiffness = 0.00
+        }
+        
+        switch (sortedCodes[0], sortedCodes[1], sortedCodes[2]) {
+        case (1, 1, 6):
+          if ringType == 5 && all(originalCodes .== SIMD3(6, 123, 123)) {
+            stretchBendStiffness = 0.50
+          } else {
+            stretchBendStiffness = 0.02
+          }
+        case (5, 1, 6):
+          stretchBendStiffness = 0.36
+        case (1, 6, 1):
+          if ringType == 5 && all(originalCodes .== SIMD3(123, 6, 123)) {
+            stretchBendStiffness = 0.50
+          } else {
+            stretchBendStiffness = -0.12
+          }
+        default:
+          fatalError("Unrecognized oxygen angle: \(sortedCodes)")
+        }
       } else if any(sortedCodes .== 11) {
         // Fluorine
         precondition(
@@ -324,6 +416,11 @@ extension MM4Parameters {
           } else {
             bendBendStiffness = 0.204
             stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
+            
+            // Exception for the nitrogen-containing bond C-C-N.
+            if sortedCodes[0] == 1, sortedCodes[2] == 8 {
+              stretchStretchStiffness = -0.10
+            }
           }
           
           // Nitrogen
@@ -338,6 +435,17 @@ extension MM4Parameters {
             // going to set the default to 123-8-123 outside of a 5-membered
             // ring to that of 1-8-1. Often, the value inside the ring is larger
             // than in typical bonds. Not an order of magnitude smaller.
+            //
+            // On second analysis, this parameter seems completely messed up.
+            // It provides zero information, as the fallback would be 1-8-1, not
+            // 1-8-123. Also, the table is malformatted there. Setting it to
+            // 0.04, the same as the fallback, would be the safest choice.
+            //
+            // Perhaps the purpose was to clear up any confusion, as the
+            // fallback rule was described in a different paper. In the
+            // bend-bend section, a 1-8-123 parameter doesn't exist, so no
+            // extra explanation is required to specify the 123-8-123 case.
+            // Still, the presence of the 5-ring restriction is very ambiguous.
             stretchBendStiffness = (ringType == 5) ? 0.04 : 0.04
           } else {
             fatalError("Unrecognized nitrogen angle: \(sortedCodes)")
@@ -351,12 +459,6 @@ extension MM4Parameters {
           } else {
             bendBendStiffness = 0.30
             stretchBendStiffness = 0.06
-          }
-          
-          // Exception for the nitrogen-containing bond C-C-N.
-          if sortedCodes[0] == 1, sortedCodes[2] == 8 {
-            stretchBendStiffness2 = 0
-            stretchStretchStiffness = -0.10
           }
           
           // Phosphorus
@@ -388,6 +490,10 @@ extension MM4Parameters {
         }
       }
       
+      guard !bendingStiffnesses[angleType - 1].isNaN,
+            !equilibriumAngles[angleType - 1].isNaN else {
+        fatalError("Angle parameter was NaN for angle: \(sortedCodes)")
+      }
       angles.parameters.append(
         MM4AngleParameters(
           bendBendStiffness: bendBendStiffness,
