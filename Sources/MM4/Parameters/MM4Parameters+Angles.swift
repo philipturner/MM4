@@ -300,6 +300,33 @@ extension MM4Parameters {
           // Grabbing the S-C-S angle parameters from MM3.
           bendingStiffnesses = SIMD3(repeating: 0.420)
           equilibriumAngles = SIMD3(repeating: 110.00)
+          
+          // Germanium
+        case (5, 31, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.423)
+          equilibriumAngles = SIMD3(107.5, 108.5, 109.5)
+        case (1, 31, 5):
+          bendingStiffnesses = SIMD3(repeating: 0.390)
+          equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
+        case (5, 1, 31):
+          bendingStiffnesses = SIMD3(repeating: 0.420)
+          equilibriumAngles = SIMD3(110.0, 111.9, 110.0)
+        case (1, 31, 1):
+          if ringType == 5 {
+            bendingStiffnesses = SIMD3(repeating: 0.570)
+            equilibriumAngles = SIMD3(repeating: 100.0)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.500)
+            equilibriumAngles = SIMD3(109.5, 109.8, 110.5)
+          }
+        case (1, 1, 31):
+          if ringType == 5 {
+            bendingStiffnesses = SIMD3(repeating: 0.680)
+            equilibriumAngles = SIMD3(repeating: 105.5)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.450)
+            equilibriumAngles = SIMD3(repeating: 109.4)
+          }
         default:
           break
         }
@@ -478,12 +505,26 @@ extension MM4Parameters {
           
           // Sulfur
         case 15:
+          // There cannot be a bend-bend interaction around a divalent sulfur.
           bendBendStiffness = 0.000
           if all(sortedCodes .== SIMD3(1, 15, 1)) {
             stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
           } else {
             fatalError("Unrecognized sulfur angle: \(sortedCodes)")
           }
+          
+          // Germanium
+        case 31:
+          // The parameters that Allinger created for MM3(2000) do not list
+          // germanium under bend-bend parameters. Like sulfur, it is almost
+          // certainly zero.
+          bendBendStiffness = 0.000
+          if any(sortedCodes .== 5) {
+            stretchBendStiffness = 0.000
+          } else {
+            stretchBendStiffness = 0.450
+          }
+          
           
         default:
           fatalError("Unrecognized angle: \(sortedCodes)")

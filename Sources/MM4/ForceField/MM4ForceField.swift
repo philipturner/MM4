@@ -9,12 +9,13 @@
 /// modern ab initio calculations.
 ///
 /// The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
-/// restrictions on permitted bond types. For example, only C and Si may bond to
-/// hydrogen. The remaining elements (except silicon) must have all covalent
-/// bonds shared with a carbon atom. In addition, no dissimilar non-H/C atoms
-/// may be separated by a bond once removed. Within these restrictions, there
-/// exists a large variety of permissible structures, more than with exclusively
-/// carbon and hydrogen.
+/// restrictions on permitted bond types. For example, only C, Si, and Ge may
+/// bond to H. Outside of the three permitted H covalent bonds, elements
+/// except C, Si must have all covalent bonds shared with a carbon atom
+/// (silicon may bond to itself). In addition, no dissimilar non-H/C atoms may
+/// be separated by a bond once removed. Within these restrictions, there exists
+/// a large variety of permissible structures, more than with exclusively carbon
+/// and hydrogen.
 ///
 /// All force terms from MM3, and most terms from MM4, are included, except:
 /// - Electronegativity effect correction to equilibrium bond angle

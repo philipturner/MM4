@@ -40,7 +40,7 @@ extension MM4Parameters {
     return atomicNumbers
   }
   
-  static let excluding5RingElements: [UInt8] = [11, 19, 25]
+  static let excluding5RingElements: [UInt8] = [11, 19, 25, 31]
   
   @inline(__always)
   func with5RingsRemoved<T: SIMD>(_ codes: () -> T) -> T
@@ -54,7 +54,7 @@ extension MM4Parameters {
     return output
   }
   
-  static let nonCarbonElements: [UInt8] = [6, 8, 11, 15, 19, 25]
+  static let nonCarbonElements: [UInt8] = [6, 8, 11, 15, 19, 25, 31]
   
   @inline(__always)
   func containsTwoNonCarbons<T: SIMD>(_ codes: T) -> Bool

@@ -189,6 +189,21 @@ extension MM4Parameters {
         stretchingStiffness = (ringType == 5) ? 3.20 : 2.92
         equilibriumLength = (ringType == 5) ? 1.821 : 1.814
         dipoleMoment = (codes[1] == 15) ? +0.70 : -0.70
+        
+        // Germanium
+      case (1, 31):
+        potentialWellDepth = 0.744
+        stretchingStiffness = (ringType == 5) ? 2.95 : 2.72
+        equilibriumLength = (ringType == 5) ? 1.944 : 1.949
+        
+        var dipoleMagnitude: Float = (ringType == 5) ? 0.495 : 0.635
+        dipoleMagnitude *= (codes[1] == 31) ? -1 : +1
+        dipoleMoment = dipoleMagnitude
+      case (5, 31):
+        potentialWellDepth = 0.689
+        stretchingStiffness = 2.55
+        equilibriumLength = 1.529
+        
       default:
         fatalError("Unrecognized bond: \(sortedCodes)")
       }
@@ -338,6 +353,10 @@ extension MM4Parameters {
         case (5, 1, 1, 15):       return (-0.015, nil, 0.62, 0.40)
         case (5, 123, 123, 15):   return (-0.022, nil, 0.62, 0.40)
         case (123, 123, 123, 15): return (-0.015, nil, 0.62, 0.40)
+          
+          // Germanium
+        case (5, 31, 31, 31): return (0.006, nil, 0.62, 0.40)
+        case (5, 31, 31, 1):  return (0.008, nil, 0.62, 0.40)
           
         default: break
         }

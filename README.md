@@ -14,17 +14,19 @@ Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 | Si              | 19  | 19  | not supported | not supported |
 | P (trivalent)   | 25  | 25  | not supported | not supported |
 | S               | 15  | 15  | not supported | not supported |
+| Ge              | 31  | 31  | not supported | not supported |
 
-| Element | H |  C<sub>sp3</sub> | N | O | F | Si | P | S |
-| --------------- | - | - | - | - | - | - | - | - |
-| H               |   | X |   |   |   | X |   |   |
-| C<sub>sp3</sub> | X | X | O | O | O | O | O | O |
-| N               |   | O |   |   |   |   |   |   |
-| O               |   | O |   |   |   |   |   |   |
-| F               |   | O |   |   |   |   |   |   |
-| Si              | X | O |   |   |   | X |   |   |
-| P               |   | O |   |   |   |   |   |   |
-| S               |   | O |   |   |   |   |   |   |
+| Element | H |  C<sub>sp3</sub> | N | O | F | Si | P | S | Ge |
+| --------------- | - | - | - | - | - | - | - | - | - |
+| H               |   | X |   |   |   | X |   |   | X |
+| C<sub>sp3</sub> | X | X | O | O | O | O | O | O | O |
+| N               |   | O |   |   |   |   |   |   |   |
+| O               |   | O |   |   |   |   |   |   |   |
+| F               |   | O |   |   |   |   |   |   |   |
+| Si              | X | O |   |   |   | X |   |   |   |
+| P               |   | O |   |   |   |   |   |   |   |
+| S               |   | O |   |   |   |   |   |   |   |
+| Ge              | X | O |   |   |   |   |   |   |   |
 
 Key:
 - X = nonpolar covalent bond

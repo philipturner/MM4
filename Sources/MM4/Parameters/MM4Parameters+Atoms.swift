@@ -76,6 +76,11 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 25
   case phosphorus = 25
   
+  /// Germanium
+  ///
+  /// MM4 atom code: 31
+  case germanium = 31
+  
   /// Carbon (sp3, 5-ring)
   ///
   /// MM4 atom code: 123
@@ -211,6 +216,9 @@ extension MM4Parameters {
       case 16:
         output = .sulfur
         valenceCount = 2
+      case 32:
+        output = .germanium
+        valenceCount = 4
       default:
         fatalError("Atomic number \(atomicNumber) not recognized.")
       }
@@ -234,7 +242,7 @@ extension MM4Parameters {
   }
   
   func createCenterTypes() {
-    let permittedAtomicNumbers: [UInt8] = [6, 7, 14, 15, 16]
+    let permittedAtomicNumbers: [UInt8] = [6, 7, 8, 14, 15, 16, 31]
     for atomID in atoms.atomicNumbers.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       guard permittedAtomicNumbers.contains(atomicNumber) else {
@@ -308,7 +316,7 @@ extension MM4Parameters {
         // For the same reasons as silicon, don't change the energy of the B-H
         // vdW interaction. If it is actually 0.94x, which I hypothesize it is,
         // very little harm done.
-        epsilon = (heteroatom: 0.014, hydrogen: 0.015)
+        epsilon = (heteroatom: 0.014, hydrogen: 0.0154)
         radius = (heteroatom: 2.150, hydrogen: 3.563 * 0.94)
       case 6:
         let t = Float(hydrogenMassRepartitioning) - 0
@@ -387,6 +395,10 @@ extension MM4Parameters {
         // Scale H-S vdW parameters by 0.94, as suggested for MM4.
         epsilon = (heteroatom: 0.196, hydrogen: 0.0577 * epsilonScale)
         radius = (heteroatom: 2.090, hydrogen: 3.730 * 0.94)
+      case 32:
+        // Treat germanium just like silicon, and don't modify its epsilon.
+        epsilon = (heteroatom: 0.200, hydrogen: 0.0583)
+        radius = (heteroatom: 2.440, hydrogen: 3.835)
       default:
         fatalError("Atomic number \(atomicNumber) not recognized.")
       }
