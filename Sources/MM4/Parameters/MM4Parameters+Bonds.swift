@@ -71,7 +71,7 @@ extension MM4Parameters {
       var equilibriumLength: Float
       var dipoleMoment: Float?
       
-      switch (sortedCodes[0], sortedCodes[1]) {
+      switch (sortedCodes[0], sortedCodes[1]) {        
         // Carbon
       case (1, 1):
         potentialWellDepth = 1.130

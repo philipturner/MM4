@@ -28,6 +28,18 @@ extension MM4Parameters {
     return codes
   }
   
+  /// Fetch atomic numbers from an atom-to-atom map, some of which may be -1.
+  /// Return invalid atoms as zero.
+  @inline(__always)
+  func createAtomicNumbers(map: SIMD4<Int32>) -> SIMD4<UInt8> {
+    var atomicNumbers: SIMD4<UInt8> = .zero
+    for lane in 0..<4 where map[lane] != -1 {
+      let atomID = map[lane]
+      atomicNumbers[lane] = atoms.atomicNumbers[Int(atomID)]
+    }
+    return atomicNumbers
+  }
+  
   static let excluding5RingElements: [UInt8] = [11, 19, 25]
   
   @inline(__always)

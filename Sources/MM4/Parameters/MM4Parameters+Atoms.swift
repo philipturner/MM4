@@ -51,7 +51,7 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 6
   case oxygen = 6
   
-  /// Nitrogen
+  /// Nitrogen (trivalent)
   ///
   /// MM4 atom code: 8
   case nitrogen = 8
@@ -76,10 +76,20 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 25
   case phosphorus = 25
   
+  /// Boron (tetravalent)
+  ///
+  /// MM4 atom code: 27
+  case dativeBoron = 27
+  
   /// Carbon (sp3, 5-ring)
   ///
   /// MM4 atom code: 123
   case cyclopentaneCarbon = 123
+  
+  /// Nitrogen (tetravalent)
+  ///
+  /// MM4 atom code: 198
+  case dativeNitrogen = 198
 }
 
 /// The number of hydrogens surrounding the carbon or silicon.
@@ -159,6 +169,18 @@ extension MM4Parameters {
       case 1:
         output = .hydrogen
         valenceCount = 1
+      case 5:
+        let atomicNumbers = createAtomicNumbers(map: map)
+        var nitrogenMask: SIMD4<UInt8> = .zero
+        nitrogenMask.replace(with: .one, where: atomicNumbers .== 7)
+        let nitrogenCount = nitrogenMask.wrappedSum()
+        
+        if nitrogenCount == 1 {
+          output = .dativeBoron
+          valenceCount = 4
+        } else {
+          fatalError("Boron had invalid number of nitrogen bonds.")
+        }
       case 6:
         let ringType = atoms.ringTypes[atomID]
         switch ringType {
@@ -172,8 +194,20 @@ extension MM4Parameters {
         valenceCount = 4
         supportsHydrogen = true
       case 7:
-        output = .nitrogen
-        valenceCount = 3
+        let atomicNumbers = createAtomicNumbers(map: map)
+        var boronMask: SIMD4<UInt8> = .zero
+        boronMask.replace(with: .one, where: atomicNumbers .== 5)
+        let boronCount = boronMask.wrappedSum()
+        
+        if boronCount == 0 {
+          output = .nitrogen
+          valenceCount = 3
+        } else if boronCount == 1 {
+          output = .dativeNitrogen
+          valenceCount = 4
+        } else {
+          fatalError("Too many borons on a nitrogen.")
+        }
       case 9:
         output = .fluorine
         valenceCount = 1
@@ -273,10 +307,19 @@ extension MM4Parameters {
       var epsilon: (heteroatom: Float, hydrogen: Float)
       var radius: (heteroatom: Float, hydrogen: Float)
       
+      var epsilonScale: Float = 1 / (0.94 * 0.94 * 0.94)
+      epsilonScale *= epsilonScale // sixth power
+      
       switch atomicNumber {
       case 1:
         epsilon = (heteroatom: 0.017, hydrogen: 0.017)
         radius = (heteroatom: 1.640, hydrogen: 1.640)
+      case 5:
+        // For the same reasons as silicon, don't change the energy of the B-H
+        // vdW interaction. If it is actually 0.94x, which I hypothesize it is,
+        // very little harm done.
+        epsilon = (heteroatom: 0.014, hydrogen: 0.015)
+        radius = (heteroatom: 2.150, hydrogen: 3.563 * 0.94)
       case 6:
         let t = Float(hydrogenMassRepartitioning) - 0
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
@@ -348,14 +391,10 @@ extension MM4Parameters {
       case 15:
         // Use the MM3 parameters for phosphorus, as the MM4 paper doesn't
         // contain vdW parameters.
-        var epsilonScale: Float = 1 / (0.94 * 0.94 * 0.94)
-        epsilonScale *= epsilonScale // sixth power
         epsilon = (heteroatom: 0.168, hydrogen: 0.053 * epsilonScale)
         radius = (heteroatom: 2.220, hydrogen: 3.860 * 0.94)
       case 16:
         // Scale H-S vdW parameters by 0.94, as suggested for MM4.
-        var epsilonScale: Float = 1 / (0.94 * 0.94 * 0.94)
-        epsilonScale *= epsilonScale // sixth power
         epsilon = (heteroatom: 0.196, hydrogen: 0.0577 * epsilonScale)
         radius = (heteroatom: 2.090, hydrogen: 3.730 * 0.94)
       default:
