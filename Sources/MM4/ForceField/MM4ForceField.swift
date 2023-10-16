@@ -74,7 +74,7 @@
 ///
 /// > Note: To maximize the simulation speed, hydrogen mass repartitioning (HMR)
 ///   is enabled by default. This method makes hydrogens heaver and makes
-///   non-hydrogen atoms lighter, to decrease the C-H or Si-H stretching
+///   non-hydrogen atoms lighter, to decrease the C-H/Si-H/Ge-H stretching
 ///   frequency. You can, and should, disable HMR for energy-conserving
 ///   simulations where timestep falls below 2 fs. This can be done by setting
 /// <doc:MM4ParametersDescriptor/hydrogenMassRepartitioning> to `0`.
