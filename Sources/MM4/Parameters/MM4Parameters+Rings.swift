@@ -12,7 +12,7 @@
 /// The forcefield parameters may be slightly inaccurate for rings with mixed
 /// carbon and silicon atoms (not sure). In the future, this may be expanded to
 /// 3-atom and 4-atom rings.
-public struct MM4Rings {
+public class MM4Rings {
   /// Groups of atom indices that form a ring.
   public var indices: [SIMD8<Int32>] = []
   

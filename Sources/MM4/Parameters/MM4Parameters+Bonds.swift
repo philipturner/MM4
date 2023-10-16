@@ -8,7 +8,7 @@
 // MARK: - Functions for assigning per-bond parameters.
 
 /// Parameters for a group of 2 atoms.
-public struct MM4Bonds {
+public class MM4Bonds {
   /// Each value corresponds to the bond at the same array index.
   public var extendedParameters: [MM4BondExtendedParameters?] = []
   

@@ -8,7 +8,7 @@
 // MARK: - Functions for assigning per-angle parameters.
 
 /// Parameters for a group of 3 atoms.
-public struct MM4Angles {
+public class MM4Angles {
   /// Each value corresponds to the angle at the same array index.
   public var extendedParameters: [MM4AngleExtendedParameters?] = []
   

@@ -35,7 +35,7 @@ class MM4StretchForce: MM4Force {
       
       // Units: millidyne-angstrom -> kJ/mol
       var potentialWellDepth = Double(parameters.potentialWellDepth)
-      potentialWellDepth *= MM4_KJPerMolPerAJ
+      potentialWellDepth *= MM4KJPerMolPerAJ
       
       // Units: angstrom^-1 -> nm^-1
       var beta = Double(

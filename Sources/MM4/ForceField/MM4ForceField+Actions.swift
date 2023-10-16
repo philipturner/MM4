@@ -49,7 +49,7 @@ extension MM4ForceField {
   ///   during the minimization. The default value, 0, puts no restrictions on
   ///   the number of evaluations.
   public func minimize(
-    tolerance: Double = 10.0 * MM4_ZJPerKJPerMol,
+    tolerance: Double = 10.0 * MM4ZJPerKJPerMol,
     maxIterations: Int = 0
   ) {
     // Use a different integrator that doesn't incorporate the fusion of

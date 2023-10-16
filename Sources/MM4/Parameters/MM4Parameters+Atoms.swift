@@ -8,7 +8,7 @@
 // MARK: - Functions for assigning per-atom parameters.
 
 /// Parameters for one atom.
-public struct MM4Atoms {
+public class MM4Atoms {
   /// The number of protons in the atom's nucleus.
   public var atomicNumbers: [UInt8] = []
   

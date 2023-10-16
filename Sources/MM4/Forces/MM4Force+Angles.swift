@@ -93,7 +93,7 @@ class MM4BendForce: MM4Force {
       //
       // WARNING: 143 needs to be divided by 2 before it becomes 71.94.
       var bendingStiffness = Double(parameters.bendingStiffness)
-      bendingStiffness *= MM4_KJPerMolPerAJ
+      bendingStiffness *= MM4KJPerMolPerAJ
       bendingStiffness /= 2
       
       // Units: degree -> rad
@@ -105,7 +105,7 @@ class MM4BendForce: MM4Force {
       // This part does not need to be divided by 2; it was never divided by
       // 2 in the first place (2.5118 was used instead of 1.2559).
       var stretchBendStiffness = Double(parameters.stretchBendStiffness)
-      stretchBendStiffness *= MM4_KJPerMolPerAJ
+      stretchBendStiffness *= MM4KJPerMolPerAJ
       
       // Units: angstrom -> nm
       let bondLeft = system.parameters.sortBond(SIMD2(angle[0], angle[1]))
