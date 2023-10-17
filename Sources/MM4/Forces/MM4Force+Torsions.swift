@@ -55,17 +55,16 @@ class MM4TorsionForce: MM4Force {
       // Units: kcal/mol -> kJ/mol
       //
       // WARNING: Divide all Vn torsion parameters by 2.
-      var V1 = Double(parameters.V1)
-      var Vn = Double(parameters.Vn)
-      var V3 = Double(parameters.V3)
-      V1 *= OpenMM_KJPerKcal / 2
-      Vn *= OpenMM_KJPerKcal / 2
-      V3 *= OpenMM_KJPerKcal / 2
+      array[0] = Double(parameters.V1) * OpenMM_KJPerKcal / 2
+      array[1] = Double(parameters.Vn) * OpenMM_KJPerKcal / 2
+      array[2] = Double(parameters.V3) * OpenMM_KJPerKcal / 2
+      array[3] = Double(parameters.n)
       
       // Units: kcal/mol/angstrom -> kJ/mol/nm
       var Kts3 = Double(parameters.Kts3)
       Kts3 *= OpenMM_KJPerKcal
       Kts3 /= OpenMM_NmPerAngstrom
+      array[4] = Kts3
       
       // Assume the bond is already sorted.
       let bond = SIMD2(torsion[1], torsion[2])
@@ -81,17 +80,12 @@ class MM4TorsionForce: MM4Force {
       // Units: angstrom -> nm
       var equilibriumLength = Double(bondParameters.equilibriumLength)
       equilibriumLength *= OpenMM_NmPerAngstrom
+      array[5] = equilibriumLength
       
       let reorderedTorsion = system.reorder(torsion)
       for lane in 0..<4 {
         particles[lane] = reorderedTorsion[lane]
       }
-      array[0] = V1
-      array[1] = Vn
-      array[2] = V3
-      array[3] = Double(parameters.n)
-      array[4] = Kts3
-      array[5] = equilibriumLength
       force.addBond(particles: particles, parameters: array)
     }
     super.init(force: force, forceGroup: 1)
@@ -178,7 +172,8 @@ class MM4TorsionExtendedForce: MM4Force {
     
     let particles = OpenMM_IntArray(size: 4)
     let array = OpenMM_DoubleArray(
-      size: 5 /*Vn*/ + 3 * 4 /*Kts*/ + 2 * 4 /*Ktb*/ + 1 /*Kbtb*/)
+      size: 5 /*Vn*/ + 3 * 3 /*Kts*/ + 3 /*l_0*/
+      + 2 * 3 /*Ktb*/ + 1 /*Kbtb*/ + 2 /*theta_0*/)
     let bonds = system.parameters.bonds
     let angles = system.parameters.angles
     let torsions = system.parameters.torsions
@@ -192,14 +187,105 @@ class MM4TorsionExtendedForce: MM4Force {
         fatalError("'n' must be two for extended torsions.")
       }
       
+      // MARK: - Torsion
+      
       // WARNING: Divide all Vn torsion parameters by 2.
-      //
+      array[0] = Double(originalParameters.V1) * OpenMM_KJPerKcal / 2
+      array[1] = Double(originalParameters.Vn) * OpenMM_KJPerKcal / 2
+      array[2] = Double(originalParameters.V3) * OpenMM_KJPerKcal / 2
+      array[3] = Double(parameters.V4) * OpenMM_KJPerKcal / 2
+      array[4] = Double(parameters.V6) * OpenMM_KJPerKcal / 2
+      
+      // MARK: - Torsion-Stretch
+      
+      func createBondParams(_ index: Int) -> SIMD2<Float> {
+        var bond = SIMD2(torsion[index], torsion[index + 1])
+        bond = system.parameters.sortBond(bond)
+        guard let bondID = bonds.map[bond] else {
+          fatalError("Invalid bond.")
+        }
+        
+        // No change in units for stretching stiffness.
+        let bondParameters = bonds.parameters[Int(bondID)]
+        return SIMD2(
+          bondParameters.stretchingStiffness,
+          bondParameters.equilibriumLength)
+      }
+      let bondParamsLeft = createBondParams(0)
+      let bondParamsCenter = createBondParams(1)
+      let bondParamsRight = createBondParams(2)
+      
+      // Units: kcal/mol/angstrom -> kJ/mol/nm
+      var conversionFactors = SIMD3(
+        repeating: OpenMM_KJPerKcal / OpenMM_NmPerAngstrom)
+      let stiffnesses = SIMD3(
+        bondParamsLeft[0],
+        bondParamsRight[0],
+        bondParamsCenter[0])
+      conversionFactors /= SIMD3<Double>(stiffnesses)
+      
+      func addTorsionStretch(
+        _ index: Int,
+        _ tuple: (left: Float, central: Float, right: Float)
+      ) {
+        array[5 + index + 0] = Double(tuple.left) * conversionFactors[0]
+        array[5 + index + 3] = Double(tuple.central) * conversionFactors[1]
+        array[5 + index + 6] = Double(tuple.right) * conversionFactors[2]
+      }
+      addTorsionStretch(0, parameters.Kts1)
+      addTorsionStretch(1, parameters.Kts2)
+      addTorsionStretch(2, parameters.Kts3)
+      
+      // Units: angstrom -> nm
+      array[14] = Double(bondParamsLeft[1]) * OpenMM_NmPerAngstrom
+      array[15] = Double(bondParamsCenter[1]) * OpenMM_NmPerAngstrom
+      array[16] = Double(bondParamsRight[1]) * OpenMM_NmPerAngstrom
+      
+      // MARK: - Torsion-Bend, Bend-Torsion-Bend
+      
       // Bend-torsion-bend should remain unchanged (0.043828 converts directly
       // to attojoules, and should not be divided by 2. Same with torsion-bend,
       // which converts directly without dividing by 2.
       
+      func createAngleParams(_ index: Int) -> Float {
+        var angle = SIMD3(
+          torsion[index], torsion[index + 1], torsion[index + 2])
+        angle = system.parameters.sortAngle(angle)
+        guard let angleID = angles.map[angle] else {
+          fatalError("Invalid bond.")
+        }
+        
+        let angleParameters = angles.parameters[Int(angleID)]
+        return angleParameters.equilibriumAngle
+      }
+      let angleParamsLeft = createAngleParams(0)
+      let angleParamsRight = createAngleParams(1)
+      
+      // Units: millidyne-angstrom/rad -> kJ/mol/rad
+      func addTorsionBend(
+        _ index: Int,
+        _ tuple: (left: Float, right: Float)
+      ) {
+        array[17 + index + 0] = Double(tuple.left) * MM4KJPerMolPerAJ
+        array[17 + index + 3] = Double(tuple.right) * MM4KJPerMolPerAJ
+      }
+      addTorsionBend(0, parameters.Ktb1)
+      addTorsionBend(1, parameters.Ktb2)
+      addTorsionBend(2, parameters.Ktb3)
+      
+      // Units: millidyne-angstrom/rad^2 -> kJ/mol/rad^2
+      array[23] = Double(parameters.Kbtb) * MM4KJPerMolPerAJ
+      
+      // Units: degree -> rad
+      array[24] = Double(angleParamsLeft) * OpenMM_RadiansPerDegree
+      array[25] = Double(angleParamsRight) * OpenMM_RadiansPerDegree
+      
+      let reorderedTorsion = system.reorder(torsion)
+      for lane in 0..<4 {
+        particles[lane] = reorderedTorsion[lane]
+      }
+      force.addBond(particles: particles, parameters: array)
     }
-    
-    fatalError("Not implemented.")
+    super.init(force: force, forceGroup: 2)
   }
 }

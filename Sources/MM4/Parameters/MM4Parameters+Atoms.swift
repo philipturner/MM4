@@ -306,6 +306,8 @@ extension MM4Parameters {
       case 1:
         epsilon = (heteroatom: 0.017, hydrogen: 0.017)
         radius = (heteroatom: 1.640, hydrogen: 1.640)
+        fatalError(
+          "Hydrogen vdW interactions seem to not be from the correct position. The forcefield cannot be tested until this issue is resolved.")
       case 5:
         // For the same reasons as silicon, don't change the energy of the B-H
         // vdW interaction. If it is actually 0.94x, which I hypothesize it is,
