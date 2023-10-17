@@ -14,10 +14,11 @@ extension MM4ForceField {
   /// - Parameter time: The time interval, in picoseconds.
   /// - Parameter maximumTimeStep: The largest time step that may be taken
   ///   during the simulation, in picoseconds.
+  /// - throws: An error if the energy exploded.
   public func simulate(
     time: Double,
     maximumTimeStep: Double = 0.100 / 23 + 1e-8
-  ) {
+  ) throws {
     // If the time doesn't divide evenly into 100 fs, use a temporary
     // integrator for the remainder, potentially with a slightly scaled-down
     // timestep.
@@ -48,10 +49,11 @@ extension MM4ForceField {
   /// - Parameter maxIterations: Maximum number of force evaluations permitted
   ///   during the minimization. The default value, 0, puts no restrictions on
   ///   the number of evaluations.
+  /// - throws: An error if the energy exploded.
   public func minimize(
     tolerance: Double = 10.0 * MM4ZJPerKJPerMol,
     maxIterations: Int = 0
-  ) {
+  ) throws {
     // Use a different integrator that doesn't incorporate the fusion of
     // multiple timesteps. Also, zero out the system's bulk velocity during the
     // minimization. Restore the particles' velocities after the minimization is

@@ -2,11 +2,17 @@
 
 General-purpose simulator for molecular nanotechnology (work in progress)
 
+> Warning: The public Swift API is currently unstable, and subject to change without backward compatibility.
+
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-C Bindings: TODO
+C Bindings: [MM4.h](./Bindings/C/MM4.h)
 
-Python Bindings: TODO
+Python Bindings: [mm4.py](./Bindings/Python/mm4.py)
+
+## Parameters
+
+### Supported Atoms
 
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
@@ -20,6 +26,13 @@ Python Bindings: TODO
 | S               | 15  | 15  | not supported | not supported |
 | Ge              | 31  | 31  | not supported | not supported |
 
+### Supported Bonds
+
+Key:
+- X = nonpolar covalent bond
+- O = polar covalent bond
+- blank = not supported
+
 | Element | H |  C<sub>sp3</sub> | N | O | F | Si | P | S | Ge |
 | --------------- | - | - | - | - | - | - | - | - | - |
 | H               |   | X |   |   |   | X |   |   | X |
@@ -31,8 +44,3 @@ Python Bindings: TODO
 | P               |   | O |   |   |   |   |   |   |   |
 | S               |   | O |   |   |   |   |   |   |   |
 | Ge              | X | O |   |   |   |   |   |   | X |
-
-Key:
-- X = nonpolar covalent bond
-- O = polar covalent bond
-- blank = not supported

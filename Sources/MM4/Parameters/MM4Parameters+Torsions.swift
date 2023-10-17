@@ -434,7 +434,7 @@ extension MM4Parameters {
         case (6, 123, 123, 6):   Ktb_l = SIMD3(-0.005, -0.014, 0.000)
             /**/                 Ktb_r = SIMD3(-0.005, -0.014, 0.000)
         case (6, 123, 123, 123): Ktb_l = SIMD3(0.005, -0.002, 0.001)
-            /**/                 Ktb_r = SIMD3(-0.003, -0.003, 0.000)
+            /**/                 Ktb_r = SIMD3(-0.003, -0.003, -0.000)
         case (123, 6, 123, 123):
           if ringType == 5 {     Ktb_l = SIMD3(-0.010, 0.017, 0.000)
             /**/                 Ktb_r = SIMD3(-0.043, -0.013, -0.002) }
@@ -622,6 +622,7 @@ extension MM4Parameters {
         case (6, 1, 6, 1):
           Kts_l = SIMD3(5.300, 9.650, 0.000)
           Kts_c = SIMD3(-7.000, -6.520, 1.559)
+          Kts_r = SIMD3(0.000, 3.900, 0.000)
         case (123, 6, 123, 6):
           Kts_l = SIMD3(0.000, 14.000, 0.000)
           Kts_c = SIMD3(0.000, -6.920, -2.200)
@@ -732,5 +733,3 @@ extension MM4Parameters {
     }
   }
 }
-
-

@@ -245,15 +245,15 @@ extension MM4Parameters {
             // parameters 109.5-112.7-111.5, while sp3 silicon *should* have
             // something similar: 109.5-110.8-111.2. I think 118.00 was a typo
             // from the column four cells below: 19-22-22. Anything connected to
-            // the other side of a cyclopropane carbon (60°) should have an angle
-            // like 120°. This is not the first typo I have caught in one of
-            // Allinger's research papers, see the note about the MM4 formula for
-            // the Torsion-Stretch cross-term.
+            // the other side of a cyclopropane carbon (60°) should have an
+            // angle like 120°. This is not the first typo I have caught in one
+            // of Allinger's research papers, see the note about the MM4 formula
+            // for the Torsion-Stretch cross-term.
             //
             // The stiffness does match up. Extrapolating the ratios of 1-1-19 :
             // 19-19-19 and 1-19-1 : 19-19-19 from 5-membered ring variants, one
-            // gets 0.233 and 0.236 respectively for 19-19-19. That is very close
-            // to 0.25, so I don't think that was messed up.
+            // gets 0.233 and 0.236 respectively for 19-19-19. That is very
+            // close to 0.25, so I don't think that was messed up.
             bendingStiffnesses = SIMD3(repeating: 0.250)
             equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
           } else {
@@ -308,7 +308,7 @@ extension MM4Parameters {
             equilibriumAngles = SIMD3(repeating: 105.5)
           } else {
             bendingStiffnesses = SIMD3(repeating: 0.450)
-            equilibriumAngles = SIMD3(repeating: 109.4)
+            equilibriumAngles = SIMD3(repeating: 109.3)
           }
         case (5, 1, 31):
           bendingStiffnesses = SIMD3(repeating: 0.420)
@@ -348,9 +348,13 @@ extension MM4Parameters {
           // improve accuracy.
           //
           // The angle might need to be a variable of how many carbon atoms are
-          // connected to the germanium.
+          // connected to the germanium. For now, I will set the type-1 constant
+          // to 109.5, which follows the pattern of carbon, and some general
+          // trends in silicon parameters. I will primarily use this for solid
+          // germanium or germanium carbide, where the equilibrium is supposed
+          // to be at a tetrahedral conformation.
           bendingStiffnesses = SIMD3(repeating: 0.300)
-          equilibriumAngles = SIMD3(repeating: 112.50)
+          equilibriumAngles = SIMD3(109.5, 112.50, 112.50)
           
         default:
           break

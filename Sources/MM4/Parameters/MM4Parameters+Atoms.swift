@@ -302,9 +302,6 @@ extension MM4Parameters {
       var epsilon: (heteroatom: Float, hydrogen: Float)
       var radius: (heteroatom: Float, hydrogen: Float)
       
-      var epsilonScale: Float = 1 / (0.94 * 0.94 * 0.94)
-      epsilonScale *= epsilonScale // sixth power
-      
       switch atomicNumber {
       case 1:
         epsilon = (heteroatom: 0.017, hydrogen: 0.017)
@@ -386,11 +383,11 @@ extension MM4Parameters {
       case 15:
         // Use the MM3 parameters for phosphorus, as the MM4 paper doesn't
         // contain vdW parameters.
-        epsilon = (heteroatom: 0.168, hydrogen: 0.053 * epsilonScale)
+        epsilon = (heteroatom: 0.168, hydrogen: 0.0534)
         radius = (heteroatom: 2.220, hydrogen: 3.860 * 0.94)
       case 16:
         // Scale H-S vdW parameters by 0.94, as suggested for MM4.
-        epsilon = (heteroatom: 0.196, hydrogen: 0.0577 * epsilonScale)
+        epsilon = (heteroatom: 0.196, hydrogen: 0.0577)
         radius = (heteroatom: 2.090, hydrogen: 3.730 * 0.94)
       case 32:
         // Treat germanium just like silicon, and don't modify its epsilon.
