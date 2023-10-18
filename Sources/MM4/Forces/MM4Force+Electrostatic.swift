@@ -7,7 +7,8 @@
 
 // Electrostatic force, using an interaction group to mask out neutral atoms
 class MM4ElectrostaticForce: MM4Force {
-  
+  // Don't remove 1,4 particles from the electrostatic exception force. The
+  // correction force will "undo" the actions of each unwanted torsion.
 }
 
 // ========================================================================== //

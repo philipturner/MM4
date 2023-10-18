@@ -174,16 +174,15 @@ class MM4BendBendForce: MM4Force {
         energy += "bendBend\(interaction[0])\(interaction[1])"
         energy += " = term\(interaction[0]) * term\(interaction[1]);\n"
       }
-      for i in 0..<angleCount {
-        energy += "term\(i) = bendBendStiffness\(i) * deltaTheta\(i);\n"
-      }
       
       // The center particle is always first, so shift the index sequence by +1
       // before entering into the energy expression.
       for i in 0..<angleCount {
-        let indices = indexSequence[i]
+        energy += "term\(i) = bendBendStiffness\(i) * deltaTheta\(i);\n"
         energy += "deltaTheta\(i) = "
-        energy += "angle(p\(1 + indices[0]), p0, p\(1 + indices[1]))"
+        
+        let sequence = indexSequence[i]
+        energy += "angle(p\(1 + sequence[0]), p0, p\(1 + sequence[1]))"
         energy += " - equilibriumAngle\(i);\n";
       }
       return OpenMM_CustomCompoundBondForce(
@@ -199,9 +198,9 @@ class MM4BendBendForce: MM4Force {
       OpenMM_IntArray(size: 1 + 3),
       OpenMM_IntArray(size: 1 + 4)
     ]
-    let arrays = [
+    let parameterArrays = [
       OpenMM_DoubleArray(size: 3 * 2),
-      OpenMM_DoubleArray(size: 4 * 2)
+      OpenMM_DoubleArray(size: 6 * 2)
     ]
     let atoms = system.parameters.atoms
     let angles = system.parameters.angles
@@ -224,7 +223,34 @@ class MM4BendBendForce: MM4Force {
         continue
       }
       
-      let numAngles = (valenceCount == 3) ? 3 : 6
+      let angleCount = (valenceCount == 3) ? 3 : 6
+      let arrayIndex = (valenceCount == 3) ? 0 : 1
+      let particles = particleArrays[arrayIndex]
+      let map = system.parameters.atomsToAtomsMap[atomID]
+      particles[0] = atomID
+      for i in 0..<valenceCount {
+        particles[1 + i] = Int(map[i])
+      }
+      
+      let array = parameterArrays[arrayIndex]
+      for i in 0..<angleCount {
+        let sequence = indexSequence[i]
+        var angle = SIMD3(
+          map[sequence[0]], Int32(truncatingIfNeeded: atomID), map[sequence[1]])
+        angle = system.parameters.sortAngle(angle)
+        guard let angleID = angles.map[angle] else {
+          fatalError("Angle did not exist.")
+        }
+        
+        let parameters = angles.parameters[Int(angleID)]
+        var bendBendStiffness = Double(parameters.bendBendStiffness)
+        bendBendStiffness *= MM4KJPerMolPerAJ
+        array[2 * i + 0] = bendBendStiffness
+        
+        var equilibriumAngle = Double(parameters.equilibriumAngle)
+        equilibriumAngle *= OpenMM_RadiansPerDegree
+        array[2 * i + 1] = equilibriumAngle
+      }
     }
     super.init(forces: forces, forceGroup: 1)
   }
