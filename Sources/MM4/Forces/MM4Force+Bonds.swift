@@ -53,6 +53,6 @@ class MM4StretchForce: MM4Force {
       array[2] = equilibriumLength
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(force: force, forceGroup: 2)
+    super.init(forces: [force], forceGroup: 2)
   }
 }

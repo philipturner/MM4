@@ -9,13 +9,13 @@ import OpenMM
 
 class MM4Force {
   /// The OpenMM object containing the force.
-  var force: OpenMM_Force
+  var forces: [OpenMM_Force]
   
   /// How many times to evaluate this force per timestep.
   var forceGroup: Int
   
-  init(force: OpenMM_Force, forceGroup: Int) {
-    self.force = force
+  init(forces: [OpenMM_Force], forceGroup: Int) {
+    self.forces = forces
     self.forceGroup = forceGroup
   }
   

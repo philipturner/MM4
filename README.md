@@ -33,7 +33,7 @@ Key:
 - O = polar covalent bond
 - blank = not supported
 
-| Element | H |  C<sub>sp3</sub> | N | O | F | Si | P | S | Ge |
+| Element | H | C<sub>sp3</sub> | N | O | F | Si | P | S | Ge |
 | --------------- | - | - | - | - | - | - | - | - | - |
 | H               |   | X |   |   |   | X |   |   | X |
 | C<sub>sp3</sub> | X | X | O | O | O | O | O | O | O |

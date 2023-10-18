@@ -133,7 +133,7 @@ class MM4BendForce: MM4Force {
       array[4] = createLength(bondRight)
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(force: force, forceGroup: 2)
+    super.init(forces: [force], forceGroup: 1)
   }
 }
 
@@ -141,9 +141,95 @@ class MM4BendForce: MM4Force {
 ///
 /// This object may be deleted during a future optimization.
 class MM4BendBendForce: MM4Force {
-  
+  required init(system: MM4System) {
+    // Sequence of indices for both generating energy expressions and fetching
+    // angles during per-atom iteration.
+    let indexSequence: [SIMD2<Int>] = [
+      SIMD2(0, 1), SIMD2(1, 2), SIMD2(2, 0),
+      SIMD2(0, 3), SIMD2(1, 3), SIMD2(2, 3)
+    ]
+    
+    // Make a different optimized bend-bend force for trivalent and tetravalent
+    // atoms.
+    func makeForce(
+      valenceCount: Int, angleCount: Int
+    ) -> OpenMM_CustomCompoundBondForce {
+      var energy: String = ""
+      var interactions: [SIMD2<Int>] = []
+      for i in 0..<angleCount {
+        for j in (i + 1)..<angleCount {
+          interactions.append(SIMD2(i, j))
+        }
+      }
+      energy += "-("
+      for (index, interaction) in interactions.enumerated() {
+        energy += "bendBend\(interaction[0])\(interaction[1])"
+        if index < interactions.count - 1 {
+          energy += " + "
+        } else {
+          energy += ");\n"
+        }
+      }
+      for interaction in interactions {
+        energy += "bendBend\(interaction[0])\(interaction[1])"
+        energy += " = term\(interaction[0]) * term\(interaction[1]);\n"
+      }
+      for i in 0..<angleCount {
+        energy += "term\(i) = bendBendStiffness\(i) * deltaTheta\(i);\n"
+      }
+      
+      // The center particle is always first, so shift the index sequence by +1
+      // before entering into the energy expression.
+      for i in 0..<angleCount {
+        let indices = indexSequence[i]
+        energy += "deltaTheta\(i) = "
+        energy += "angle(p\(1 + indices[0]), p0, p\(1 + indices[1]))"
+        energy += " - equilibriumAngle\(i);\n";
+      }
+      return OpenMM_CustomCompoundBondForce(
+        numParticles: 1 + valenceCount, energy: energy)
+    }
+    
+    // These is no bend-bend force for divalent atoms.
+    let trivalentForce = makeForce(valenceCount: 3, angleCount: 3)
+    let tetravalentForce = makeForce(valenceCount: 4, angleCount: 6)
+    let forces = [trivalentForce, tetravalentForce]
+    
+    let particleArrays = [
+      OpenMM_IntArray(size: 1 + 3),
+      OpenMM_IntArray(size: 1 + 4)
+    ]
+    let arrays = [
+      OpenMM_DoubleArray(size: 3 * 2),
+      OpenMM_DoubleArray(size: 4 * 2)
+    ]
+    let atoms = system.parameters.atoms
+    let angles = system.parameters.angles
+    for atomID in atoms.atomicNumbers.indices {
+      let atomicNumber = atoms.atomicNumbers[atomID]
+      var valenceCount: Int
+      switch atomicNumber {
+      case 1: valenceCount = 1 // H
+      case 6: valenceCount = 4 // C
+      case 7: valenceCount = 3 // N
+      case 8: valenceCount = 2 // O
+      case 9: valenceCount = 1 // F
+      case 14: valenceCount = 4 // Si
+      case 15: valenceCount = 3 // P
+      case 16: valenceCount = 2 // S
+      case 32: valenceCount = 4 // Ge
+      default: fatalError("Atomic number not recognized: \(atomicNumber)")
+      }
+      if valenceCount < 3 {
+        continue
+      }
+      
+      let numAngles = (valenceCount == 3) ? 3 : 6
+    }
+    super.init(forces: forces, forceGroup: 1)
+  }
 }
 
-class MM4BendExtendedForc: MM4Force {
+class MM4BendExtendedForce: MM4Force {
   
 }
