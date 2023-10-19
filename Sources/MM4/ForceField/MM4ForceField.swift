@@ -5,6 +5,19 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
+/// A configuration for a force field simulator.
+public class MM4ForceFieldDescriptor {
+  /// Required. The set of parameters defining the forcefield.
+  public var parameters: MM4Parameters?
+  
+  /// Required. The position (in nanometers) of each atom's nucleus.
+  public var positions: [SIMD3<Float>]?
+  
+  public init() {
+    
+  }
+}
+
 /// The MM2 force field used to create _Nanosystems (1992)_, but updated with
 /// modern ab initio calculations.
 ///
@@ -105,53 +118,6 @@ public class MM4ForceField {
       fatalError("No parameters were specified for the force field.")
     }
     system = MM4System(parameters: parameters)
-  }
-}
-
-// Deviating from the usual convention, and declaring the descriptor after the
-// object it creates. This is to emphasize the long documentation comment above.
-
-/// A configuration for a force field simulator.
-public class MM4ForceFieldDescriptor {
-  /// Optional. The constant force (in piconewtons) exerted on each atom.
-  public var externalForces: [SIMD3<Float>]?
-  
-  /// Required. The set of parameters defining the forcefield.
-  public var parameters: MM4Parameters?
-  
-  /// Required. The position (in nanometers) of each atom's nucleus.
-  public var positions: [SIMD3<Float>]?
-  
-  /// Optional. Atom indices for each rigid body.
-  ///
-  /// Rigid bodies should have atoms laid out contiguously in memory, in Morton
-  /// order. This format ensures spatial locality, which increases performance
-  /// of nonbonded forces. Therefore, rigid bodies must be entered as contiguous
-  /// ranges of the atom list.
-  ///
-  /// The set of rigid bodies must cover every atom in the system. No two ranges
-  /// may overlap the same atom. If the array of rigid bodies is empty, it
-  /// defaults to a range encompassing the entire system. This ensures the
-  /// closed system's net momentum stays conserved.
-  public var rigidBodies: [Range<Int>]?
-  
-  /// Optional. Whether each atom's absolute position should never change.
-  ///
-  /// This is implemented by setting the particle's mass and velocity to zero.
-  ///
-  /// > Warning: Stationary atoms may cause energy measurements to be
-  /// nonsensical. This needs to be investigated further.
-  public var stationaryAtoms: [Bool]?
-  
-  /// Optional. The velocity (in nanometers per picosecond) of each atom at the
-  /// start of the simulation.
-  ///
-  /// These are added to thermal velocities in a way that conserves each rigid
-  /// body's overall momentum.
-  public var velocities: [SIMD3<Float>]?
-  
-  public init() {
-    
   }
 }
 

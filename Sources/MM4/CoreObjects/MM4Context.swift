@@ -5,10 +5,14 @@
 //  Created by Philip Turner on 10/3/23.
 //
 
+import OpenMM
+
 /// Stores an OpenMM context generated from an integrator variant.
 class MM4Context {
+  var context: OpenMM_Context
+  
   init(system: MM4System, integrator: MM4Integrator) {
-    
+    fatalError("Not implemented.")
   }
 }
 

@@ -8,11 +8,11 @@
 /// A configuration for a set of force field parameters.
 public class MM4ParametersDescriptor {
   /// Required. The number of protons in the atom's nucleus.
-  public var atomicNumbers: [UInt8] = []
+  public var atomicNumbers: [UInt8]?
   
   /// Required. Pairs of atom indices representing (potentially multiple)
   /// covalent bonds.
-  public var bonds: [SIMD2<UInt32>] = []
+  public var bonds: [SIMD2<UInt32>]?
   
   /// Optional. The bond order for each covalent bond, which may be fractional.
   ///
@@ -84,18 +84,24 @@ public class MM4Parameters {
   /// into the initializer, then try a different one if it fails. This removes
   /// the need to reimplement some of that logic in an automated search program.
   public init(descriptor: MM4ParametersDescriptor) throws {
+    // Ensure the required descriptor properties were set.
+    guard let descriptorAtomicNumbers = descriptor.atomicNumbers,
+          let descriptorBonds = descriptor.bonds else {
+      fatalError("Descriptor did not have any atomic numbers or bonds.")
+    }
+    
     // Check the bond orders.
     if let bondOrders = descriptor.bondOrders {
       precondition(
-        bondOrders.allSatisfy { $0 == 1 }, "Pi bonds not supported yet.")
+        bondOrders.allSatisfy { $0 == 1 }, "Pi bonds are not supported yet.")
     }
     
     // Compile the bonds into a map.
-    bondsToAtomsMap = .allocate(capacity: descriptor.bonds.count + 1)
+    bondsToAtomsMap = .allocate(capacity: descriptorBonds.count + 1)
     bondsToAtomsMap += 1
     bondsToAtomsMap[-1] = SIMD2(repeating: -1)
-    for bondID in 0..<descriptor.bonds.count {
-      var bond = descriptor.bonds[bondID]
+    for bondID in 0..<descriptorBonds.count {
+      var bond = descriptorBonds[bondID]
       
       // Sort the indices in the bond, so the lower appears first.
       bond = SIMD2(bond.min(), bond.max())
@@ -103,7 +109,7 @@ public class MM4Parameters {
       bonds.indices.append(SIMD2(truncatingIfNeeded: bond))
     }
     
-    atoms.atomicNumbers = descriptor.atomicNumbers
+    atoms.atomicNumbers = descriptorAtomicNumbers
     atomsToBondsMap = .allocate(capacity: atoms.atomicNumbers.count + 1)
     atomsToBondsMap += 1
     atomsToBondsMap[-1] = SIMD4(repeating: -1)
