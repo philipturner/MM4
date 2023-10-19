@@ -27,8 +27,8 @@ class MM4System {
     // - [x] Angles
     // - [x] Bonds
     // - [ ] Electrostatic
-    // - [ ] External
-    // - [ ] Nonbonded
+    // - [x] External
+    // - [x] Nonbonded
     // - [x] Torsions
   }
 }

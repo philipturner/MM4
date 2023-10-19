@@ -43,7 +43,7 @@ class MM4NonbondedForce: MM4Force {
     force.cutoffDistance = cutoff
     force.switchingDistance = cutoff * pow(1.0 / 3, 1.0 / 6)
     
-    let array = OpenMM_DoubleArray(size: 3)
+    let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
     for atomID in atoms.atomicNumbers.indices {
       let parameters = atoms.nonbondedParameters[atomID]
@@ -57,7 +57,6 @@ class MM4NonbondedForce: MM4Force {
       let (radius, hydrogenRadius) = parameters.radius
       array[2] = Double(radius) * OpenMM_NmPerAngstrom
       array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
-      
       force.addParticle(parameters: array)
     }
     

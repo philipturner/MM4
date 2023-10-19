@@ -5,10 +5,61 @@
 //  Created by Philip Turner on 10/14/23.
 //
 
-// Electrostatic force, using an interaction group to mask out neutral atoms
+import OpenMM
+
+// Electrostatic force, using an interaction group to mask out neutral atoms.
 class MM4ElectrostaticForce: MM4Force {
-  // Don't remove 1,4 particles from the electrostatic exception force. The
-  // correction force will "undo" the actions of each unwanted torsion.
+  required init(system: MM4System) {
+    let vacuumPermittivity: Double = 8.8541878128e-12
+    let coulombConstant = 1 / (4 * Double.pi * vacuumPermittivity)
+    var scaleFactor = coulombConstant
+    
+    let coulombsPerElementaryCharge: Double = 801088317 / 5e27
+    scaleFactor *= coulombsPerElementaryCharge * coulombsPerElementaryCharge
+    
+    let metersPerNm: Double = 1e-9
+    scaleFactor /= metersPerNm
+    
+    // Units: J -> aJ -> kJ/mol
+    let AJPerJ: Double = 1e18
+    scaleFactor *= AJPerJ * MM4KJPerMolPerAJ
+    
+    let force = OpenMM_NonbondedForce()
+    let atoms = system.parameters.atoms
+    let set = OpenMM_IntSet()
+    for atomID in atoms.atomicNumbers.indices {
+      var charge: Float = 0
+      if let extendedParameters = atoms.extendedParameters[atomID] {
+        charge = extendedParameters.charge
+        set.insert(atomID)
+      }
+      force.addParticle(charge: Double(charge), sigma: 0.01, epsilon: 0)
+    }
+    
+    // Don't remove 1,4 particles from the electrostatic exception force. The
+    // correction force will "undo" the actions of each unwanted torsion.
+    let bonds = system.parameters.bonds
+    let bondPairs = OpenMM_BondArray(size: bonds.indices.count)
+    for bondID in bonds.indices.indices {
+      let bond = bonds.indices[bondID]
+      bondPairs[bondID] = system.reorder(bond)
+    }
+    force.createExceptionsFromBonds(
+      bondPairs, coulomb14Scale: 1.0, lj14Scale: 0.0)
+    
+    // Next, use reaction field with an extremely conservative cutoff.
+    //
+    // Source for initial choice of parameters:
+    // https://pubs.rsc.org/en/content/articlehtml/2020/cp/d0cp03835k
+    //
+    // TODO: Add the necessary OpenMM bindings
+//    force.nonbondedMethod = .cutoffNonPeriodic
+//    force.useSwitchingFunction = true
+//    force.cutoffDistance = 1.4
+//    force.switchingDistance = 1.4 - 0.5
+    
+    super.init(forces: [force], forceGroup: 2)
+  }
 }
 
 // ========================================================================== //
@@ -16,7 +67,7 @@ class MM4ElectrostaticForce: MM4Force {
 // Create a counterforce at short range that corrects for 1/2 of a
 // dipole falling on the 1-3 border. In the paper about fluorine, Allinger
 // mentioned some 1-4 fluorines on fluoroethane having a repulsive effect
-// from their dipoles. This suggests 1-4 interactions ("sclfac = 1.000") are
+// from their dipoles. This suggests 1-4 interactions ("sclfac = 1.000"?) are
 // included, but perhaps not the 1-3 interactions.
 //
 // Create a different force to handle the dipole-dipole interactions along
@@ -96,3 +147,4 @@ class MM4ElectrostaticExceptionForce: MM4Force {
   // dipole-dipole = -mu1 mu2 / 4 pi epsilon_0 r_12^3
   //                  * (cos(omega) - 3(cos(theta1) * cos(theta2))
 }
+

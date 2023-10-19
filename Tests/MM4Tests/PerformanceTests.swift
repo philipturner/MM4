@@ -8,8 +8,7 @@
 import Foundation
 
 // The initial tests should be for forcefield correctness. At another time, in
-// the distant future, it will be optimized for performance, removing the O(n^2)
-// scaling.
+// the distant future, it will be optimized for performance.
 //
 // TODO: Setup profiling tests. See whether multicore CPU could help for
 // setting up quick energy minimizations of large nanosystems. The test suite
