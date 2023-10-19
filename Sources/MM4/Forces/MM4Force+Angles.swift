@@ -5,6 +5,7 @@
 //  Created by Philip Turner on 10/8/23.
 //
 
+import Foundation
 import OpenMM
 
 /// Angle bend and stretch-bend force.
@@ -54,9 +55,9 @@ class MM4BendForce: MM4Force {
     let correction = 180 / Float.pi
     // let bendingStiffness = /*71.94*/ 1.00 * bendingStiffness
     let cubicTerm = 0.014 * correction
-    let quarticTerm = 5.6e-5 * correction * correction
-    let quinticTerm = 7.0e-7 * correction * correction * correction
-    let sexticTerm = 2.2e-8  * correction * correction * correction * correction
+    let quarticTerm = 5.6e-5 * pow(correction, 2)
+    let quinticTerm = 7.0e-7 * pow(correction, 3)
+    let sexticTerm = 2.2e-8 * pow(correction, 4)
     
     let force = OpenMM_CustomCompoundBondForce(numParticles: 3, energy: """
       bend + stretchBend;

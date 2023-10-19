@@ -304,8 +304,13 @@ extension MM4Parameters {
       
       switch atomicNumber {
       case 1:
-        epsilon = (heteroatom: 0.017, hydrogen: 0.017)
-        radius = (heteroatom: 1.640, hydrogen: 1.640)
+        // Set the hydrogen parameters to -1, so that a simple maximum
+        // operation can be used to select the parameter for the heteroatom.
+        // Furthermore, multiplication of the two atoms' hydrogen parameters can
+        // be used as efficient logic for checking whether hydrogen exists. If
+        // the result is negative, choose the hydrogen parameters (XOR gate).
+        epsilon = (heteroatom: 0.017, hydrogen: -1)
+        radius = (heteroatom: 1.640, hydrogen: -1)
         fatalError(
           "Hydrogen vdW interactions seem to not be from the correct position. The forcefield cannot be tested until this issue is resolved.")
       case 5:

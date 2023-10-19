@@ -90,7 +90,7 @@ class MM4ElectrostaticForce: MM4Force {
 //         charge-charge forces
 //
 // ========================================================================== //
-class MM4ElectrostaticExceptionForce {
+class MM4ElectrostaticExceptionForce: MM4Force {
   // debye = 0.02081943 electron-nm
   // charge-charge = q1 q2 / 4 pi epsilon_0
   // dipole-dipole = -mu1 mu2 / 4 pi epsilon_0 r_12^3
