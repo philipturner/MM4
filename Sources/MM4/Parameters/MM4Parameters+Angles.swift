@@ -28,7 +28,7 @@ public class MM4Angles {
 /// Parameters for an angle between two bonds, including bending stiffness
 /// and multiplicative contribution to bend-bend stiffness.
 public struct MM4AngleParameters {
-  /// Units: millidyne^2 / radian^2
+  /// Units: millidyne \* angstrom / radian^2
   ///
   /// > WARNING: Convert aJ to kJ/mol.
   public var bendBendStiffness: Float

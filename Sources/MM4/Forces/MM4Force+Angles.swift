@@ -227,9 +227,11 @@ class MM4BendBendForce: MM4Force {
       let arrayIndex = (valenceCount == 3) ? 0 : 1
       let particles = particleArrays[arrayIndex]
       let map = system.parameters.atomsToAtomsMap[atomID]
-      particles[0] = atomID
+      particles[0] = Int(system.reorderedIndices[atomID])
+      
+      let reorderedMap = system.reorder(map)
       for i in 0..<valenceCount {
-        particles[1 + i] = Int(map[i])
+        particles[1 + i] = Int(reorderedMap[i])
       }
       
       let array = parameterArrays[arrayIndex]
@@ -242,20 +244,110 @@ class MM4BendBendForce: MM4Force {
           fatalError("Angle did not exist.")
         }
         
+        // Units: millidyne-angstrom/rad^2 -> kJ/mol/rad^2
         let parameters = angles.parameters[Int(angleID)]
         var bendBendStiffness = Double(parameters.bendBendStiffness)
         bendBendStiffness *= MM4KJPerMolPerAJ
         array[2 * i + 0] = bendBendStiffness
         
+        // Units: degree -> rad
         var equilibriumAngle = Double(parameters.equilibriumAngle)
         equilibriumAngle *= OpenMM_RadiansPerDegree
         array[2 * i + 1] = equilibriumAngle
       }
+      forces[arrayIndex].addBond(particles: particles, parameters: array)
     }
     super.init(forces: forces, forceGroup: 1)
   }
 }
 
+/// Type 2 stretch-bend and stretch-stretch force.
 class MM4BendExtendedForce: MM4Force {
-  
+  required init(system: MM4System) {
+    // In the future, create a separate force, only for fluorines that have a
+    // stretch-stretch interaction.
+    let force = OpenMM_CustomCompoundBondForce(numParticles: 5, energy: """
+      stretchBend + stretchStretch;
+      stretchBend = stretchBendStiffness * deltaTheta * (
+        deltaLength4 + deltaLength5
+      );
+      stretchStretch = stretchStretchStiffness * (
+        deltaLength2 * deltaLength3
+      );
+      
+      deltaTheta = angle(p2, p1, p3) - equilibriumAngle;
+      deltaLength2 = distance(p1, p2) - equilibriumLength2;
+      deltaLength3 = distance(p1, p3) - equilibriumLength3;
+      deltaLength4 = distance(p1, p4) - equilibriumLength4;
+      deltaLength5 = distance(p1, p5) - equilibriumLength5;
+      """)
+    force.addPerBondParameter(name: "stretchBendStiffness")
+    force.addPerBondParameter(name: "stretchStretchStiffness")
+    force.addPerBondParameter(name: "equilibriumAngle")
+    force.addPerBondParameter(name: "equilibriumLength2")
+    force.addPerBondParameter(name: "equilibriumLength3")
+    force.addPerBondParameter(name: "equilibriumLength4")
+    force.addPerBondParameter(name: "equilibriumLength5")
+    
+    // Iterate by angles instead of by atoms this time.
+    let particles = OpenMM_IntArray(size: 5)
+    let array = OpenMM_DoubleArray(size: 7)
+    let bonds = system.parameters.bonds
+    let angles = system.parameters.angles
+    for angleID in angles.indices.indices {
+      let angle = angles.indices[angleID]
+      guard let parameters = angles.extendedParameters[angleID] else {
+        continue
+      }
+      let originalParameters = angles.parameters[angleID]
+      
+      // Units: aJ/... -> kJ/mol/...
+      let stretchBendStiffness = Double(parameters.stretchBendStiffness)
+      array[0] = stretchBendStiffness * MM4AJPerKJPerMol
+      
+      // Units: aJ/... -> kJ/mol/...
+      let stretchStretchStiffness = Double(parameters.stretchStretchStiffness)
+      array[1] = stretchStretchStiffness * MM4AJPerKJPerMol
+      
+      // Units: degree -> rad
+      let equilibriumAngle = Double(originalParameters.equilibriumAngle)
+      array[2] = equilibriumAngle * OpenMM_RadiansPerDegree
+      
+      let map = system.parameters.atomsToAtomsMap[Int(angle[1])]
+      var sortedMap: SIMD4<Int32> = .init(repeating: -1)
+      var sortedStart: Int = 0
+      var sortedEnd: Int = 3
+      for lane in 0..<4 {
+        if angle[0] == map[lane] || angle[2] == map[lane] {
+          sortedMap[sortedStart] = map[lane]
+          sortedStart += 1
+        } else {
+          sortedMap[sortedEnd] = map[lane]
+          sortedEnd -= 1
+        }
+      }
+      guard sortedEnd == 2, sortedEnd == 2 else {
+        fatalError("Unexpected number of atoms matched angle.")
+      }
+      
+      let reorderedMap = system.reorder(map)
+      particles[0] = Int(system.reorderedIndices[Int(angle[1])])
+      for i in 0..<4 {
+        particles[1 + i] = Int(reorderedMap[i])
+        
+        // Units: angstrom -> nm
+        var bond = SIMD2(angle[1], sortedMap[i])
+        bond = system.parameters.sortBond(bond)
+        guard let bondID = bonds.map[bond] else {
+          fatalError("Bond was not in the map.")
+        }
+        
+        let parameters = bonds.parameters[Int(bondID)]
+        let equilibriumLength = Double(parameters.equilibriumLength)
+        array[2 + i] = equilibriumLength * OpenMM_NmPerAngstrom
+      }
+      force.addBond(particles: particles, parameters: array)
+    }
+    super.init(forces: [force], forceGroup: 1)
+  }
 }

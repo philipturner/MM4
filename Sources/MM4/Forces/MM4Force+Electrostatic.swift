@@ -86,7 +86,13 @@ class MM4ElectrostaticForce: MM4Force {
 // seem to be parameterized with the dipole-dipole approach with zero
 // attenuation for 1,4 interactions.
 //
+// Update: dipole-dipole forces will be used initially, rather than
+//         charge-charge forces
+//
 // ========================================================================== //
 class MM4ElectrostaticExceptionForce {
-  
+  // debye = 0.02081943 electron-nm
+  // charge-charge = q1 q2 / 4 pi epsilon_0
+  // dipole-dipole = -mu1 mu2 / 4 pi epsilon_0 r_12^3
+  //                  * (cos(omega) - 3(cos(theta1) * cos(theta2))
 }

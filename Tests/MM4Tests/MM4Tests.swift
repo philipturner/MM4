@@ -20,6 +20,9 @@ final class MM4Tests: XCTestCase {
 // handle. Diamond, lonsdaleite, silicon carbide, silicon, germanium carbide,
 // and germanium should all be checked for correctness. We may need to tweak the
 // parameters for germanium to get correct results.
+//
+// End goal: reproduce empirical data with as much accuracy as MM4 claims to
+// have.
 
 final class MM4ParametersTests: XCTestCase {
   // TODO: Measure material properties of solid germanium to check that the
@@ -34,7 +37,8 @@ final class MM4ParametersTests: XCTestCase {
   // - Include 1,3 interactions as well
   //
   // This may also determine whether computing charge-charge or classical
-  // dipole-dipole is measurably more accurate
+  // dipole-dipole is measurably more accurate. The initial implementation will
+  // use dipoles because that's the most likely algorithm used.
   
   // TODO: Use cyclosilane ab initio structures as a test case.
   

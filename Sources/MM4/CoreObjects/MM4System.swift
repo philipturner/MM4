@@ -22,6 +22,14 @@ class MM4System {
     reorderedIndices = parameters.atoms.atomicNumbers.indices.map {
       Int32(parameters.atoms.atomicNumbers.count - 1 - $0)
     }
+    
+    // Forces:
+    // - [x] Angles
+    // - [x] Bonds
+    // - [ ] Electrostatic
+    // - [ ] External
+    // - [ ] Nonbonded
+    // - [x] Torsions
   }
 }
 
