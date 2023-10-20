@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 10/14/23.
 //
 
+import OpenMM
+
 /// Encapsulates an OpenMM system and the associated force objects.
 ///
 /// This object takes ownership of the `parameters` passed in.
@@ -12,6 +14,8 @@ class MM4System {
   var parameters: MM4Parameters
   
   var reorderedIndices: [Int32]
+  
+  var bondPairs: OpenMM_BondArray
   
   init(parameters: MM4Parameters) {
     self.parameters = parameters
@@ -23,10 +27,17 @@ class MM4System {
       Int32(parameters.atoms.atomicNumbers.count - 1 - $0)
     }
     
+    let bonds = parameters.bonds
+    bondPairs = OpenMM_BondArray(size: bonds.indices.count)
+    for bondID in bonds.indices.indices {
+      let bond = bonds.indices[bondID]
+      bondPairs[bondID] = reorder(bond)
+    }
+    
     // Forces:
     // - [x] Angles
     // - [x] Bonds
-    // - [ ] Electrostatic
+    // - [x] Electrostatic
     // - [x] External
     // - [x] Nonbonded
     // - [x] Torsions
