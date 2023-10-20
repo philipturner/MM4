@@ -43,8 +43,14 @@ class MM4ElectrostaticForce: MM4Force {
     let cutoff = MM4NonbondedForce.cutoff
     
     // Source (from OpenMM C++ code):
-    // double reactionFieldK = pow(force.getCutoffDistance(), -3.0)*(force.getReactionFieldDielectric()-1.0)/(2.0*force.getReactionFieldDielectric()+1.0);
-    // double reactionFieldC = (1.0 / force.getCutoffDistance())*(3.0*force.getReactionFieldDielectric())/(2.0*force.getReactionFieldDielectric()+1.0);
+    //
+    // double reactionFieldK = pow(force.getCutoffDistance(), -3.0)
+    // * (force.getReactionFieldDielectric()-1.0)
+    // / (2.0*force.getReactionFieldDielectric()+1.0);
+    //
+    // double reactionFieldC = (1.0 / force.getCutoffDistance())
+    // * (3.0*force.getReactionFieldDielectric())
+    // / (2.0*force.getReactionFieldDielectric()+1.0);
     let reactionFieldK = pow(cutoff, -3) * (dielectricConstant - 1)
     /**/                                 / (2 * dielectricConstant + 1)
     let reactionFieldC = (1 / cutoff) * (3 * dielectricConstant)
@@ -193,7 +199,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     let prefactor = MM4ElectrostaticForce.prefactor
     let (K, C) = MM4ElectrostaticForce.reactionFieldConstants
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      prefactor * (dipoleDipole - chargeCharge);
+      \(prefactor) * (dipoleDipole - chargeCharge);
       
       dipoleDipole = dipoleDipoleProduct * invLength_muij^3 * lengthScale * (
         (xi * xj + yi * yj + zi * zj) - 3 * invLength_muij^2 * (
@@ -236,6 +242,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     
     // Collect all the torsions that exist between a 1,4 pair.
     var pairsToTorsionsMap: [SIMD2<Int32>: SIMD8<Int32>] = [:]
+    let bonds = system.parameters.bonds
     let torsions = system.parameters.torsions
     for torsionID in torsions.indices.indices {
       let torsion = torsions.indices[torsionID]
@@ -256,7 +263,8 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     }
     
     // Create force instances for each exception.
-    var array = OpenMM_DoubleArray(size: 2)
+    let particles = OpenMM_IntArray(size: 4)
+    let array = OpenMM_DoubleArray(size: 2)
     var arrayLeft: [SIMD2<Int32>] = []
     var arrayRight: [SIMD2<Int32>] = []
     for exception in system.parameters.nonbondedExceptions14 {
@@ -268,7 +276,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
       
       for lane in 0..<Int(map[8]) {
         // 'bondLeft' and 'bondRight' are not necessarily sorted in numerical
-        // order, just in a conventient form where the inner atom goes first.
+        // order, just in a convenient form where the inner atom goes first.
         //
         // WARNING: Before entering particles into the OpenMM kernel, swap the
         // two indices in 'bondLeft'.
@@ -294,11 +302,48 @@ class MM4ElectrostaticExceptionForce: MM4Force {
         append(bondRight, array: &arrayRight)
       }
       
+      /// - Returns: Dipole in e-nm, partial charges in e.
+      func project(_ bond: SIMD2<Int32>) -> (
+        dipoleMoment: Float, charge: SIMD2<Float>
+      )? {
+        let sorted = system.parameters.sortBond(bond)
+        guard let bondID = bonds.map[sorted],
+              let parameters = bonds.extendedParameters[Int(bondID)] else {
+          return nil
+        }
+        var partialCharges = system.parameters.projectDipole(
+          parameters.dipoleMoment, bondID: bondID)
+        if any(bond .!= sorted) {
+          partialCharges = SIMD2(partialCharges[1], partialCharges[0])
+        }
+        
+        // Units: elementary charge * angstrom -> elementary charge * nm
+        var dipoleMoment = parameters.dipoleMoment * Float(MM4EAngstromPerDebye)
+        dipoleMoment *= Float(OpenMM_NmPerAngstrom)
+        return (dipoleMoment, partialCharges)
+      }
+      
       for bondLeft in arrayLeft {
+        guard let (dipoleLeft, chargesLeft) = project(bondLeft) else {
+          continue
+        }
         for bondRight in arrayRight {
-          // TODO: Project the dipole onto a partial charge, compute the
-          // dipole-dipole product.
-          fatalError("Not implemented.")
+          guard let (dipoleRight, chargesRight) = project(bondRight) else {
+            continue
+          }
+          
+          let dipoleDipoleProduct = dipoleLeft * dipoleRight
+          let chargeChargeProduct = chargesLeft[1] * chargesRight[1]
+          array[0] = Double(dipoleDipoleProduct)
+          array[1] = Double(chargeChargeProduct)
+          
+          // WARNING: Before entering particles into the OpenMM kernel, swap the
+          // two indices in 'bondLeft'.
+          particles[0] = Int(bondLeft[1])
+          particles[1] = Int(bondLeft[0])
+          particles[2] = Int(bondRight[0])
+          particles[3] = Int(bondRight[1])
+          force.addBond(particles: particles, parameters: array)
         }
       }
     }

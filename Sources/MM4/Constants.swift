@@ -26,3 +26,13 @@ public let MM4AJPerZJ: Double = 0.001
 
 /// 1000
 public let MM4ZJPerAJ: Double = 1000
+
+/// 0.2081943
+///
+/// Converts from debyes to elementary charge \* angstroms.
+public let MM4EAngstromPerDebye: Double = 0.2081943
+
+/// 4.803205
+///
+/// Converts from elementary charge \* angstroms to debyes.
+public let MM4DebyePerEAngstrom: Double = 1 / 0.2081943

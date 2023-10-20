@@ -15,7 +15,7 @@ class MM4TorsionForce: MM4Force {
     //
     // Perhaps only do this for bonds that have no heteroatoms immediately next
     // to them. This should optimize bulk diamond and moissanite, without
-    // introducing extra combination for highly mixed-element compounds. There
+    // introducing extra computation for highly mixed-element compounds. There
     // should be a separate force object for this.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
       torsion + torsionStretch;

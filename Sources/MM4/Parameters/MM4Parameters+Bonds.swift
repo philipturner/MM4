@@ -228,28 +228,39 @@ extension MM4Parameters {
   }
   
   func createPartialCharges() {
-    // Units: proton charge * angstrom
-    //
-    // Dipole moment is positive if it points from a positive charge to a
-    // negative charge. For example, a bond from C -> F should have a positive
-    // dipole moment. A bond from F -> C should have a negative moment.
-    let debye: Float = 0.2081943
     var charges = Array<Float>(repeating: 0, count: atoms.atomicNumbers.count)
-    
     for (bondID, parameters) in bonds.extendedParameters.enumerated() {
       guard let parameters else { continue }
-      let atomsMap = bondsToAtomsMap[bondID]
-      let length = bonds.parameters[bondID].equilibriumLength
-      let dipole = parameters.dipoleMoment
+      let atomCharges = projectDipole(
+        parameters.dipoleMoment, bondID: Int32(bondID))
       
-      // Dipole points from positive to negative (+->)
-      let partialCharge = dipole * debye / length
-      let atomCharges = SIMD2(+partialCharge, -partialCharge)
+      let atomsMap = bondsToAtomsMap[bondID]
       for lane in 0..<2 {
         let atomID = atomsMap[lane]
         charges[Int(atomID)] += atomCharges[lane]
       }
     }
+  }
+  
+  /// - Parameter dipoleMoment: Original dipole moment parameter in elementary
+  /// charge-angstroms.
+  /// - Parameter bondID: Usage of 32-bit integers for `bondID` reflects that
+  /// bond IDs are most often stored in compact 32-bit form, not extended
+  /// 64-bit. This is not something exposed in a public API, so the choice is
+  /// permissible.
+  func projectDipole(_ dipoleMoment: Float, bondID: Int32) -> SIMD2<Float> {
+    // Units: angstrom
+    let length = bonds.parameters[Int(bondID)].equilibriumLength
+    
+    // Units: elementary charge * angstrom
+    //
+    // Dipole moment is positive if it points from a positive charge to a
+    // negative charge. For example, a bond from C -> F should have a positive
+    // dipole moment. A bond from F -> C should have a negative moment.
+    let partialCharge = dipoleMoment * Float(MM4EAngstromPerDebye) / length
+    
+    // Dipole points from positive to negative (+->)
+    return SIMD2(+partialCharge, -partialCharge)
   }
   
   private func electrostaticEffect(sign: Float) -> [Float] {
