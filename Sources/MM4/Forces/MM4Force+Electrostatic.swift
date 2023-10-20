@@ -175,9 +175,9 @@ class MM4ElectrostaticForce: MM4Force {
 //
 // ========================================================================== //
 
-// In the future, an optimization could fuse the O(bonds^2) interactions into a
-// single kernel invocation. This would also pre-compute the O(bonds^2) partial
-// charge interactions to "undo" the regular electrostatic force.
+/// In the future, an optimization could fuse the O(bonds^2) interactions into a
+/// single kernel invocation. This would also pre-compute the O(bonds^2) partial
+/// charge interactions to "undo" the regular electrostatic force.
 class MM4ElectrostaticExceptionForce: MM4Force {
   required init(system: MM4System) {
     // Equation for dipole-dipole interaction:
@@ -187,10 +187,122 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     // charge-charge = q1 q2 / 4 pi epsilon_0
     // dipole-dipole = mu1 mu2 / 4 pi epsilon_0 * (
     //   normalize(p1 - p2) * normalize(p4 - p3) + ...
-    //
-    fatalError("Not implemented.")
     
     // For each bond-bond interaction, compute the projected charge onto each
     // 1,4 atom and undo it.
+    let prefactor = MM4ElectrostaticForce.prefactor
+    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants
+    let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
+      prefactor * (dipoleDipole - chargeCharge);
+      
+      dipoleDipole = dipoleDipoleProduct * invLength_muij^3 * lengthScale * (
+        (xi * xj + yi * yj + zi * zj) - 3 * invLength_muij^2 * (
+          xi * x_torsion + yi * y_torsion + zi * z_torsion
+        ) * (
+          x_torsion * xj + y_torsion * yj + z_torsion * zj
+        )
+      );
+      x_torsion = xi - xj;
+      y_torsion = yi - yj;
+      z_torsion = zi - zj;
+      lengthScale = invLength_mui * invLength_muj;
+      invLength_mui = 1 / sqrt(xi^2 + yi^2 + zi^2);
+      invLength_muj = 1 / sqrt(xj^2 + yj^2 + zj^2);
+      invLength_muij = 1 / sqrt(xij^2 + yij^2 + zij^2);
+      
+      xij = x12 - x34;
+      yij = y12 - y34;
+      zij = z12 - z34;
+      xi = x1 - x12;
+      yi = y1 - y12;
+      zi = z1 - z12;
+      xj = x4 - x34;
+      yj = y4 - y34;
+      zj = z4 - z34;
+      x12 = (x1 + x2) / 2;
+      y12 = (y1 + y2) / 2;
+      z12 = (z1 + z2) / 2;
+      x34 = (x3 + x4) / 2;
+      y34 = (y3 + y4) / 2;
+      z34 = (z3 + z4) / 2;
+      
+      chargeCharge = chargeChargeProduct * (
+        1 / r14 + \(K) * r14^2 - \(C)
+      );
+      r14 = distance(p1, p4);
+      """)
+    force.addPerBondParameter(name: "dipoleDipoleProduct")
+    force.addPerBondParameter(name: "chargeChargeProduct")
+    
+    // Collect all the torsions that exist between a 1,4 pair.
+    var pairsToTorsionsMap: [SIMD2<Int32>: SIMD8<Int32>] = [:]
+    let torsions = system.parameters.torsions
+    for torsionID in torsions.indices.indices {
+      let torsion = torsions.indices[torsionID]
+      var pair = SIMD2(torsion[0], torsion[3])
+      pair = system.parameters.sortBond(pair)
+      
+      guard var map = pairsToTorsionsMap[pair] else {
+        pairsToTorsionsMap[pair] = SIMD8(
+          Int32(torsionID), -1, -1, -1, -1, -1, -1, 1)
+        continue
+      }
+      guard map[8] < 7 else {
+        fatalError("Pair to torsion map was full.")
+      }
+      map[Int(map[8])] = Int32(torsionID)
+      map[8] += 1
+      pairsToTorsionsMap[pair] = map
+    }
+    
+    // Create force instances for each exception.
+    var array = OpenMM_DoubleArray(size: 2)
+    var arrayLeft: [SIMD2<Int32>] = []
+    var arrayRight: [SIMD2<Int32>] = []
+    for exception in system.parameters.nonbondedExceptions14 {
+      guard let map = pairsToTorsionsMap[exception] else {
+        fatalError("No torsions found for 1,4 exception.")
+      }
+      arrayLeft.removeAll(keepingCapacity: true)
+      arrayRight.removeAll(keepingCapacity: true)
+      
+      for lane in 0..<Int(map[8]) {
+        // 'bondLeft' and 'bondRight' are not necessarily sorted in numerical
+        // order, just in a conventient form where the inner atom goes first.
+        //
+        // WARNING: Before entering particles into the OpenMM kernel, swap the
+        // two indices in 'bondLeft'.
+        var torsion = torsions.indices[Int(map[lane])]
+        if torsion[1] == exception[1] || torsion[2] == exception[0] {
+          torsion = SIMD4(torsion[3], torsion[2], torsion[1], torsion[0])
+        }
+        let bondLeft = SIMD2(torsion[1], torsion[0])
+        let bondRight = SIMD2(torsion[2], torsion[3])
+        
+        func append(_ bond: SIMD2<Int32>, array: inout [SIMD2<Int32>]) {
+          for i in 0..<array.count {
+            if all(array[i] .== bond) {
+              break
+            }
+            if i + 1 == array.count {
+              array.append(bond)
+              break
+            }
+          }
+        }
+        append(bondLeft, array: &arrayLeft)
+        append(bondRight, array: &arrayRight)
+      }
+      
+      for bondLeft in arrayLeft {
+        for bondRight in arrayRight {
+          // TODO: Project the dipole onto a partial charge, compute the
+          // dipole-dipole product.
+          fatalError("Not implemented.")
+        }
+      }
+    }
+    super.init(forces: [force], forceGroup: 1)
   }
 }
+

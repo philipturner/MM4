@@ -416,14 +416,23 @@ extension MM4Parameters {
       guard torsion[0] < torsion[3] else {
         fatalError("Torsions were not sorted.")
       }
-      nonbondedExceptions14Map[SIMD2(torsion[0], torsion[3])] = true
+      let pair = sortBond(SIMD2(torsion[0], torsion[3]))
+      nonbondedExceptions14Map[pair] = true
     }
     for angle in angles.indices {
       guard angle[0] < angle[2] else {
         fatalError("Angle was not sorted.")
       }
-      nonbondedExceptions13Map[SIMD2(angle[0], angle[2])] = true
-      nonbondedExceptions14Map[SIMD2(angle[0], angle[2])] = nil
+      let pair = sortBond(SIMD2(angle[0], angle[2]))
+      nonbondedExceptions13Map[pair] = true
+      nonbondedExceptions14Map[pair] = nil
+    }
+    
+    // Remove 1,2 interactions from erroneously being in either map. This can
+    // often happen with 5-membered rings.
+    for bond in bonds.indices {
+      nonbondedExceptions13Map[bond] = nil
+      nonbondedExceptions14Map[bond] = nil
     }
     nonbondedExceptions13 = nonbondedExceptions13Map.keys.map { $0 }
     nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
