@@ -41,8 +41,7 @@ extension MM4ForceField {
   ///
   /// This is one of few such algorithms with O(n) computational complexity. It
   /// is a limited-memory version of BFGS, an O(n^2) algorithm. BFGS, in turn,
-  /// is an improvement on O(n^3) methods such as Newton's method and the
-  /// conjugate gradient method.
+  /// is an improvement on O(n^3) methods such as Newton's method.
   ///
   /// - Parameter tolerance: Accepted uncertainty in potential energy,
   ///   in zeptojoules.
@@ -65,16 +64,17 @@ extension MM4ForceField {
   ///
   /// - Parameter temperature: The temperature to randomize thermal velocites
   ///   at, in kelvin.
-  /// - Parameter atoms: Indices of the atoms to thermalize.
+  /// - Parameter rigidBodies: Indices of the rigid bodies to thermalize.
   ///
   /// Thermalizing is recommended for any simulation that replicates macroscale
   /// conditions. The default is 298.15 K, but other useful temperatures include
   /// liquid nitrogen (77.00 K) and liquid helium (4.15 K).
   ///
-  /// If the list of atoms is not specified, it will thermalize the entire system.
+  /// If the list of rigid bodies is not specified, it will thermalize the
+  /// entire system.
   public func thermalize(
     temperature: Double = 298.15,
-    atoms: [Int]? = nil
+    rigidBodies: [Int]? = nil
   ) {
     
   }

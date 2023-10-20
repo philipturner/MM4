@@ -2,13 +2,9 @@
 
 General-purpose simulator for molecular nanotechnology (work in progress)
 
-> Warning: The public Swift API is currently unstable, and subject to change without backward compatibility.
-
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-C Bindings: [MM4.h](./Bindings/C/MM4.h)
-
-Python Bindings: [mm4.py](./Bindings/Python/mm4.py)
+There may eventually be C and Python bindings for this library.
 
 ## Parameters
 

@@ -42,8 +42,7 @@ public class MM4ForceFieldDescriptor {
 /// multiple vendors. OpenMM avoids any O(n^3) algorithms and provides the
 /// flexibility to opt out of O(n^2) algorithms. For example, the
 /// [minimizer](<doc:MM4ForceField/minimize(tolerance:maxIterations:)>) uses
-/// limited-memory BFGS as a faster alternative to conjugate gradient
-/// minimization.
+/// limited-memory BFGS with O(n) complexity.
 ///
 /// > Note: Throughout the entire software stack, from setup to minimization to
 ///   simulation, this simulator is O(n). Linear scaling exists at every system

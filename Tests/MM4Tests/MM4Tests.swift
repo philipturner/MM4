@@ -11,18 +11,14 @@ final class MM4Tests: XCTestCase {
   }
 }
 
-// TODO: Gather a very large amount of experimental and computed forcefield
-// values from the MM3/MM4 research papers. Measure how well the current
-// implementation reproduces them. This should allow me to detect things I'm
-// doing wrong, such as omitting the "hydrogen reductions".
+// TODO: Pick some examples experimental and computed forcefield values from the
+// MM3/MM4 research papers. Measure how well the current implementation
+// reproduces them. This should be a litmus test of how good the forcefield is.
 //
 // Then, this should expand to measuring bulk properties of materials we want to
 // handle. Diamond, lonsdaleite, silicon carbide, silicon, germanium carbide,
 // and germanium should all be checked for correctness. We may need to tweak the
 // parameters for germanium to get correct results.
-//
-// End goal: reproduce empirical data with as much accuracy as MM4 claims to
-// have.
 
 final class MM4ParametersTests: XCTestCase {
   // TODO: Measure material properties of solid germanium to check that the
