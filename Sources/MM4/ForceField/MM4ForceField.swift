@@ -113,6 +113,10 @@ public class MM4ForceField {
   /// velocities in between context switches.
   var latestContext: MM4Context!
   
+  var _anchors: [Int32] = []
+  
+  var _externalForces: [SIMD3<Float>] = []
+  
   /// Create a simulator using the specified configuration.
   public init(descriptor: MM4ForceFieldDescriptor) {
     MM4Plugins.global.load()
@@ -122,8 +126,13 @@ public class MM4ForceField {
     }
     system = MM4System(parameters: parameters)
     
+    _externalForces = Array(
+      repeating: .zero, count: parameters.atoms.atomicNumbers.count)
+    
     let descriptor = MM4IntegratorDescriptor()
     descriptor.fusedTimeSteps = 1
     switchContext(context(descriptor: descriptor))
+    
+    system.forces.external.updateForces(_externalForces, context: latestContext)
   }
 }

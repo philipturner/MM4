@@ -48,6 +48,8 @@ typedef void MM4State;
 
 #define MM4_ARRAY(expr) expr, int64_t* size
 
+// Instances of 'Bool' in Swift are replaced with 'uint8_t' in C.
+//
 // All arrays for getters/setters should have length equal to the number of
 // atoms in the system. The exception is rigid bodies, which should equal the
 // number of atoms. If an array is null, the function will return the needed
@@ -55,8 +57,6 @@ typedef void MM4State;
 //
 // Unless explicitly stated in this header, you do not need to deallocate an
 // object returned from a function.
-//
-// Instances of 'Bool' in Swift are replaced with 'uint8_t' in C.
 
 // MARK: - CoreObjects/MM4State.swift
 
@@ -80,7 +80,7 @@ void MM4State_getPositions(MM4State* target, MM4_ARRAY(MM4Float3* positions));
 double MM4State_getPotentialEnergy(MM4State* target);
 void MM4State_getVelocities(MM4State* target, MM4_ARRAY(MM4Float3* velocities));
 
-/// You own the object created by this function. You must destroy it.
+/// > WARNING: You own the object created by this function. You must destroy it.
 MM4State* MM4ForceField_state(MM4StateDescriptor* descriptor);
 
 // MARK: - ForceField/MM4ForceField.swift
@@ -103,7 +103,7 @@ void MM4ForceField_thermalize(MM4ForceField* target, double temperature, MM4_ARR
 
 // MARK: - ForceField/MM4ForceField+Properties.swift
 
-void MM4ForceField_getAnchors(MM4ForceField* target, MM4_ARRAY(uint8_t* anchors));
+void MM4ForceField_getAnchors(MM4ForceField* target, MM4_ARRAY(uint32_t* anchors));
 void MM4ForceField_getExternalForces(MM4ForceField* target, MM4_ARRAY(MM4Float3* externalForces));
 void MM4ForceField_getForces(MM4ForceField* target, MM4_ARRAY(MM4Float3* forces));
 double MM4ForceField_getKineticEnergy(MM4ForceField* target);
@@ -112,7 +112,7 @@ double MM4ForceField_getPotentialEnergy(MM4ForceField* target);
 void MM4ForceField_getRigidBodies(MM4ForceField* target, MM4_ARRAY(MM4Range* rigidBodies));
 void MM4ForceField_getVelocities(MM4ForceField* target, MM4_ARRAY(MM4Float3* velocities));
 
-void MM4ForceField_setAnchors(MM4ForceField* target, MM4_ARRAY(const uint8_t* anchors));
+void MM4ForceField_setAnchors(MM4ForceField* target, MM4_ARRAY(const uint32_t* anchors));
 void MM4ForceField_setExternalForces(MM4ForceField* target, MM4_ARRAY(const MM4Float3* externalForces));
 void MM4ForceField_setPositions(MM4ForceField* target, MM4_ARRAY(const MM4Float3* positions));
 void MM4ForceField_setVelocities(MM4ForceField* target, MM4_ARRAY(const MM4Float3* velocities));

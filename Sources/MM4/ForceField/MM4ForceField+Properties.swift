@@ -7,14 +7,16 @@
 
 // Ergonomic APIs for accessing a force field's state. These delegate to
 // a single-property instances of the batched functions, 'update' or 'state'.
-//
+// They are not intended to be used as a primary interface for interacting with
+// the system (they have high overhead). Rather, the calling application's IR
+// should handle most of the data processing. One should only transfer data
+// in/out of OpenMM to set up the simulation.
+
 // Use the following OpenMM functions to update the system.
 // anchors
 //   - setParticleParameters, updateParametersInContext
-//   - setIntegrationForceGroups, swapping integrators
 // externalForces
 //   - setParticleParameters, updateParametersInContext
-//   - setIntegrationForceGroups, swapping integrators
 // positions
 //   - setState
 // velocities
@@ -135,6 +137,16 @@ extension MM4ForceField {
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
   public var rigidBodies: [Range<UInt32>] {
-    get { fatalError("Not implemented.") }
+    get {
+      // Create a new array with a different type. This isn't the fastest
+      // approach, but the property should rarely be used in most cases. The
+      // user should already have a data structure that separates the atoms into
+      // rigid bodies during high-level operations.
+      system.parameters.rigidBodies.map {
+        let lowerBound = UInt32(truncatingIfNeeded: $0.lowerBound)
+        let upperBound = UInt32(truncatingIfNeeded: $0.upperBound)
+        return lowerBound..<upperBound
+      }
+    }
   }
 }

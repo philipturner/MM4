@@ -24,10 +24,88 @@ public class MM4Rings {
 }
 
 extension MM4Parameters {
-  // TODO: Ensure you combine arrays, in a way that minimizes the required
-  // amount of rearrangement during quicksort.
   func createRigidBodies() {
+    struct Group {
+      var indices: [Int32]?
+      var movedIndex: Int32?
+      
+      mutating func add(to other: inout Group, index: Int) {
+        guard indices!.count <= other.indices!.count,
+              movedIndex == nil else {
+          fatalError("Unexpected behavior when combining atom groups.")
+        }
+        other.indices! += indices!
+        movedIndex = Int32(index)
+        indices = nil
+      }
+    }
     
+    var groups = atoms.atomicNumbers.indices.map { i in
+      Group(indices: [Int32(i)], movedIndex: nil)
+    }
+    for bond in bonds.indices {
+      var groupIDs: SIMD2<Int> = SIMD2(-1, -1)
+      for i in 0..<2 {
+        groupIDs[i] = Int(bond[i])
+        var group = groups[groupIDs[i]]
+        while let movedIndex = group.movedIndex {
+          groupIDs[i] = Int(movedIndex)
+          group = groups[groupIDs[i]]
+        }
+      }
+      guard !any(groupIDs .== -1) else {
+        fatalError("Invalid atom groups.")
+      }
+      if groupIDs[0] == groupIDs[1] {
+        // The groups have already been fused.
+        continue
+      }
+      
+      var group0 = groups[groupIDs[0]]
+      var group1 = groups[groupIDs[1]]
+      guard group0.indices != nil,
+            group1.indices != nil else {
+        fatalError("Unexpected behavior before combining atom groups.")
+      }
+      if group0.indices!.count < group1.indices!.count {
+        group0.add(to: &groups[groupIDs[1]], index: groupIDs[1])
+        groups[groupIDs[0]] = group0
+      } else {
+        group1.add(to: &groups[groupIDs[0]], index: groupIDs[0])
+        groups[groupIDs[1]] = group1
+      }
+    }
+    
+    // Check that each group is internally contiguous.
+    var sortedGroups: [Range<Int32>] = []
+    for group in groups where group.movedIndex == nil {
+      guard group.indices != nil else {
+        fatalError("Non-moved group had null indices.")
+      }
+      let indices = group.indices!.sorted()
+      for i in 1..<indices.count {
+        let previous = indices[i - 1]
+        guard previous + 1 == indices[i] else {
+          fatalError("Group indices were not contiguous.")
+        }
+      }
+      sortedGroups.append(indices.first!..<indices.last! + 1)
+    }
+    
+    // Check that the list of groups spans all the atoms, with a 1-to-1 mapping.
+    sortedGroups.sort(by: { $0.lowerBound < $1.lowerBound })
+    guard sortedGroups.count > 0,
+          sortedGroups.first!.first! == 0,
+          sortedGroups.last!.last! == atoms.atomicNumbers.count - 1 else {
+      fatalError("Groups did not cover the entire system.")
+    }
+    for i in 1..<sortedGroups.count {
+      let previous = sortedGroups[i - 1]
+      guard previous.upperBound + 1 == sortedGroups[i].lowerBound else {
+        fatalError("Groups did not constitute a 1-to-1 mapping to atoms.")
+      }
+    }
+    self.rigidBodies = sortedGroups
   }
   
   func createTopology() {
