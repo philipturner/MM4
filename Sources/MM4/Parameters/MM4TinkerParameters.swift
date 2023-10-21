@@ -1,19 +1,19 @@
 //
-//  MM4MM3Parameters.swift
+//  MM4TinkerParameters.swift
 //
 //
 //  Created by Philip Turner on 9/11/23.
 //
 
-class MM4MM3Parameters {
-  static let global = MM4MM3Parameters()
+class MM4TinkerParameters {
+  static let global = MM4TinkerParameters()
   
   init() {
     
   }
 }
 
-extension MM4MM3Parameters {
+extension MM4TinkerParameters {
   static let sourceString = """
 // Originated from Tinker software.
 // License at: https://github.com/TinkerTools/tinker/blob/release/LICENSE.pdf

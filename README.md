@@ -40,3 +40,18 @@ Key:
 | P               |   | O |   |   |   |   |   |   |   |
 | S               |   | O |   |   |   |   |   |   |   |
 | Ge              | X | O |   |   |   |   |   |   | X |
+
+## Roadmap
+
+First development round (current):
+- Internal workings figured out, Swift code written.
+- C API implemented.
+
+Second development round (in ~weeks):
+- Inner workings tested.
+- Python API implemented.
+- Optimize the CPU-side cost of various operations.
+
+Third development round (in ~months):
+- Optimize every force to the physical limits, estimate no more than 50% speedup.
+- Any necessary support for multi-GPU systems.

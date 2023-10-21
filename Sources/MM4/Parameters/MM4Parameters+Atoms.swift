@@ -131,6 +131,8 @@ public struct MM4AtomExtendedParameters {
 }
 
 extension MM4Parameters {
+  // Mass repartitioning is a quite easy task. It can be reimplemented from
+  // scratch in 'RigidBody'.
   func createMasses() {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
       MM4MassParameters.global.mass(atomicNumber: atomicNumber)

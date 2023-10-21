@@ -1,6 +1,6 @@
 //
 //  MM4Integrator.swift
-// 
+//
 //
 //  Created by Philip Turner on 10/3/23.
 //
@@ -12,7 +12,8 @@ class MM4Context {
   var context: OpenMM_Context
   
   init(system: MM4System, integrator: MM4Integrator) {
-    fatalError("Not implemented.")
+    self.context = OpenMM_Context(
+      system: system.system, integrator: integrator.integrator)
   }
 }
 
@@ -28,3 +29,19 @@ extension MM4ForceField {
     return context
   }
 }
+
+extension MM4System {
+  func switchContext(_ context: MM4Context) {
+    if latestContext != nil, latestContext === context {
+      // There is no need to switch contexts.
+      return
+    }
+    
+    if let latestContext {
+      let state = latestContext.context.state(types: [.positions, .velocities])
+      context.context.state = state
+    }
+    latestContext = context
+  }
+}
+

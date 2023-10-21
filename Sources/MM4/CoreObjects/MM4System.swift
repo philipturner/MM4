@@ -26,6 +26,10 @@ class MM4System {
   /// The backing OpenMM system object.
   var system: OpenMM_System
   
+  /// Store the latest context object, so you can transfer positions and
+  /// velocities in between context switches.
+  var latestContext: MM4Context!
+  
   init(parameters: MM4Parameters) {
     self.parameters = parameters
     

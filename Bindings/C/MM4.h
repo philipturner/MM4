@@ -12,11 +12,23 @@
 
 // MARK: - Types
 
+// The C API will be drafted and implemented right now. The Python API will have
+// to wait until the second near-term round of development. During this round,
+// the forcefield will be debugged and Swift test cases will be created. The
+// development round will begin after sufficient progress has been made on the
+// geometry compiler.
+
 __attribute__((aligned(16)))
 struct MM4Float3 {
   float x;
   float y;
   float z;
+};
+
+__attribute__((aligned(8)))
+struct MM4UInt2 {
+  uint32_t x;
+  uint32_t y;
 };
 
 __attribute__((aligned(16)))
@@ -29,6 +41,10 @@ typedef void MM4Error;
 typedef void MM4ForceField;
 typedef void MM4ForceFieldDescriptor;
 typedef void MM4ForceFieldUpdateDescriptor;
+typedef void MM4ParametersDescriptor;
+typedef void MM4Parameters;
+typedef void MM4StateDescriptor;
+typedef void MM4State;
 
 #define MM4_ARRAY(expr) expr, int64_t* size
 
@@ -36,54 +52,65 @@ typedef void MM4ForceFieldUpdateDescriptor;
 // optionals and tuples are not compatible with C. Create a data layout for
 // bridging to C. Request that the user enter a pointer to write the data to. If
 // the value is 'nil', return 'false' from the function to indicate failure.
+//
+// Therefore, as of now, you cannot inspect the individual parameters in an
+// MM4Parameters object without using the Swift API.
 
 // All arrays for getters/setters should have length equal to the number of
 // atoms in the system. The exception is rigid bodies, which should equal the
 // number of atoms. If an array is null, the function will return the needed
 // number of elements in the 'size' argument.
 
+// Unless explicitly stated in this header, you do not need to deallocate an
+// object returned from a function.
+
 // Instances of 'Bool' in Swift are replaced with 'uint8_t' in C.
 
-// Arrays have an efficient method of getting/setting. Instead of entering the
-// entire at once, you can access the data at a per-element granularity. If an
-// index is out of bounds, it returns something invalid (getter) or false
-// (setter). Most arrays have a pre-determined element count, but those that
-// don't have a separate...
-// - Haven't decided how to proceed with this.
-// - Note: the APIs are supposed to be batched. In Swift, there is a warning
-//   about how efficient fetching even a contiguous array can be. However, an
-//   element-by-element API may be extremely useful, even for Swift.
-// - Consider how to implement this internally, e.g. by caching and
-//   automatically flushing changes from a dirty array. This may be more work
-//   and debugging, but a more ergonomic API overall.
-// - Add this API after the first round of debugging/testing. It is bound to
-//   introduce additional bugs, although that doesn't mean it's a bad idea from
-//   a software engineering prospective. A minimum viable product with
-//   sub-optimal performance for some use cases is okay.
-// - TODO: Add this per-element API and finish the C bindings, once development
-//   on MM4 resumes, to add the remaining optimizations.
+// MARK: - CoreObjects/MM4State.swift
 
-// MARK: - Functions
+MM4StateDescriptor* MM4StateDescriptor_init();
+void MM4StateDescriptor_deinit(MM4StateDescriptor* target);
 
-// ForceField/MM4ForceField.swift
+uint8_t MM4StateDescriptor_getEnergy(MM4StateDescriptor* target);
+uint8_t MM4StateDescriptor_getForces(MM4StateDescriptor* target);
+uint8_t MM4StateDescriptor_getPositions(MM4StateDescriptor* target);
+uint8_t MM4StateDescriptor_getVelocities(MM4StateDescriptor* target);
+
+void MM4StateDescriptor_setEnergy(MM4StateDescriptor* target, uint8_t energy);
+void MM4StateDescriptor_setForces(MM4StateDescriptor* target, uint8_t forces);
+void MM4StateDescriptor_setPositions(MM4StateDescriptor* target, uint8_t positions);
+void MM4StateDescriptor_setVelocities(MM4StateDescriptor* target, uint8_t velocities);
+
+void MM4State_destroy(MM4State* target);
+void MM4State_getForces(MM4State* target, MM4_ARRAY(MM4Float3* forces));
+double MM4State_getKineticEnergy(MM4State* target);
+void MM4State_getPositions(MM4State* target, MM4_ARRAY(MM4Float3* positions));
+double MM4State_getPotentialEnergy(MM4State* target);
+void MM4State_getVelocities(MM4State* target, MM4_ARRAY(MM4Float3* velocities));
+
+// You own the object created by this functon. You must destroy it.
+MM4State* MM4ForceField_state(MM4StateDescriptor* descriptor);
+
+// MARK: - ForceField/MM4ForceField.swift
+
 MM4ForceFieldDescriptor* MM4ForceFieldDescriptor_init();
 void MM4ForceFieldDescriptor_deinit(MM4ForceFieldDescriptor* target);
-MM4Parameters* MM4ForceFieldDescriptor_getParameters();
-void MM4ForceFieldDescriptor_setParameters(MM4ForceFieldParameters* parameters);
-// getter for parameters
-// getter for positions
-// setter for parameters
-// setter for positions
+MM4Parameters* MM4ForceFieldDescriptor_getParameters(MM4ForceFieldDescriptor* target);
+void MM4ForceFieldDescriptor_getPositions(MM4ForceFieldDescriptor* target, MM4_ARRAY(MM4Float3* positions));
+void MM4ForceFieldDescriptor_setParameters(MM4ForceFieldDescriptor* target, MM4ForceFieldParameters* parameters);
+void MM4ForceFieldDescriptor_setPositions(MM4ForceFieldDescriptor* target, MM4_ARRAY(const MM4Float3* positions));
 
 MM4ForceField* MM4ForceField_init(MM4ForceFieldDescriptor* descriptor);
 void MM4ForceField_deinit(MM4ForceField* target);
 
-// ForceField/MM4ForceField+Actions.swift
+// MARK: - ForceField/MM4ForceField+Actions.swift
+
 void MM4ForceField_simulate(MM4ForceField* target, double time, double maximumTimeStep, MM4Error** error);
 void MM4ForceField_minimize(MM4ForceField* target, double tolerance, int64_t maxIterations, MM4Error** error);
 void MM4ForceField_thermalize(MM4ForceField* target, double temperature, MM4_ARRAY(const int64_t* rigidBodies));
 
-// ForceField/MM4ForceField+Properties.swift
+// MARK: - ForceField/MM4ForceField+Properties.swift
+
 void MM4ForceField_getExternalForces(MM4ForceField* target, MM4_ARRAY(MM4Float3* externalForces));
 void MM4ForceField_getForces(MM4ForceField* target, MM4_ARRAY(MM4Float3* forces));
 double MM4ForceField_getKineticEnergy(MM4ForceField* target);
@@ -99,14 +126,37 @@ void MM4ForceField_setRigidBodies(MM4ForceField* target, MM4_ARRAY(const MM4Rang
 void MM4ForceField_setStationaryAtoms(MM4ForceField* target, MM4_ARRAY(const uint8_t* stationaryAtoms));
 void MM4ForceField_setVelocities(MM4ForceField* target, MM4_ARRAY(const MM4Float3* velocities));
 
-// ForceField/MM4ForceField+Update.swift
+// MARK: - ForceField/MM4ForceField+Update.swift
+
 MM4ForceFieldUpdateDescriptor* MM4ForceFieldUpdateDescriptor_init();
 void MM4ForceFieldUpdateDescriptor_deinit(MM4ForceFieldUpdateDescriptor* target);
+void MM4ForceFieldUpdateDescriptor_getPositions(MM4ForceFieldDescriptor* target, MM4_ARRAY(MM4Float3* positions));
+void MM4ForceFieldUpdateDescriptor_getVelocities(MM4ForceFieldDescriptor* target, MM4_ARRAY(MM4Float3* velocities));
+void MM4ForceFieldUpdateDescriptor_setPositions(MM4ForceFieldDescriptor* target, MM4_ARRAY(const MM4Float3* positions));
+void MM4ForceFieldUpdateDescriptor_setVelocities(MM4ForceFieldDescriptor* target, MM4_ARRAY(const MM4Float3* velocities));
 
-// MM4Error.swift
+void MM4ForceField_update(MM4ForceFieldUpdateDescriptor* descriptor);
+
+// MARK: - MM4Error.swift
+
 MM4Error* MM4Error_init(const char* description);
 void MM4Error_deinit(MM4Error* target);
 const char* MM4Error_description(MM4Error* target);
+
+// MARK: - Parameters/MM4Parameters.swift
+
+MM4ParametersDescriptor* MM4ParametersDescriptor_init();
+void MM4ParametersDescriptor_destroy(MM4ParametersDescriptor* target);
+
+void MM4ParametersDescriptor_getAtomicNumbers(MM4ParametersDescriptor* target, MM4_ARRAY(uint8_t* atomicNumbers));
+void MM4ParametersDescriptor_getBonds(MM4ParametersDescriptor* target, MM4_ARRAY(MM4UInt2* bonds));
+void MM4ParametersDescriptor_getBondOrders(MM4ParametersDescriptor* target, MM4_ARRAY(float* bondOrders));
+double MM4ParametersDescriptor_getHydrogenMassRepartitioning(MM4ParametersDescriptor* target);
+
+void MM4ParametersDescriptor_setAtomicNumbers(MM4ParametersDescriptor* target, MM4_ARRAY(const uint8_t* atomicNumbers));
+void MM4ParametersDescriptor_setBonds(MM4ParametersDescriptor* target, MM4_ARRAY(const MM4UInt2* bonds));
+void MM4ParametersDescriptor_setBondOrders(MM4ParametersDescriptor* target, MM4_ARRAY(const float* bondOrders));
+void MM4ParametersDescriptor_setHydrogenMassRepartitioning(MM4ParametersDescriptor* target, double hydrogenMassRepartitioning);
 
 #undef MM4_ARRAY
 

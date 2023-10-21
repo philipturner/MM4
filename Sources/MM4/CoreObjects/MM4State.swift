@@ -66,6 +66,7 @@ extension MM4ForceField {
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
     if descriptor.energy {
       // Add the energy flag to the OpenMM state data type.
+      
     }
     if descriptor.forces {
       // Add the forces flag to the OpenMM state data type.
