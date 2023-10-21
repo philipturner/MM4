@@ -134,7 +134,7 @@ class MM4BendForce: MM4Force {
       array[4] = createLength(bondRight)
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 2)
   }
 }
 
@@ -258,7 +258,7 @@ class MM4BendBendForce: MM4Force {
       }
       forces[arrayIndex].addBond(particles: particles, parameters: array)
     }
-    super.init(forces: forces, forceGroup: 1)
+    super.init(forces: forces, forceGroup: 2)
   }
 }
 
@@ -349,6 +349,6 @@ class MM4BendExtendedForce: MM4Force {
       }
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 2)
   }
 }

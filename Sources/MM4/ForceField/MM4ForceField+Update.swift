@@ -16,6 +16,10 @@ public class MM4ForceFieldUpdateDescriptor {
   /// [re-thermalize](<doc:MM4ForceField/thermalize(temperature:atoms:)>) the
   /// system.
   public var velocities: [SIMD3<Float>]?
+  
+  public init() {
+    
+  }
 }
 
 extension MM4ForceField {

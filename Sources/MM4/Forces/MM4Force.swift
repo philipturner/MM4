@@ -15,6 +15,9 @@ class MM4Force {
   var forceGroup: Int
   
   init(forces: [OpenMM_Force], forceGroup: Int) {
+    for force in forces {
+      force.forceGroup = forceGroup
+    }
     self.forces = forces
     self.forceGroup = forceGroup
   }

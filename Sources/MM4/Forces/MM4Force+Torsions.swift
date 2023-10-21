@@ -88,7 +88,7 @@ class MM4TorsionForce: MM4Force {
       }
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 2)
   }
 }
 

@@ -11,10 +11,13 @@ import OpenMM
 ///
 /// This object takes ownership of the `parameters` passed in.
 class MM4System {
+  /// The location where the parameters are owned.
   var parameters: MM4Parameters
   
+  /// Indices may eventually be rearranged for performance.
   var reorderedIndices: [Int32]
   
+  /// Bond pairs using the reordered indices.
   var bondPairs: OpenMM_BondArray
   
   init(parameters: MM4Parameters) {
@@ -41,6 +44,7 @@ class MM4System {
     // - [x] External
     // - [x] Nonbonded
     // - [x] Torsions
+    
   }
 }
 

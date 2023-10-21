@@ -119,10 +119,3 @@ public class MM4ForceField {
     system = MM4System(parameters: parameters)
   }
 }
-
-// MARK: - C Bindings
-
-// The parameters must be arranged in a different way than the Swift API. Swift
-// optionals and tuples are not compatible with C. Create a data layout for
-// bridging to C. Request that the user enter a pointer to write the data to. If
-// the value is 'nil', return 'false' from the function to indicate failure.

@@ -23,8 +23,6 @@
 // MARK: - Batched Functions
 
 extension MM4ForceField {
-  
-  
   /// The net varying force (in piconewtons) exerted on each atom.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
@@ -83,7 +81,10 @@ extension MM4ForceField {
 
 extension MM4ForceField {
   /// The constant force (in piconewtons) exerted on each atom.
-  public var externalForces: [SIMD3<Float>]? {
+  ///
+  /// The default value is all zeroes for every particle, which disables the
+  /// backing OpenMM force object.
+  public var externalForces: [SIMD3<Float>] {
     set { fatalError("Not implemented.") }
     get { fatalError("Not implemented.") }
   }
@@ -96,10 +97,10 @@ extension MM4ForceField {
   /// ranges of the atom list.
   ///
   /// The set of rigid bodies must cover every atom in the system. No two ranges
-  /// may overlap the same atom. If the array of rigid bodies is empty, it
+  /// may overlap the same atom. If the array of rigid bodies is unspecified, it
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
-  public var rigidBodies: [Range<Int>]? {
+  public var rigidBodies: [Range<Int>] {
     set { fatalError("Not implemented.") }
     get { fatalError("Not implemented.") }
   }
@@ -110,7 +111,7 @@ extension MM4ForceField {
   ///
   /// > Warning: Stationary atoms may cause energy measurements to be
   /// nonsensical. This needs to be investigated further.
-  public var stationaryAtoms: [Bool]? {
+  public var stationaryAtoms: [Bool] {
     set { fatalError("Not implemented.") }
     get { fatalError("Not implemented.") }
   }
