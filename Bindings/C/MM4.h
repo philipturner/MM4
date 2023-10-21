@@ -103,18 +103,18 @@ void MM4ForceField_thermalize(MM4ForceField* target, double temperature, MM4_ARR
 
 // MARK: - ForceField/MM4ForceField+Properties.swift
 
+void MM4ForceField_getAnchors(MM4ForceField* target, MM4_ARRAY(uint8_t* anchors));
 void MM4ForceField_getExternalForces(MM4ForceField* target, MM4_ARRAY(MM4Float3* externalForces));
 void MM4ForceField_getForces(MM4ForceField* target, MM4_ARRAY(MM4Float3* forces));
 double MM4ForceField_getKineticEnergy(MM4ForceField* target);
 void MM4ForceField_getPositions(MM4ForceField* target, MM4_ARRAY(MM4Float3* positions));
 double MM4ForceField_getPotentialEnergy(MM4ForceField* target);
 void MM4ForceField_getRigidBodies(MM4ForceField* target, MM4_ARRAY(MM4Range* rigidBodies));
-void MM4ForceField_getStationaryAtoms(MM4ForceField* target, MM4_ARRAY(uint8_t* stationaryAtoms));
 void MM4ForceField_getVelocities(MM4ForceField* target, MM4_ARRAY(MM4Float3* velocities));
 
+void MM4ForceField_setAnchors(MM4ForceField* target, MM4_ARRAY(const uint8_t* anchors));
 void MM4ForceField_setExternalForces(MM4ForceField* target, MM4_ARRAY(const MM4Float3* externalForces));
 void MM4ForceField_setPositions(MM4ForceField* target, MM4_ARRAY(const MM4Float3* positions));
-void MM4ForceField_setStationaryAtoms(MM4ForceField* target, MM4_ARRAY(const uint8_t* stationaryAtoms));
 void MM4ForceField_setVelocities(MM4ForceField* target, MM4_ARRAY(const MM4Float3* velocities));
 
 // MARK: - ForceField/MM4ForceField+Update.swift

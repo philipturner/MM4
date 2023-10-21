@@ -9,14 +9,14 @@
 // a single-property instances of the batched functions, 'update' or 'state'.
 //
 // Use the following OpenMM functions to update the system.
+// anchors
+//   - setParticleParameters, updateParametersInContext
+//   - setIntegrationForceGroups, swapping integrators
 // externalForces
 //   - setParticleParameters, updateParametersInContext
 //   - setIntegrationForceGroups, swapping integrators
 // positions
 //   - setState
-// stationaryAtoms
-//   - setParticleParameters, updateParametersInContext
-//   - setIntegrationForceGroups, swapping integrators
 // velocities
 //   - setState
 
@@ -80,6 +80,28 @@ extension MM4ForceField {
 // MARK: - Simulation Setup
 
 extension MM4ForceField {
+  /// Indices of atoms that should ignore forces exerted on them.
+  ///
+  /// > Warning: Anchors may cause energy measurements to be
+  /// nonsensical. This needs to be investigated further.
+  ///
+  /// This is implemented by treating particle like it has infinite mass (in
+  /// OpenMM, by setting the mass to zero). Either set the particle's velocity
+  /// to zero, or give all anchors in same rigid body the same linear velocity.
+  /// Otherwise, the divergent paths will eventually rip the rigid body apart.
+  /// The library currently doesn't check for adherence to this rule, but may
+  /// enforce it in the future.
+  public var anchors: [UInt32] {
+    get { fatalError("Not implemented.") }
+    set {
+      // Reset every atom's mass to the one provided by the parameters. Then,
+      // selectively set the anchors to zero. This may have more overhead, but
+      // not that much more (~overhead of setting positions). It also reduces
+      // the chance for bugs in a rarely tested edge case.
+      fatalError("Not implemented.")
+    }
+  }
+  
   // The force field could be optimized by deactivating the external force for
   // an incremental gain in performance. However, such fine-tuning optimizations
   // will come at a later date. The current "optimization" is that the force is
@@ -91,8 +113,8 @@ extension MM4ForceField {
   /// The default value is all zeroes for every particle, which may be used to
   /// deactivate the backing OpenMM force object.
   public var externalForces: [SIMD3<Float>] {
-    set { fatalError("Not implemented.") }
     get { fatalError("Not implemented.") }
+    set { fatalError("Not implemented.") }
   }
   
   /// Atom indices for each rigid body.
@@ -112,18 +134,7 @@ extension MM4ForceField {
   /// may overlap the same atom. If the array of rigid bodies is unspecified, it
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
-  public var rigidBodies: [Range<Int>] {
-    get { fatalError("Not implemented.") }
-  }
-  
-  /// Whether each atom's absolute position should never change.
-  ///
-  /// This is implemented by setting the particle's mass and velocity to zero.
-  ///
-  /// > Warning: Stationary atoms may cause energy measurements to be
-  /// nonsensical. This needs to be investigated further.
-  public var stationaryAtoms: [Bool] {
-    set { fatalError("Not implemented.") }
+  public var rigidBodies: [Range<UInt32>] {
     get { fatalError("Not implemented.") }
   }
 }

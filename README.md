@@ -1,10 +1,12 @@
 # MM4
 
-General-purpose simulator for molecular nanotechnology (work in progress)
+General-purpose simulator for molecular nanotechnology.
 
-Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
+Swift API: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-There may eventually be C and Python bindings for this library.
+C API: [MM4.h](./Bindings/C/MM4.h)
+
+Python API: in progress
 
 ## Parameters
 

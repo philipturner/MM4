@@ -5,7 +5,7 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
-// MARK: - Functions for generating rings and assigning ring types.
+// MARK: - Functions for generating the topology and assigning ring types.
 
 /// Parameters for a group of 5 atoms.
 ///
@@ -24,6 +24,12 @@ public class MM4Rings {
 }
 
 extension MM4Parameters {
+  // TODO: Ensure you combine arrays, in a way that minimizes the required
+  // amount of rearrangement during quicksort.
+  func createRigidBodies() {
+    
+  }
+  
   func createTopology() {
     // Traverse the bond topology.
     for atom1 in 0..<Int32(atoms.atomicNumbers.count) {
