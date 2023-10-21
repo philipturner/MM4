@@ -12,6 +12,10 @@ public class MM4ParametersDescriptor {
   
   /// Required. Pairs of atom indices representing (potentially multiple)
   /// covalent bonds.
+  ///
+  /// The bonding topology must arrange atoms from a single rigid body
+  /// contiguously in memory. Otherwise, there will be an error when creating
+  /// the parameters.
   public var bonds: [SIMD2<UInt32>]?
   
   /// Optional. The bond order for each covalent bond, which may be fractional.
@@ -75,9 +79,13 @@ public class MM4Parameters {
   /// Map from atoms to connected atoms that can be efficiently traversed.
   var atomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
   
+  /// Grouping of atoms into rigid bodies.
+  var rigidBodies: [Range<Int32>] = []
+  
   /// Create a set of parameters using the specified configuration.
   ///
-  /// - throws: An error if there wasn't a parameter for a certain atom pair.
+  /// - throws: An error if there wasn't a parameter for a certain atom pair, or
+  ///   the descriptor was invalid.
   ///
   /// This is a throwing initializer, allowing it to be used as a validation
   /// mechanism for structures that are potentially invalid. Enter the structure

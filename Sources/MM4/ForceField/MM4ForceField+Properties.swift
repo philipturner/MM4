@@ -97,17 +97,22 @@ extension MM4ForceField {
   
   /// Atom indices for each rigid body.
   ///
+  /// > Note: This is similar to molecules (`OpenMM_Context.getMolecules`),
+  /// with an additional restriction. The user must enter the atoms from each
+  /// molecule in one contiguous range of the atom list. Otherwise, the
+  /// forcefield cannot initialize. See <doc:MM4ParametersDescriptor/bonds> for
+  /// more details.
+  ///
   /// Rigid bodies should have atoms laid out contiguously in memory, in Morton
   /// order. This format ensures spatial locality, which increases performance
-  /// of nonbonded forces. Therefore, rigid bodies must be entered as contiguous
-  /// ranges of the atom list.
+  /// of nonbonded forces. Therefore, rigid bodies are contiguous ranges of the
+  /// atom list.
   ///
   /// The set of rigid bodies must cover every atom in the system. No two ranges
   /// may overlap the same atom. If the array of rigid bodies is unspecified, it
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
   public var rigidBodies: [Range<Int>] {
-    set { fatalError("Not implemented.") }
     get { fatalError("Not implemented.") }
   }
   

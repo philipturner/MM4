@@ -109,6 +109,10 @@ public class MM4ForceField {
   
   var contexts: [MM4IntegratorDescriptor: MM4Context] = [:]
   
+  /// Store the latest context object, so you can transfer positions and
+  /// velocities in between context switches.
+  var latestContext: MM4Context!
+  
   /// Create a simulator using the specified configuration.
   public init(descriptor: MM4ForceFieldDescriptor) {
     MM4Plugins.global.load()
@@ -117,5 +121,9 @@ public class MM4ForceField {
       fatalError("No parameters were specified for the force field.")
     }
     system = MM4System(parameters: parameters)
+    
+    let descriptor = MM4IntegratorDescriptor()
+    descriptor.fusedTimeSteps = 1
+    switchContext(context(descriptor: descriptor))
   }
 }

@@ -48,22 +48,14 @@ typedef void MM4State;
 
 #define MM4_ARRAY(expr) expr, int64_t* size
 
-// The parameters must be arranged in a different way than the Swift API. Swift
-// optionals and tuples are not compatible with C. Create a data layout for
-// bridging to C. Request that the user enter a pointer to write the data to. If
-// the value is 'nil', return 'false' from the function to indicate failure.
-//
-// Therefore, as of now, you cannot inspect the individual parameters in an
-// MM4Parameters object without using the Swift API.
-
 // All arrays for getters/setters should have length equal to the number of
 // atoms in the system. The exception is rigid bodies, which should equal the
 // number of atoms. If an array is null, the function will return the needed
 // number of elements in the 'size' argument.
-
+//
 // Unless explicitly stated in this header, you do not need to deallocate an
 // object returned from a function.
-
+//
 // Instances of 'Bool' in Swift are replaced with 'uint8_t' in C.
 
 // MARK: - CoreObjects/MM4State.swift
@@ -88,7 +80,7 @@ void MM4State_getPositions(MM4State* target, MM4_ARRAY(MM4Float3* positions));
 double MM4State_getPotentialEnergy(MM4State* target);
 void MM4State_getVelocities(MM4State* target, MM4_ARRAY(MM4Float3* velocities));
 
-// You own the object created by this functon. You must destroy it.
+/// You own the object created by this function. You must destroy it.
 MM4State* MM4ForceField_state(MM4StateDescriptor* descriptor);
 
 // MARK: - ForceField/MM4ForceField.swift
@@ -122,7 +114,6 @@ void MM4ForceField_getVelocities(MM4ForceField* target, MM4_ARRAY(MM4Float3* vel
 
 void MM4ForceField_setExternalForces(MM4ForceField* target, MM4_ARRAY(const MM4Float3* externalForces));
 void MM4ForceField_setPositions(MM4ForceField* target, MM4_ARRAY(const MM4Float3* positions));
-void MM4ForceField_setRigidBodies(MM4ForceField* target, MM4_ARRAY(const MM4Range* rigidBodies));
 void MM4ForceField_setStationaryAtoms(MM4ForceField* target, MM4_ARRAY(const uint8_t* stationaryAtoms));
 void MM4ForceField_setVelocities(MM4ForceField* target, MM4_ARRAY(const MM4Float3* velocities));
 
@@ -144,6 +135,14 @@ void MM4Error_deinit(MM4Error* target);
 const char* MM4Error_description(MM4Error* target);
 
 // MARK: - Parameters/MM4Parameters.swift
+
+// The parameters must be arranged in a different way than the Swift API. Swift
+// optionals and tuples are not compatible with C. Create a data layout for
+// bridging to C. Request that the user enter a pointer to write the data to. If
+// the value is 'nil', return 'false' from the function to indicate failure.
+//
+// Therefore, as of now, you cannot inspect the individual parameters in an
+// MM4Parameters object without using the Swift API.
 
 MM4ParametersDescriptor* MM4ParametersDescriptor_init();
 void MM4ParametersDescriptor_destroy(MM4ParametersDescriptor* target);

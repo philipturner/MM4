@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
+import OpenMM
+
 /// A configuration for a frame of a simulation.
 public class MM4StateDescriptor {
   /// Required. Whether to report the system's total kinetic and potential
@@ -64,33 +66,46 @@ extension MM4ForceField {
   /// `positions`, `velocities`, or either of the energies in isolation.
   /// However, the API is less expressive.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
+    var dataTypes: OpenMM_State.DataType = []
     if descriptor.energy {
-      // Add the energy flag to the OpenMM state data type.
-      
+      dataTypes = [dataTypes, .energy]
     }
     if descriptor.forces {
-      // Add the forces flag to the OpenMM state data type.
+      dataTypes = [dataTypes, .forces]
     }
     if descriptor.positions {
-      // Add the positions flag to the OpenMM state data type.
+      dataTypes = [dataTypes, .positions]
     }
     if descriptor.velocities {
-      // Add the velocities flag to the OpenMM state data type.
+      dataTypes = [dataTypes, .velocities]
+    }
+    
+    let query = latestContext.context.state(types: dataTypes)
+    func convertArray(_ input: OpenMM_Vec3Array) -> [SIMD3<Float>] {
+      var output: [SIMD3<Float>] = []
+      output.reserveCapacity(input.size)
+      
+      for i in 0..<input.size {
+        output.append(SIMD3<Float>(input[i]))
+      }
+      return output
     }
    
     let state = MM4State()
     if descriptor.energy {
-      // Set the kinetic and potential energy.
+      state.kineticEnergy = query.kineticEnergy
+      state.potentialEnergy = query.potentialEnergy
     }
     if descriptor.forces {
-      // Set the forces.
+      state.forces = convertArray(query.forces)
     }
     if descriptor.positions {
-      // Set the positions.
+      state.positions = convertArray(query.positions)
     }
     if descriptor.velocities {
-      // Set the velocities.
+      state.velocities = convertArray(query.velocities)
     }
     return state
   }
 }
+

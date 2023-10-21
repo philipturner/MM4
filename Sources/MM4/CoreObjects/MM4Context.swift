@@ -28,19 +28,15 @@ extension MM4ForceField {
     contexts[descriptor] = context
     return context
   }
-}
-
-extension MM4System {
+  
   func switchContext(_ context: MM4Context) {
-    if latestContext != nil, latestContext === context {
+    if latestContext === context {
       // There is no need to switch contexts.
       return
     }
     
-    if let latestContext {
-      let state = latestContext.context.state(types: [.positions, .velocities])
-      context.context.state = state
-    }
+    let state = latestContext.context.state(types: [.positions, .velocities])
+    context.context.state = state
     latestContext = context
   }
 }
