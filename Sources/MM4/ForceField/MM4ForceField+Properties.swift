@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 10/14/23.
 //
 
+import OpenMM
+
 // Ergonomic APIs for accessing a force field's state. These delegate to
 // a single-property instances of the batched functions, 'update' or 'state'.
 // They are not intended to be used as a primary interface for interacting with
@@ -12,22 +14,13 @@
 // should handle most of the data processing. One should only transfer data
 // in/out of OpenMM to set up the simulation.
 
-// Use the following OpenMM functions to update the system.
-// positions
-//  - setState
-//  - system.reorderedIndices
-// velocities
-//  - setState
-//  - system.reorderedIndices
-
 // MARK: - Batched Functions
 
 extension MM4ForceField {
   /// The net varying force (in piconewtons) exerted on each atom.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// functions <doc:MM4ForceField/update(descriptor:)> and
-  /// <doc:MM4ForceField/state(descriptor:)>.
+  /// function <doc:MM4ForceField/state(descriptor:)>.
   public var forces: [SIMD3<Float>] {
     get {
       // No need to convert between original and reordered indices.
@@ -40,8 +33,7 @@ extension MM4ForceField {
   /// The system's total kinetic energy, in zeptojoules.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// functions <doc:MM4ForceField/update(descriptor:)> and
-  /// <doc:MM4ForceField/state(descriptor:)>.
+  /// function <doc:MM4ForceField/state(descriptor:)>.
   public var kineticEnergy: Double {
     get {
       let descriptor = MM4StateDescriptor()
@@ -53,8 +45,7 @@ extension MM4ForceField {
   /// The position (in nanometers) of each atom's nucleus.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// functions <doc:MM4ForceField/update(descriptor:)> and
-  /// <doc:MM4ForceField/state(descriptor:)>.
+  /// function <doc:MM4ForceField/state(descriptor:)>.
   public var positions: [SIMD3<Float>] {
     get {
       // No need to convert between original and reordered indices.
@@ -63,15 +54,20 @@ extension MM4ForceField {
       return state(descriptor: descriptor).positions!
     }
     set {
-      fatalError("Not implemented.")
+      // reordered -> original -> reordered
+      let array = OpenMM_Vec3Array(size: system.atomCount)
+      for (reordered, original) in system.originalIndices.enumerated() {
+        let position = newValue[Int(original)]
+        array[reordered] = SIMD3<Double>(position)
+      }
+      latestContext.context.positions = array
     }
   }
   
   /// The system's total potential energy, in zeptojoules.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// functions <doc:MM4ForceField/update(descriptor:)> and
-  /// <doc:MM4ForceField/state(descriptor:)>.
+  /// function <doc:MM4ForceField/state(descriptor:)>.
   public var potentialEnergy: Double {
     get {
       let descriptor = MM4StateDescriptor()
@@ -83,8 +79,7 @@ extension MM4ForceField {
   /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
   ///
   /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// functions <doc:MM4ForceField/update(descriptor:)> and
-  /// <doc:MM4ForceField/state(descriptor:)>.
+  /// function <doc:MM4ForceField/state(descriptor:)>.
   ///
   /// When thermalizing, the linear and angular momentum over every rigid body
   /// is conserved. Then, the thermal velocities are reinitialized. If you want
@@ -99,7 +94,13 @@ extension MM4ForceField {
       return state(descriptor: descriptor).velocities!
     }
     set {
-      fatalError("Not implemented.")
+      // reordered -> original -> reordered
+      let array = OpenMM_Vec3Array(size: system.atomCount)
+      for (reordered, original) in system.originalIndices.enumerated() {
+        let velocity = newValue[Int(original)]
+        array[reordered] = SIMD3<Double>(velocity)
+      }
+      latestContext.context.velocities = array
     }
   }
 }
@@ -202,8 +203,8 @@ extension MM4ForceField {
     get {
       // Create a new array with a different type. This isn't the fastest
       // approach, but the property should rarely be used in most cases. The
-      // user should already have a data structure that separates the atoms into
-      // rigid bodies during high-level operations.
+      // user should already have a data structure that separates the atoms
+      // into rigid bodies during high-level operations.
       system.parameters.rigidBodies.map {
         let lowerBound = UInt32(truncatingIfNeeded: $0.lowerBound)
         let upperBound = UInt32(truncatingIfNeeded: $0.upperBound)

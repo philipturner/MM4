@@ -141,7 +141,7 @@ extension MM4Parameters {
     where atoms.atomicNumbers[atomID] == 1 {
       atoms.masses[atomID] += hydrogenMassRepartitioning
       
-      // HMR affects both carbon and silicon.
+      // HMR affects any tetravalent atom.
       let map = atomsToBondsMap[atomID]
       guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
         fatalError("Hydrogen did not have exactly 1 bond.")
