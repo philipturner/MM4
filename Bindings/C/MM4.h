@@ -60,6 +60,8 @@ typedef void MM4ForceFieldUpdateDescriptor;
 //   introduce additional bugs, although that doesn't mean it's a bad idea from
 //   a software engineering prospective. A minimum viable product with
 //   sub-optimal performance for some use cases is okay.
+// - TODO: Add this per-element API and finish the C bindings, once development
+//   on MM4 resumes, to add the remaining optimizations.
 
 // MARK: - Functions
 
