@@ -37,8 +37,10 @@ extension MM4ForceField {
     
     let state = latestContext.context.state(types: [.positions, .velocities])
     context.context.state = state
-    system.forces.external.updateForces(context: context)
     latestContext = context
+    
+    // Update any forces whose parameters change based on user input.
+    system.forces.external.updateForces(context: context)
   }
 }
 

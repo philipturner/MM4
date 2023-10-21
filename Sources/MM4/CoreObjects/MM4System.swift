@@ -11,11 +11,18 @@ import OpenMM
 ///
 /// This object takes ownership of the `parameters` passed in.
 class MM4System {
+  /// Concise method for fetching the atom count. This should not be exposed to
+  /// the public API.
+  var atomCount: Int { parameters.atoms.atomicNumbers.count }
+  
   /// Bond pairs using the reordered indices.
-  var bondPairs: OpenMM_BondArray
+  var bondPairs: OpenMM_BondArray!
   
   /// The forces used by the system.
   var forces: MM4Forces!
+  
+  /// Map from reordered indices to original indices.
+  var originalIndices: [Int32]
   
   /// The location where the parameters are owned.
   var parameters: MM4Parameters
@@ -40,8 +47,14 @@ class MM4System {
     //
     // The index reversing is a litmus test, to ensure the code is aware of the
     // index reordering at every step.
-    self.reorderedIndices = parameters.atoms.atomicNumbers.indices.map {
-      Int32(parameters.atoms.atomicNumbers.count - 1 - $0)
+    let atomCount = parameters.atoms.atomicNumbers.count
+    self.reorderedIndices = (0..<atomCount).map {
+      Int32(atomCount - 1 - $0)
+    }
+    self.originalIndices = Array(repeating: -1, count: atomCount)
+    for originalID in 0..<atomCount {
+      let reorderedID = reorderedIndices[originalID]
+      originalIndices[Int(reorderedID)] = Int32(truncatingIfNeeded: originalID)
     }
     
     let bonds = parameters.bonds

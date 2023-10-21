@@ -12,12 +12,6 @@
 
 // MARK: - Types
 
-// The C API will be drafted and implemented right now. The Python API will have
-// to wait until the second near-term round of development. During this round,
-// the forcefield will be debugged and Swift test cases will be created. The
-// development round will begin after sufficient progress has been made on the
-// geometry compiler.
-
 __attribute__((aligned(16)))
 struct MM4Float3 {
   float x;

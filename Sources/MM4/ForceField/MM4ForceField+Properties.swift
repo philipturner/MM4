@@ -13,14 +13,12 @@
 // in/out of OpenMM to set up the simulation.
 
 // Use the following OpenMM functions to update the system.
-// anchors
-//   - setParticleParameters, updateParametersInContext
-// externalForces
-//   - setParticleParameters, updateParametersInContext
 // positions
-//   - setState
+//  - setState
+//  - system.reorderedIndices
 // velocities
-//   - setState
+//  - setState
+//  - system.reorderedIndices
 
 // MARK: - Batched Functions
 
@@ -94,35 +92,59 @@ extension MM4ForceField {
   /// The library currently doesn't check for adherence to this rule, but may
   /// enforce it in the future.
   public var anchors: [UInt32] {
-    get { fatalError("Not implemented.") }
+    get {
+      // original -> reordered -> original
+      system.reorderedIndices.map {
+        let anchor = _anchors[Int($0)]
+        return UInt32(truncatingIfNeeded: anchor)
+      }
+    }
     set {
       // Reset every atom's mass to the one provided by the parameters. Then,
       // selectively set the anchors to zero. This may have more overhead, but
       // not that much more (~overhead of setting positions). It also reduces
       // the chance for bugs in a rarely tested edge case.
-      fatalError("Not implemented.")
+      for (index, mass) in system.parameters.atoms.masses.enumerated() {
+        let reordered = system.reorderedIndices[Int(index)]
+        system.system.setParticleMass(Double(mass), index: Int(reordered))
+      }
+      
+      // reordered -> original -> reordered
+      _anchors = system.originalIndices.map {
+        let anchor = newValue[Int($0)]
+        return Int32(truncatingIfNeeded: anchor)
+      }
+      _anchors.forEach { index in
+        system.system.setParticleMass(0, index: Int(index))
+      }
     }
   }
-  
-  // The force field could be optimized by deactivating the external force for
-  // an incremental gain in performance. However, such fine-tuning optimizations
-  // will come at a later date. The current "optimization" is that the force is
-  // added each timestep (4 fs), but only computed every time the integrator
-  // loop starts up.
   
   /// The constant force (in piconewtons) exerted on each atom.
   ///
   /// The default value is all zeroes for every particle, which may be used to
   /// deactivate the backing OpenMM force object.
   public var externalForces: [SIMD3<Float>] {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
+    get {
+      // original -> reordered -> original
+      system.reorderedIndices.map {
+        _externalForces[Int($0)]
+      }
+    }
+    set {
+      // reordered -> original -> reordered
+      _externalForces = system.originalIndices.map {
+        newValue[Int($0)]
+      }
+      system.forces.external.updateForces(
+        _externalForces, context: latestContext)
+    }
   }
   
   /// Atom indices for each rigid body.
   ///
-  /// > Note: This is similar to molecules (`OpenMM_Context.getMolecules`),
-  /// with an additional restriction. The user must enter the atoms from each
+  /// > Note: This is similar to molecules (`OpenMM_Context.getMolecules()`),
+  /// with an additional restriction. The user must enter atoms for each
   /// molecule in one contiguous range of the atom list. Otherwise, the
   /// forcefield cannot initialize. See <doc:MM4ParametersDescriptor/bonds> for
   /// more details.
@@ -136,6 +158,15 @@ extension MM4ForceField {
   /// may overlap the same atom. If the array of rigid bodies is unspecified, it
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
+  ///
+  /// If a body can flex around a joint, it is no longer a rigid body.
+  /// Suppressing macroscopic motion from randomly initialized thermal
+  /// velocities becomes non-trivial. For such cases, you must explicitly
+  /// thermalize the velocities.
+  /// <doc:MM4ForceField/thermalize(temperature:rigidBodies:)> lets you choose
+  /// which rigid bodies are thermalized using the MM4 algorithm. Remove
+  /// flexible bodies from the list and manually thermalize using a similar
+  /// algorithm.
   public var rigidBodies: [Range<UInt32>] {
     get {
       // Create a new array with a different type. This isn't the fastest

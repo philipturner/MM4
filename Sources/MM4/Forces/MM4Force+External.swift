@@ -33,8 +33,7 @@ class MM4ExternalForce: MM4Force {
     super.init(forces: [force], forceGroup: 0)
   }
   
-  // Regardless of whether they're specified at the start of the forcefield,
-  // parameters will still be updated this way.
+  /// > WARNING: Reorder the forces before entering into this object.
   func updateForces(_ forces: [SIMD3<Float>]? = nil, context: MM4Context) {
     guard let forceObject = self.forces[0] as? OpenMM_CustomExternalForce else {
       fatalError("External force was not an external force.")
