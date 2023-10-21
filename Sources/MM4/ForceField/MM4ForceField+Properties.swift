@@ -29,7 +29,12 @@ extension MM4ForceField {
   /// functions <doc:MM4ForceField/update(descriptor:)> and
   /// <doc:MM4ForceField/state(descriptor:)>.
   public var forces: [SIMD3<Float>] {
-    get { fatalError("Not implemented.") }
+    get {
+      // No need to convert between original and reordered indices.
+      let descriptor = MM4StateDescriptor()
+      descriptor.forces = true
+      return state(descriptor: descriptor).forces!
+    }
   }
   
   /// The system's total kinetic energy, in zeptojoules.
@@ -38,7 +43,11 @@ extension MM4ForceField {
   /// functions <doc:MM4ForceField/update(descriptor:)> and
   /// <doc:MM4ForceField/state(descriptor:)>.
   public var kineticEnergy: Double {
-    get { fatalError("Not implemented.") }
+    get {
+      let descriptor = MM4StateDescriptor()
+      descriptor.energy = true
+      return state(descriptor: descriptor).kineticEnergy!
+    }
   }
   
   /// The position (in nanometers) of each atom's nucleus.
@@ -47,8 +56,15 @@ extension MM4ForceField {
   /// functions <doc:MM4ForceField/update(descriptor:)> and
   /// <doc:MM4ForceField/state(descriptor:)>.
   public var positions: [SIMD3<Float>] {
-    set { fatalError("Not implemented.") }
-    get { fatalError("Not implemented.") }
+    get {
+      // No need to convert between original and reordered indices.
+      let descriptor = MM4StateDescriptor()
+      descriptor.positions = true
+      return state(descriptor: descriptor).positions!
+    }
+    set {
+      fatalError("Not implemented.")
+    }
   }
   
   /// The system's total potential energy, in zeptojoules.
@@ -57,7 +73,11 @@ extension MM4ForceField {
   /// functions <doc:MM4ForceField/update(descriptor:)> and
   /// <doc:MM4ForceField/state(descriptor:)>.
   public var potentialEnergy: Double {
-    get { fatalError("Not implemented.") }
+    get {
+      let descriptor = MM4StateDescriptor()
+      descriptor.energy = true
+      return state(descriptor: descriptor).potentialEnergy!
+    }
   }
   
   /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
@@ -72,8 +92,15 @@ extension MM4ForceField {
   /// velocities. Add the desired bulk velocity component to them, them set the
   /// new velocity values.
   public var velocities: [SIMD3<Float>] {
-    set { fatalError("Not implemented.") }
-    get { fatalError("Not implemented.") }
+    get {
+      // No need to convert between original and reordered indices.
+      let descriptor = MM4StateDescriptor()
+      descriptor.velocities = true
+      return state(descriptor: descriptor).velocities!
+    }
+    set {
+      fatalError("Not implemented.")
+    }
   }
 }
 
@@ -132,6 +159,10 @@ extension MM4ForceField {
       }
     }
     set {
+      guard newValue.count == system.atomCount else {
+        fatalError("Too few atoms.")
+      }
+      
       // reordered -> original -> reordered
       _externalForces = system.originalIndices.map {
         newValue[Int($0)]

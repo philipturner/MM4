@@ -354,7 +354,17 @@ extension MM4Parameters {
           // germanium or germanium carbide, where the equilibrium is supposed
           // to be at a tetrahedral conformation.
           bendingStiffnesses = SIMD3(repeating: 0.300)
-          equilibriumAngles = SIMD3(109.5, 112.50, 112.50)
+          equilibriumAngles = SIMD3(repeating: 112.50)
+          
+          // Only set to 109.5 when simulating solid germanium.
+          let map = atomsToAtomsMap[Int(angle[1])]
+          var atomCodes: SIMD4<UInt8> = .zero
+          for lane in 0..<4 {
+            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
+          }
+          if all(atomCodes .== 5 .| atomCodes .== 31) {
+            equilibriumAngles![0] = 109.5
+          }
           
         default:
           break

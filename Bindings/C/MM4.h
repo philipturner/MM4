@@ -34,7 +34,6 @@ struct MM4Range {
 typedef void MM4Error;
 typedef void MM4ForceField;
 typedef void MM4ForceFieldDescriptor;
-typedef void MM4ForceFieldUpdateDescriptor;
 typedef void MM4ParametersDescriptor;
 typedef void MM4Parameters;
 typedef void MM4StateDescriptor;
@@ -110,17 +109,6 @@ void MM4ForceField_setAnchors(MM4ForceField* target, MM4_ARRAY(const uint32_t* a
 void MM4ForceField_setExternalForces(MM4ForceField* target, MM4_ARRAY(const MM4Float3* externalForces));
 void MM4ForceField_setPositions(MM4ForceField* target, MM4_ARRAY(const MM4Float3* positions));
 void MM4ForceField_setVelocities(MM4ForceField* target, MM4_ARRAY(const MM4Float3* velocities));
-
-// MARK: - ForceField/MM4ForceField+Update.swift
-
-MM4ForceFieldUpdateDescriptor* MM4ForceFieldUpdateDescriptor_init();
-void MM4ForceFieldUpdateDescriptor_deinit(MM4ForceFieldUpdateDescriptor* target);
-void MM4ForceFieldUpdateDescriptor_getPositions(MM4ForceFieldDescriptor* target, MM4_ARRAY(MM4Float3* positions));
-void MM4ForceFieldUpdateDescriptor_getVelocities(MM4ForceFieldDescriptor* target, MM4_ARRAY(MM4Float3* velocities));
-void MM4ForceFieldUpdateDescriptor_setPositions(MM4ForceFieldDescriptor* target, MM4_ARRAY(const MM4Float3* positions));
-void MM4ForceFieldUpdateDescriptor_setVelocities(MM4ForceFieldDescriptor* target, MM4_ARRAY(const MM4Float3* velocities));
-
-void MM4ForceField_update(MM4ForceFieldUpdateDescriptor* descriptor);
 
 // MARK: - MM4Error.swift
 

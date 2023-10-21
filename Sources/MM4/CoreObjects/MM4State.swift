@@ -81,14 +81,15 @@ extension MM4ForceField {
     }
     
     let query = latestContext.context.state(types: dataTypes)
+    
+    // Convert the OpenMM array to a different data type, and map from reordered
+    // to original indices.
     func convertArray(_ input: OpenMM_Vec3Array) -> [SIMD3<Float>] {
-      var output: [SIMD3<Float>] = []
-      output.reserveCapacity(input.size)
-      
-      for i in 0..<input.size {
-        output.append(SIMD3<Float>(input[i]))
+      // original -> reordered -> original
+      system.reorderedIndices.map {
+        let index = Int($0)
+        return SIMD3<Float>(input[index])
       }
-      return output
     }
    
     let state = MM4State()
