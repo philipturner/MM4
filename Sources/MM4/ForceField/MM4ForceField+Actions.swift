@@ -25,8 +25,7 @@ extension MM4ForceField {
     //
     // Dynamically switch between the integrators below. There should be
     // multiple OpenMM contexts surrounding the same system.
-    // - minimization integrator
-    // - 1-step custom MTS integrator
+    // - 1-step custom MTS integrator (always used for minimization)
     // - 5-step custom MTS integrator
     // - 23-step custom MTS integrator
     //

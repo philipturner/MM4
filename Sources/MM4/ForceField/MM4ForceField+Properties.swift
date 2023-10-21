@@ -80,10 +80,16 @@ extension MM4ForceField {
 // MARK: - Simulation Setup
 
 extension MM4ForceField {
+  // The force field could be optimized by deactivating the external force for
+  // an incremental gain in performance. However, such fine-tuning optimizations
+  // will come at a later date. The current "optimization" is that the force is
+  // added each timestep (4 fs), but only computed every time the integrator
+  // loop starts up.
+  
   /// The constant force (in piconewtons) exerted on each atom.
   ///
-  /// The default value is all zeroes for every particle, which disables the
-  /// backing OpenMM force object.
+  /// The default value is all zeroes for every particle, which may be used to
+  /// deactivate the backing OpenMM force object.
   public var externalForces: [SIMD3<Float>] {
     set { fatalError("Not implemented.") }
     get { fatalError("Not implemented.") }

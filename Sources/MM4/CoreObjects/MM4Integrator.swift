@@ -8,11 +8,8 @@
 /// A configuration for an integrator.
 class MM4IntegratorDescriptor: Hashable {
   /// The number of force evaluations fused together to reduce redundant
-  /// computation of forces. This must be one for a Verlet integrator.
+  /// computation of forces. Setting this to one creates a Verlet integrator.
   var fusedTimeSteps: Int = 1
-  
-  /// This must be false for a Verlet integrator.
-  var multipleTimeSteps: Bool = false
   
   init() {
     
@@ -22,8 +19,7 @@ class MM4IntegratorDescriptor: Hashable {
     lhs: MM4IntegratorDescriptor,
     rhs: MM4IntegratorDescriptor
   ) -> Bool {
-    guard lhs.fusedTimeSteps == rhs.fusedTimeSteps,
-          lhs.multipleTimeSteps == rhs.multipleTimeSteps else {
+    guard lhs.fusedTimeSteps == rhs.fusedTimeSteps else {
       return false
     }
     return true
@@ -31,7 +27,6 @@ class MM4IntegratorDescriptor: Hashable {
   
   func hash(into hasher: inout Hasher) {
     hasher.combine(fusedTimeSteps)
-    hasher.combine(multipleTimeSteps)
   }
 }
 

@@ -88,7 +88,7 @@ class MM4TorsionForce: MM4Force {
       }
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(forces: [force], forceGroup: 2)
+    super.init(forces: [force], forceGroup: 1)
   }
 }
 
@@ -286,6 +286,6 @@ class MM4TorsionExtendedForce: MM4Force {
       }
       force.addBond(particles: particles, parameters: array)
     }
-    super.init(forces: [force], forceGroup: 2)
+    super.init(forces: [force], forceGroup: 1)
   }
 }

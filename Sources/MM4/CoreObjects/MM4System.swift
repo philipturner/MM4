@@ -11,40 +11,48 @@ import OpenMM
 ///
 /// This object takes ownership of the `parameters` passed in.
 class MM4System {
+  /// Bond pairs using the reordered indices.
+  var bondPairs: OpenMM_BondArray
+  
+  /// The forces used by the system.
+  var forces: MM4Forces!
+  
   /// The location where the parameters are owned.
   var parameters: MM4Parameters
   
   /// Indices may eventually be rearranged for performance.
   var reorderedIndices: [Int32]
   
-  /// Bond pairs using the reordered indices.
-  var bondPairs: OpenMM_BondArray
+  /// The backing OpenMM system object.
+  var system: OpenMM_System
   
   init(parameters: MM4Parameters) {
     self.parameters = parameters
     
+    self.system = OpenMM_System()
+    for mass in parameters.atoms.masses {
+      system.addParticle(mass: Double(mass))
+    }
+    
     // Store a mapping from current indices to reversed indices in the force
     // objects. Eventually, separate the atoms into two groups of "small" vs
     // "large" atoms, creating different zones of internally contiguous tiles.
-    reorderedIndices = parameters.atoms.atomicNumbers.indices.map {
+    //
+    // The index reversing is a litmus test, to ensure the code is aware of the
+    // index reordering at every step.
+    self.reorderedIndices = parameters.atoms.atomicNumbers.indices.map {
       Int32(parameters.atoms.atomicNumbers.count - 1 - $0)
     }
     
     let bonds = parameters.bonds
-    bondPairs = OpenMM_BondArray(size: bonds.indices.count)
+    self.bondPairs = OpenMM_BondArray(size: bonds.indices.count)
     for bondID in bonds.indices.indices {
       let bond = bonds.indices[bondID]
       bondPairs[bondID] = reorder(bond)
     }
     
-    // Forces:
-    // - [x] Angles
-    // - [x] Bonds
-    // - [x] Electrostatic
-    // - [x] External
-    // - [x] Nonbonded
-    // - [x] Torsions
-    
+    self.forces = MM4Forces(system: self)
+    forces.addForces(to: system)
   }
 }
 

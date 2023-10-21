@@ -50,6 +50,16 @@ typedef void MM4ForceFieldUpdateDescriptor;
 // (setter). Most arrays have a pre-determined element count, but those that
 // don't have a separate...
 // - Haven't decided how to proceed with this.
+// - Note: the APIs are supposed to be batched. In Swift, there is a warning
+//   about how efficient fetching even a contiguous array can be. However, an
+//   element-by-element API may be extremely useful, even for Swift.
+// - Consider how to implement this internally, e.g. by caching and
+//   automatically flushing changes from a dirty array. This may be more work
+//   and debugging, but a more ergonomic API overall.
+// - Add this API after the first round of debugging/testing. It is bound to
+//   introduce additional bugs, although that doesn't mean it's a bad idea from
+//   a software engineering prospective. A minimum viable product with
+//   sub-optimal performance for some use cases is okay.
 
 // MARK: - Functions
 
