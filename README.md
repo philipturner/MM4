@@ -29,7 +29,6 @@ Python API: in progress
 Key:
 - X = nonpolar covalent bond
 - O = polar covalent bond
-- blank = not supported
 
 | Element | H | C<sub>sp3</sub> | N | O | F | Si | P | S | Ge |
 | --------------- | - | - | - | - | - | - | - | - | - |
@@ -43,17 +42,25 @@ Key:
 | S               |   | O |   |   |   |   |   |   |   |
 | Ge              | X | O |   |   |   |   |   |   | X |
 
+## Forced Motions
+
+|         | Force                 | Velocity                    |
+| ------- | --------------------- | --------------------------- |
+| Linear  | external force (MM4)  | anchor with velocity (MM4)  |
+| Angular | external torque (MM4) | flywheel (hardware catalog) |
+
 ## Roadmap
 
-First development round (current):
+First development round (v0.1.0, current):
 - Internal workings figured out, Swift code written
 - C API implemented
+- Constant forces
 
-Second development round (in ~weeks):
+Second development round (v0.2.0, in ~weeks):
 - Inner workings tested
 - Python API implemented
-- Optimize the CPU-side cost of various operations
+- Constant torques
 
-Third development round (in ~months):
-- Optimize every force to the physical limits, estimate no more than 50% speedup
+Third development round (v1.0.0, in ~months):
+- Optimize the CPU-side setup and GPU-side simulation
 - Any necessary support for multi-GPU systems
