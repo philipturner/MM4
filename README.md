@@ -53,12 +53,12 @@ Key:
 
 First development round (v0.1.0, current):
 - Internal workings figured out, Swift code written
-- C API implemented
+- C API drafted
 - Constant forces
 
 Second development round (v0.2.0, in ~weeks):
 - Inner workings tested
-- Python API implemented
+- C, Python API implemented
 - Constant torques
 
 Third development round (v1.0.0, in ~months):
