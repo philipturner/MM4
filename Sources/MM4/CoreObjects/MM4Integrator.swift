@@ -77,6 +77,12 @@ class MM4Integrator {
           """)
       }
     }
+    
+    // WARNING: This is incorrect! The kinetic energy must be computed using a
+    // special formula for a Verlet integrator. It doesn't look as simple as
+    // averaging the velocities v(t) and v(t + 1), then pairing with the
+    // potential energy at t + 1.
+    fatalError("This is incorrect!")
   }
   
   /// Modeled after how the OpenMM `integrator.step` API is typically used -
