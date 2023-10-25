@@ -148,12 +148,6 @@ extension MM4Parameters {
         fatalError("Torsions may not contain two non-carbon atoms.")
       }
       
-      let sortedBond = sortBond(SIMD2(torsion[1], torsion[2]))
-      guard let bondID = bonds.map[sortedBond] else {
-        fatalError("Could not fetch bond for torsion.")
-      }
-      let bondStiffness = bonds.parameters[Int(bondID)].stretchingStiffness
-      
       /// "Note that unless they are explicitly in the table, parameters
       /// involving five-membered ring atom types (122 and 123) are assigned
       /// parameters which involve the regular atom types (types 2 and 1). This
@@ -527,6 +521,33 @@ extension MM4Parameters {
       // New formula:
       //   Δl * (Kts / Ks) * (1 + cos(3ω))
       
+      // Update: During an experiment with lonsdaleite, the TS caused very
+      // incorrect behavior with the old MM4 implementation (~10 too much
+      // stiffness). It didn't show up with cubic diamond, where the torsion
+      // angle was 180 degrees.
+      //
+      // While double-checking torsion stretch, I found a simpler explanation.
+      //
+      // Bond         MM3     MM4   MM4/MM3 Ratio
+      // 1-1          0.059   0.66  11.18644068
+      // 123-123(5)   0.059   0.84  14.23728814
+      // 56-56(4)     0.059   0.94  15.93220339
+      // 1-2          0.27    2.159 7.996296296
+      // 1-6          0.1     1.559 15.59
+      // 1-8          0.061   0.58  9.508196721
+      // 1-15         0.17    1.559 9.170588235
+      // 1-25         0.104   1.247 11.99038462
+      //
+      // The average of all eight (MM4/MM3 Ratio) values is 11.951. This is very
+      // close to 11.995, and not a coincidence. The actual formula is shown
+      // below. However, I will leave the previous (incorrect) reasoning there
+      // for reference. "-k" could have been "0.5". The "-" key on the keyboard
+      // is close to "0". lowercase "k" is also sort-of close to "." and also
+      // not activated by "shift". A plausible mistake while typing, which the
+      // writer wouldn't notice when looking over a 2nd time.
+      //
+      // (Kts/2) * Δl * (1 + cos(3ω))
+      
       var Kts_l: SIMD3<Float>?
       var Kts_c: SIMD3<Float>?
       var Kts_r: SIMD3<Float>?
@@ -539,18 +560,13 @@ extension MM4Parameters {
         if all(middle .== 123) {
           Kts_c = SIMD3(0.000, 0.000, 0.840)
         } else {
+          // For silicon, multiply the MM3 torsion-stretch constant by 11.995.
           switch (middle6Ring[0], middle6Ring[1]) {
           case (1, 1): Kts_c = SIMD3(0.000, 0.000, 0.640)
-          case (1, 19): Kts_c = SIMD3(0.000, 0.000, 0.036)
-          case (19, 19): Kts_c = SIMD3(0.000, 0.000, 0.012)
+          case (1, 19): Kts_c = SIMD3(0.000, 0.000, 0.036 * 11.995)
+          case (19, 19): Kts_c = SIMD3(0.000, 0.000, 0.012 * 11.995)
           case (1, 15): Kts_c = SIMD3(0.000, 0.000, 1.559)
           default: break
-          }
-          
-          // For silicon, take the MM3 torsion-stretch constant, multiply by
-          // 11.995 / 2, then multiply by bond stiffness.
-          if any(middle6Ring .== 19), Kts_c != nil {
-            Kts_c! *= 11.995 / 2 * bondStiffness
           }
         }
         
