@@ -24,6 +24,14 @@ class MM4NonbondedForce: MM4Force {
   }
   
   required init(system: MM4System) {
+    // WARNING: This is not correct!
+    //
+    // The hydrogens needs to be shifted toward C/Si/Ge by a factor of 0.94.
+    // Run the forcefield through initially without that modification. Only
+    // after the code is thoroughly debugged, add the virtual particles and
+    // reorder them. The new vdW force will be projected onto both the hydrogen
+    // and the non-hydrogen. How does this affect partial charges? Is the bond
+    // dipole modified to accomodate the different length?
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
         -2.25 * (length / r)^6 +
