@@ -32,6 +32,13 @@ class MM4NonbondedForce: MM4Force {
     // reorder them. The new vdW force will be projected onto both the hydrogen
     // and the non-hydrogen. How does this affect partial charges? Is the bond
     // dipole modified to accomodate the different length?
+    //
+    // Luckily, there are no polarized atom-hydrogen bonds in this MM4
+    // implementation. No dipole-dipole interactions or projected charge-charge
+    // interactions can involve a virtual sites. Hydrogens have 0 partial
+    // charge. Computing the coulomb interaction on their virtual sites creates
+    // zero energy, removing the need to account for the position being
+    // different.
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
         -2.25 * (length / r)^6 +
