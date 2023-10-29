@@ -9,7 +9,6 @@ import OpenMM
 
 class MM4ExternalForce: MM4Force {
   required init(system: MM4System) {
-    
     let force = OpenMM_CustomExternalForce(energy: """
       x * fx + y * fy + z * fz;
       """)
