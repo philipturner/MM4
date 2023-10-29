@@ -12,9 +12,9 @@ class MM4ExternalForce: MM4Force {
     let force = OpenMM_CustomExternalForce(energy: """
       x * fx + y * fy + z * fz;
       """)
-    force.addPerParticleParameter(name: "f0")
-    force.addPerParticleParameter(name: "f1")
-    force.addPerParticleParameter(name: "f2")
+    force.addPerParticleParameter(name: "fx")
+    force.addPerParticleParameter(name: "fy")
+    force.addPerParticleParameter(name: "fz")
     
     let array = OpenMM_DoubleArray(size: 3)
     array[0] = 0
