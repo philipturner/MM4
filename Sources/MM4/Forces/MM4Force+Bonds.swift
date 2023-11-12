@@ -39,7 +39,7 @@ class MM4StretchForce: MM4Force {
       
       // Units: angstrom^-1 -> nm^-1
       var beta = Double(
-        parameters.stretchingStiffness / (2 * parameters.stretchingStiffness)
+        parameters.stretchingStiffness / (2 * parameters.potentialWellDepth)
       ).squareRoot()
       beta /= OpenMM_NmPerAngstrom
       
