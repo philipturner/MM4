@@ -95,8 +95,8 @@ class MM4NonbondedExceptionForce: MM4Force {
   required init(system: MM4System) {
     // It seems like "disfac" was the dispersion factor, similar to the DISP-14
     // keyword in Tinker. Keep the Pauli repulsion force the same though.
-    let disfac: Double = 0.550
-    let correction = disfac - 1
+    let dispersionFactor: Double = 0.550
+    let correction = dispersionFactor - 1
     let force = OpenMM_CustomBondForce(energy: """
       epsilon * (
         \(-2.25 * correction) * (equilibriumLength / r)^6
@@ -112,6 +112,12 @@ class MM4NonbondedExceptionForce: MM4Force {
       let parameters1 = atoms.nonbondedParameters[Int(exception[0])]
       let parameters2 = atoms.nonbondedParameters[Int(exception[1])]
       
+      if parameters1.dispersionFactor > 1.000 - 0.001 ||
+          parameters2.dispersionFactor > 1.000 - 0.001 {
+        // Skip corrections when either atom has a dispersion factor of 1.000.
+        continue
+      }
+      
       var epsilon: Float
       var equilibriumLength: Float
       if parameters1.epsilon.hydrogen * parameters2.epsilon.hydrogen < 0 {
@@ -120,10 +126,10 @@ class MM4NonbondedExceptionForce: MM4Force {
         equilibriumLength = max(parameters1.radius.hydrogen,
                                 parameters2.radius.hydrogen)
       } else {
-        epsilon = sqrt(parameters1.epsilon.heteroatom *
-                       parameters2.epsilon.heteroatom)
-        equilibriumLength = parameters1.radius.heteroatom +
-        /**/                parameters2.radius.heteroatom
+        epsilon = sqrt(parameters1.epsilon.default *
+                       parameters2.epsilon.default)
+        equilibriumLength = parameters1.radius.default +
+        /**/                parameters2.radius.default
       }
       
       // Units: kcal/mol -> kJ/mol, angstrom -> nm

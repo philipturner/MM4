@@ -2,11 +2,7 @@
 
 General-purpose simulator for molecular nanotechnology.
 
-Swift API: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
-
-C API: [MM4.h](./Bindings/C/MM4.h)
-
-Python API: in progress
+Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
 ## Parameters
 
@@ -44,23 +40,7 @@ Key:
 
 ## Forced Motions
 
-|         | Force                 | Velocity                    |
-| ------- | --------------------- | --------------------------- |
-| Linear  | external force (MM4)  | anchor with velocity (MM4)  |
-| Angular | external torque (MM4) | flywheel (hardware catalog) |
-
-## Roadmap
-
-First development round (v0.1.0, current):
-- Internal workings figured out, Swift code written
-- C API drafted
-- Constant forces
-
-Second development round (v0.2.0, in ~weeks):
-- Inner workings tested
-- C, Python API implemented
-- Constant torques
-
-Third development round (v1.0.0, in ~months):
-- Optimize the CPU-side setup and GPU-side simulation
-- Any necessary support for multi-GPU systems
+|         | Force           | Velocity             |
+| ------- | --------------- | -------------------- |
+| Linear  | external force  | anchor with velocity |
+| Angular | not implemented | flywheel             |

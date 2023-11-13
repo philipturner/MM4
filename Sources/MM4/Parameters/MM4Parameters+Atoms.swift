@@ -101,28 +101,27 @@ public enum MM4CenterType: UInt8 {
   case quaternary = 4
 }
 
-/// Parameters for the van der Waals force on a specific atom, with an
-/// alternative value for use in hydrogen interactions. This force does not
-/// include electrostatic forces, which are handled separately in a bond-based
-/// dipole-dipole interaction.
+/// Parameters for the van der Waals force on a specific atom. Special values
+/// are provided for hydrogen parameters, where applicable. Interactions
+/// containing Si, Ge should be treated with MM3 heuristics:
+/// - Dispersion factors for 1,4 nonbonded exceptions are eliminated.
+/// - Hydrogen reduction factors for bonded hydrogens change from 0.94 to 0.923.
 public struct MM4NonbondedParameters {
+  /// Units: dimensionless
+  public var dispersionFactor: Float
+  
   /// Units:  kilocalorie / mole
   ///
-  /// `heteroatom` includes carbon; the term was simply chosen as an antonym to
-  /// hydrogen. Epsilons are computed using the geometric mean for heteroatoms,
-  /// otherwise substitute directly with the hydrogen epsilon.
-  ///
   /// > WARNING: Convert aJ to kJ/mol.
-  public var epsilon: (heteroatom: Float, hydrogen: Float)
+  public var epsilon: (default: Float, hydrogen: Float)
+  
+  /// Units: dimensionless
+  public var hydrogenReductionFactor: Float
   
   /// Units: angstrom
   ///
-  /// `heteroatom` includes carbon; the term was simply chosen as an antonym to
-  /// hydrogen. Radii are computed using the arithmetic sum for heteroatoms,
-  /// otherwise substitute directly with the hydrogen radius.
-  ///
   /// > WARNING: Convert angstroms to nanometers.
-  public var radius: (heteroatom: Float, hydrogen: Float)
+  public var radius: (default: Float, hydrogen: Float)
 }
 
 public struct MM4AtomExtendedParameters {
@@ -286,23 +285,42 @@ extension MM4Parameters {
     }
   }
   
-  // Two forces:
-  // - Short-range vdW force between pairs of non-charged atoms smaller than
-  //   the C-Si vdW radius.
-  //   - Interaction group 1: small vdW radius and non-charged
-  //   - Interaction group 2: any vdW radius and any charge status
-  // - Electrostatics and either (a) larger vdW radii or (b) vdW interactions
-  //   between pairs of charged particles.
-  //   - Interaction group 1: large vdW radius and/or charged
-  //   - Interaction group 2: large vdW radius and/or charged
+  // Copying notes from the MM4_validator.swift script:
   //
-  // Near-term unoptimized alternative: two separate O(n^2) forces without any
-  // cutoff, one for vdW and one for electrostatics
+  // The problems this script was built to solve, have been resolved through other
+  // means. MM4 uses dipole-dipole interactions just like MM3; Jay was wrong about
+  // that. Regarding the disfac=0.550, it won't change the shape of molecules
+  // (internal structure) significantly. It definitely won't change the distance
+  // between diamondoid surfaces, the primary area of concern regarding vdW.
+  //
+  // Assume any bona fide MM4 parameter had the torsions recalibrated against the
+  // new disfac. That includes phosphorus, but doesn't stand for any phosphorus
+  // torsions I stole from MM3. Accept the inaccuracy incurred here, just like the
+  // inaccuracy from transferring Si angles/torsions to Ge.
+  //
+  // The hydrogen reduction factor is used **in addition** to mutations to X/H
+  // radius. This combines in a wierd way to create R=0.92 for carbon, R=0.85
+  // for nitrogen, oxygen, fluorine. Just use the following exceptions:
+  //
+  // - Si, Ge treat hydrogens like R=0.923
+  //   - change the weight for the Si-H virtual sites
+  // - Si, Ge treat other elements like the vdW parameters are from MM3
+  //   - create a third conditional branch for the vdW energy function
+  //   - particularly important: C-Si nonbonded interaction (0.08 A correction)
+  // - Si, Ge treat other elements like disfac=1.000
+  //   - change the parameter for 1,4 nonbonded exceptions
+  //
+  // Oxygen vdW parameters:
+  // - Norman's actual parameters for solid O atoms likely didn't change by more
+  //   than 0.01 A.
+  // - Using the strange relationship that conflates the different vdW adjustments
+  //   to create a single "R=0.85", I derived r=3.046 A, eps=0.0840.
+  // - Si, P, S, Ge use the Hill function exactly instead of X/H vdW pairs.
   func createNonbondedParameters() {
     for atomID in atoms.atomicNumbers.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
-      var epsilon: (heteroatom: Float, hydrogen: Float)
-      var radius: (heteroatom: Float, hydrogen: Float)
+      var epsilon: (default: Float, hydrogen: Float)
+      var radius: (default: Float, hydrogen: Float)
       
       switch atomicNumber {
       case 1:
@@ -311,102 +329,58 @@ extension MM4Parameters {
         // Furthermore, multiplication of the two atoms' hydrogen parameters can
         // be used as efficient logic for checking whether hydrogen exists. If
         // the result is negative, choose the hydrogen parameters (XOR gate).
-        epsilon = (heteroatom: 0.017, hydrogen: -1)
-        radius = (heteroatom: 1.640, hydrogen: -1)
-        fatalError(
-          "Hydrogen vdW interactions seem to not be from the correct position. The forcefield cannot be tested until this issue is resolved.")
-      case 5:
-        // For the same reasons as silicon, don't change the energy of the B-H
-        // vdW interaction. If it is actually 0.94x, which I hypothesize it is,
-        // very little harm done.
-        epsilon = (heteroatom: 0.014, hydrogen: 0.0154)
-        radius = (heteroatom: 2.150, hydrogen: 3.563 * 0.94)
+        epsilon = (default: 0.017, hydrogen: -1)
+        radius = (default: 1.640, hydrogen: -1)
       case 6:
         let t = Float(hydrogenMassRepartitioning) - 0
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
-        epsilon = (heteroatom: 0.037, hydrogen: 0.024)
-        radius = (heteroatom: 1.960, hydrogen: hydrogenRadius)
+        epsilon = (default: 0.037, hydrogen: 0.024)
+        radius = (default: 1.960, hydrogen: hydrogenRadius)
       case 7:
-        // Parameters coming directly from the research papers:
-        // hydrogen epsilon: 0.030 -> 0.110 = (1 / 80.7%)^6
-        // hydrogen radius: 3.50 -> 3.110 = 88.9%
-        epsilon = (heteroatom: 0.054, hydrogen: 0.110)
-        radius = (heteroatom: 1.860, hydrogen: 3.110)
+        epsilon = (default: 0.054, hydrogen: 0.110)
+        radius = (default: 1.860, hydrogen: 3.110)
       case 8:
-        // Extrapolating the missing MM4 parameters for oxygen:
-        // - MM3 parameter for heteroatom epsilon/radius is likely the same. It
-        //   is exactly the same for F, but slightly different for N. The
-        //   hydrogen vdW paper specifically said "MM3/MM4 parameter",
-        //   indicating that MM3(2000) used the same one as MM4.
-        // - Tinker's parameters do not include the special C-H pairs outside of
-        //   hydrogen bonding. But, I can extrapolate. The hydrogen vdW paper
-        //   showed N having 2.8 A for MM4, but then changed that to 3.1 A for
-        //   the final amines paper (~6 years later). Fluorine has 2.87 A, very
-        //   close to the 2.9 A in hydrogen vdW (which used only 1 s.f.).
-        // - Combine using the fluorine heuristic, decided upon at the end of
-        //   the hydrogen vdW paper. Combine O + H with the usual method, but
-        //   scale by 0.85 and 2.6.
-        //
-        // hydrogen epsilon: 0.032 -> 0.084 = (1 / 85.0%)^6
-        // hydrogen radius: 3.46 -> 2.941 = 85.0%
-        //   - 0.054 < 0.0590 < 0.075
-        //   - 0.110 > 0.084 is NOT greater than 0.092
-        //   - 1.860 > 1.8200 > 1.710
-        //   - 3.110 > 2.941 > 2.870
-        //
-        // This attempt seems to have failed. Interpolate the scaling factors
-        // between nitrogen and fluorine. The energy is rather large for N/O/F,
-        // but potentially not from regular vdW interactions. This could be
-        // emulating the absent induced polarization from electronegativity,
-        // which is a good thing. Second-row elements and first-row carbon are
-        // not very electronegative; it seems reasonable they should follow a
-        // different trend for nonbonded hydrogen epsilons.
-        //
-        // hydrogen epsilon: 0.032 -> 0.098 = (1 / 82.9)^6
-        // hydrogen radius: 3.46 -> 3.010 = 87.0%
-        //   - 0.110 > 0.098 > 0.092
-        //   - 3.110 > 3.010 > 2.870
-        epsilon = (heteroatom: 0.059, hydrogen: 0.098)
-        radius = (heteroatom: 1.820, hydrogen: 3.010)
+        epsilon = (default: 0.059, hydrogen: 0.084)
+        radius = (default: 1.820, hydrogen: 3.046)
       case 9:
-        // Parameters coming directly from the research papers:
-        // hydrogen epsilon: 0.036 -> 0.092 = (1 / 85.5%)^6
-        // hydrogen radius: 3.35 -> 2.870 = 85.7%
-        epsilon = (heteroatom: 0.075, hydrogen: 0.092)
-        radius = (heteroatom: 1.710, hydrogen: 2.870)
+        epsilon = (default: 0.075, hydrogen: 0.092)
+        radius = (default: 1.710, hydrogen: 2.870)
       case 14:
-        // For phosphorus and sulfur, we know the electronegative lone pair will
-        // polarize hydrogens that get close. For silicon, it's more like
-        // carbon. With carbon, the energy also decreased by 0.94x, when the
-        // radius decreased that much. Instead of the formula used for H-N and
-        // H-F, where epsilon scaled in the opposite direction to radius. I
-        // think with silicon, the 0.94x correction might do more harm than
-        // good.
-        //
-        // I will not change the energy of silicon. Carbon decreased it using
-        // the factor 0.94x; more electronegative atoms increased it by an
-        // amount roughly following a r^-6 law. Not changing at all is
-        // treating silicon just like carbon, which seems reasonable.
-        epsilon = (heteroatom: 0.140, hydrogen: 0.0488)
-        radius = (heteroatom: 2.290, hydrogen: 3.930 * 0.94)
+        epsilon = (default: 0.140, hydrogen: -1)
+        radius = (default: 2.290, hydrogen: -1)
       case 15:
-        // Use the MM3 parameters for phosphorus, as the MM4 paper doesn't
-        // contain vdW parameters.
-        epsilon = (heteroatom: 0.168, hydrogen: 0.0534)
-        radius = (heteroatom: 2.220, hydrogen: 3.860 * 0.94)
+        epsilon = (default: 0.168, hydrogen: -1)
+        radius = (default: 2.220, hydrogen: -1)
       case 16:
-        // Scale H-S vdW parameters by 0.94, as suggested for MM4.
-        epsilon = (heteroatom: 0.196, hydrogen: 0.0577)
-        radius = (heteroatom: 2.090, hydrogen: 3.730 * 0.94)
+        epsilon = (default: 0.196, hydrogen: -1)
+        radius = (default: 2.090, hydrogen: -1)
       case 32:
-        // Treat germanium just like silicon, and don't modify its epsilon.
-        epsilon = (heteroatom: 0.200, hydrogen: 0.0583)
-        radius = (heteroatom: 2.440, hydrogen: 3.835)
+        epsilon = (default: 0.200, hydrogen: -1)
+        radius = (default: 2.440, hydrogen: -1)
       default:
         fatalError("Atomic number \(atomicNumber) not recognized.")
       }
+      
+      // Pre-compute the Hill function for hydrogen interactions.
+      if atomicNumber != 1, epsilon.hydrogen < 0, radius.hydrogen < 0 {
+        epsilon.hydrogen = (epsilon.default * 0.017).squareRoot()
+        radius.hydrogen = radius.default + 1.640
+      }
+      
+      // Use MM3 heuristics for silicon and germanium.
+      var dispersionFactor: Float = 0.550
+      var hydrogenReductionFactor: Float = 0.94
+      if atomicNumber == 14 || atomicNumber == 32 {
+        dispersionFactor = 1.000
+        hydrogenReductionFactor = 0.923
+      }
+      
       atoms.nonbondedParameters.append(
-        MM4NonbondedParameters(epsilon: epsilon, radius: radius))
+        MM4NonbondedParameters(
+          dispersionFactor: dispersionFactor,
+          epsilon: epsilon,
+          hydrogenReductionFactor: hydrogenReductionFactor,
+          radius: radius))
     }
   }
   
