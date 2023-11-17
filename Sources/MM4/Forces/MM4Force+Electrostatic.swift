@@ -198,6 +198,18 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     // 1,4 atom and undo it.
     let prefactor = MM4ElectrostaticForce.prefactor
     let (K, C) = MM4ElectrostaticForce.reactionFieldConstants
+    
+    // It is currently unknown whether MM4 includes the 1-2,3-4 dipole-dipole
+    // interaction. This must be resolved through testing.
+    #if true
+    let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
+      \(prefactor) * -chargeCharge;
+      chargeCharge = chargeChargeProduct * (
+        1 / r14 + \(K) * r14^2 - \(C)
+      );
+      r14 = distance(p1, p4);
+      """)
+    #else
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
       \(prefactor) * (dipoleDipole - chargeCharge);
       
@@ -237,6 +249,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
       );
       r14 = distance(p1, p4);
       """)
+    #endif
     force.addPerBondParameter(name: "dipoleDipoleProduct")
     force.addPerBondParameter(name: "chargeChargeProduct")
     
