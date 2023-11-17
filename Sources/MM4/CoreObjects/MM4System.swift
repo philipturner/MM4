@@ -16,60 +16,53 @@ class MM4System {
   var atomCount: Int { parameters.atoms.atomicNumbers.count }
   
   /// Bond pairs using the reordered indices.
-  var bondPairs: OpenMM_BondArray!
+  var bondPairs: OpenMM_BondArray
   
   /// The forces used by the system.
   var forces: MM4Forces!
   
   /// Map from reordered indices to original indices.
-  var originalIndices: [Int32]
+  var originalIndices: [Int32] = []
   
   /// The location where the parameters are owned.
   var parameters: MM4Parameters
   
   /// Indices may eventually be rearranged for performance.
-  var reorderedIndices: [Int32]
+  var reorderedIndices: [Int32] = []
   
   /// The backing OpenMM system object.
   var system: OpenMM_System
   
+  /// Map from reordered indices to potential virtual site indices.
+  var virtualSiteIndices: [Int32] = []
+  
   init(parameters: MM4Parameters) {
+    // Initialize base properties.
+    self.bondPairs = OpenMM_BondArray(size: parameters.bonds.indices.count)
+    self.system = OpenMM_System()
     self.parameters = parameters
     
-    self.system = OpenMM_System()
-    for mass in parameters.atoms.masses {
-      system.addParticle(mass: Double(mass))
-    }
+    // Create virtual sites.
+    self.createReorderedIndices(parameters: parameters)
+    self.createMasses(parameters: parameters)
+    self.createVirtualSites(parameters: parameters)
     
-    // Store a mapping from current indices to reversed indices in the force
-    // objects. Eventually, separate the atoms into two groups of "small" vs
-    // "large" atoms, creating different zones of internally contiguous tiles.
-    //
-    // The index reversing is a litmus test, to ensure the code is aware of the
-    // index reordering at every step.
-    let atomCount = parameters.atoms.atomicNumbers.count
-    self.reorderedIndices = (0..<atomCount).map {
-      Int32(atomCount - 1 - $0)
-    }
-    self.originalIndices = Array(repeating: -1, count: atomCount)
-    for originalID in 0..<atomCount {
-      let reorderedID = reorderedIndices[originalID]
-      originalIndices[Int(reorderedID)] = Int32(truncatingIfNeeded: originalID)
-    }
-    
-    let bonds = parameters.bonds
-    self.bondPairs = OpenMM_BondArray(size: bonds.indices.count)
-    for bondID in bonds.indices.indices {
-      let bond = bonds.indices[bondID]
-      bondPairs[bondID] = reorder(bond)
-    }
-    
+    // Create force objects.
+    self.createBondPairs(parameters: parameters)
     self.forces = MM4Forces(system: self)
     forces.addForces(to: system)
   }
 }
 
 extension MM4System {
+  private func createBondPairs(parameters: MM4Parameters) {
+    let bonds = parameters.bonds
+    for bondID in bonds.indices.indices {
+      let bond = bonds.indices[bondID]
+      bondPairs[bondID] = reorder(bond)
+    }
+  }
+  
   @inline(__always)
   func reorder(_ indices: SIMD2<Int32>) -> SIMD2<Int> {
     var output: SIMD2<Int32> = .zero

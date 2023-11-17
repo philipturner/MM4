@@ -26,10 +26,7 @@ class MM4ExternalForce: MM4Force {
       force.addParticle(atomID, parameters: array)
     }
     
-    // Setting as force group 0 should allow the force to only be called at the
-    // beginning of every intergrator time step (which may span multiple actual
-    // steps).
-    super.init(forces: [force], forceGroup: 0)
+    super.init(forces: [force], forceGroup: 1)
   }
   
   /// > WARNING: Reorder the forces before entering into this object.
@@ -59,5 +56,9 @@ class MM4ExternalForce: MM4Force {
     
     // This needs to be performed if the context has changed.
     forceObject.updateParametersInContext(context.context)
+    
+    // TODO: Non-lazily update all contexts that exist after the forces are
+    // updated. There should only be 4 contexts.
+    fatalError("Did not update all contexts.")
   }
 }

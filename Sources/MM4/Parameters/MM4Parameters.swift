@@ -64,10 +64,10 @@ public class MM4Parameters {
   /// covalently bonded hydrogen.
   var hydrogenMassRepartitioning: Float = -1
   
-  /// Atom pairs to be excluded from vdW interactions.
+  /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   var nonbondedExceptions13: [SIMD2<Int32>] = []
   
-  /// Atom pairs that have reduced vdW interactions.
+  /// Atom pairs that have reduced nonbonded and electrostatic interactions.
   var nonbondedExceptions14: [SIMD2<Int32>] = []
   
   /// Map from atoms to bonds that can be efficiently traversed.

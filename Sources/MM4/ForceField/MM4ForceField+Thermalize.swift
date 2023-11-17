@@ -234,7 +234,8 @@ struct RotationalInertia {
     //
     // I_R = m * (I (S^T S) - S S^T)
     // where S is the column vector R - R_cm
-    let STS = (relativePosition * relativePosition).sum()
+    let positionSquared = relativePosition * relativePosition
+    let STS = positionSquared[0] + positionSquared[1] + positionSquared[2]
     var column0 = SIMD3(STS, 0, 0)
     var column1 = SIMD3(0, STS, 0)
     var column2 = SIMD3(0, 0, STS)

@@ -13,6 +13,9 @@ class MM4IntegratorDescriptor: Hashable {
   /// computation of forces. Setting this to one creates a Verlet integrator.
   var fusedTimeSteps: Int = 1
   
+  // TODO: Specify whether this integrator is for the start, end, both, or
+  // neither of a coherent time interval. Remove "fused time steps".
+  
   init() {
     
   }
@@ -39,19 +42,17 @@ class MM4Integrator {
   init(descriptor: MM4IntegratorDescriptor) {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 1 * OpenMM_PsPerFs)
     
-    integrator.addPerDofVariable(name: "force0", initialValue: 0)
-    integrator.addComputePerDof(variable: "force0", expression: "f0")
     for i in 0..<descriptor.fusedTimeSteps {
       if i == 0 {
         integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * (force0 + f1) / m
+          v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * f1 / m
           """)
         integrator.addComputePerDof(variable: "v", expression: """
           v + 0.25 * (dt / \(descriptor.fusedTimeSteps)) * f2 / m
           """)
       } else {
         integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.5 * (dt * 2 / \(descriptor.fusedTimeSteps)) * (force0 + f1) / m
+          v + 0.5 * (dt * 2 / \(descriptor.fusedTimeSteps)) * f1 / m
           """)
         integrator.addComputePerDof(variable: "v", expression: """
           v + 0.25 * (dt * 2 / \(descriptor.fusedTimeSteps)) * f2 / m
@@ -73,16 +74,10 @@ class MM4Integrator {
           v + 0.25 * (dt / \(descriptor.fusedTimeSteps)) * f2 / m
           """)
         integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * (force0 + f1) / m
+          v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * f1 / m
           """)
       }
     }
-    
-    // WARNING: This is incorrect! The kinetic energy must be computed using a
-    // special formula for a Verlet integrator. It doesn't look as simple as
-    // averaging the velocities v(t) and v(t + 1), then pairing with the
-    // potential energy at t + 1.
-    fatalError("This is incorrect!")
   }
   
   /// Modeled after how the OpenMM `integrator.step` API is typically used -

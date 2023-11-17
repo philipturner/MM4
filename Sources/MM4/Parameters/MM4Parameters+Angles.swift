@@ -382,7 +382,7 @@ extension MM4Parameters {
       } else {
         var matchMask: SIMD3<UInt8> = .zero
         matchMask.replace(with: .one, where: sortedCodes .== 5)
-        let numHydrogens = Int(matchMask.wrappedSum())
+        let numHydrogens = Int(matchMask[0] &+ matchMask[1] &+ matchMask[2])
         
         guard let centerType = atoms.centerTypes[Int(angle[1])] else {
           fatalError("Angle did not occur at tetravalent atom.")

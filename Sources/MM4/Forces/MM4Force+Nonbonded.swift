@@ -8,19 +8,14 @@
 import Foundation
 import OpenMM
 
-/// The MVP forcefield isn't maximally optimized. It has a cutoff using 2.5
-/// sigma for the largest atom supported (germanium), which also happens to be a
-/// reasonable cutoff for electrostatics with RF. In the future, the vdW force
-/// will be segregated into two different sets of atom groups. The more
-/// expensive set contains contiguous tiles with large or charged atom pairs.
-///
-/// However, by any non-HPC specialist's standards, this force is hecking
-/// optimized.
 class MM4NonbondedForce: MM4Force {
   /// Use a common cutoff for both forces in the nonbonded force group.
   static var cutoff: Double {
-    let germaniumRadius = 2.440 * OpenMM_NmPerAngstrom
-    return germaniumRadius * 2.5 * OpenMM_SigmaPerVdwRadius
+    // Since germanium will rarely be used, use the cutoff for silicon. The
+    // slightly greater sigma for carbon allows greater accuracy in vdW forces
+    // for bulk diamond. 1.020 nm also accomodates charge-charge interactions.
+    let siliconRadius = 2.290 * OpenMM_NmPerAngstrom
+    return siliconRadius * 2.5 * OpenMM_SigmaPerVdwRadius
   }
   
   required init(system: MM4System) {

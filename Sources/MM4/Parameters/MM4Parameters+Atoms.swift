@@ -187,20 +187,8 @@ extension MM4Parameters {
         valenceCount = 4
         supportsHydrogen = true
       case 7:
-        let atomicNumbers = createAtomicNumbers(map: map)
-        var boronMask: SIMD4<UInt8> = .zero
-        boronMask.replace(with: .one, where: atomicNumbers .== 5)
-        let boronCount = boronMask.wrappedSum()
-        
-        if boronCount == 0 {
-          output = .nitrogen
-          valenceCount = 3
-        } else if boronCount == 1 {
-          valenceCount = 4
-          fatalError("B-N dative bond not supported.")
-        } else {
-          fatalError("Too many borons on a nitrogen.")
-        }
+        output = .nitrogen
+        valenceCount = 3
       case 9:
         output = .fluorine
         valenceCount = 1
