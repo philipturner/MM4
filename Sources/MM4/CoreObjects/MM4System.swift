@@ -26,8 +26,8 @@ class MM4System {
   /// The backing OpenMM system object.
   var system: OpenMM_System
   
-  /// Map from reordered indices to potential virtual site indices.
-  var virtualSiteIndices: [Int32] = []
+  /// The number of virtual sites.
+  var virtualSiteCount: Int = 0
   
   init(parameters: MM4Parameters) {
     // Initialize base properties.
@@ -73,4 +73,3 @@ extension MM4System {
     return SIMD4(truncatingIfNeeded: output)
   }
 }
-
