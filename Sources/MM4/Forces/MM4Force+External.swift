@@ -22,7 +22,7 @@ class MM4ExternalForce: MM4Force {
     array[2] = 0
     
     let atoms = system.parameters.atoms
-    for atomID in atoms.atomicNumbers.indices {
+    for atomID in atoms.indices {
       force.addParticle(atomID, parameters: array)
     }
     

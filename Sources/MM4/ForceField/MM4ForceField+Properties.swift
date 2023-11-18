@@ -71,7 +71,7 @@ extension MM4ForceField {
     }
     set {
       // reordered -> original -> reordered
-      let array = OpenMM_Vec3Array(size: system.atomCount)
+      let array = OpenMM_Vec3Array(size: system.parameters.atoms.count)
       for (reordered, original) in system.originalIndices.enumerated() {
         let position = newValue[Int(original)]
         array[reordered] = SIMD3<Double>(position)
@@ -111,7 +111,7 @@ extension MM4ForceField {
     }
     set {
       // reordered -> original -> reordered
-      let array = OpenMM_Vec3Array(size: system.atomCount)
+      let array = OpenMM_Vec3Array(size: system.parameters.atoms.count)
       for (reordered, original) in system.originalIndices.enumerated() {
         let velocity = newValue[Int(original)]
         array[reordered] = SIMD3<Double>(velocity)
@@ -184,7 +184,7 @@ extension MM4ForceField {
       }
     }
     set {
-      guard newValue.count == system.atomCount else {
+      guard newValue.count == system.parameters.atoms.count else {
         fatalError("Too few atoms.")
       }
       
@@ -237,3 +237,4 @@ extension MM4ForceField {
     }
   }
 }
+

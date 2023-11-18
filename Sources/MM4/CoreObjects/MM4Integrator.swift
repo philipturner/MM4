@@ -13,7 +13,7 @@ class MM4IntegratorDescriptor: Hashable {
   /// computation of forces. Setting this to one creates a Verlet integrator.
   var fusedTimeSteps: Int = 1
   
-  // TODO: Specify whether this integrator is for the start, end, both, or
+  // TODO: Specify whether this integrator is for the start/end, both, or
   // neither of a coherent time interval. Remove "fused time steps".
   
   init() {

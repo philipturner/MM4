@@ -35,7 +35,7 @@ public class MM4ParametersDescriptor {
 }
 
 // Owning classes like 'MM4Atoms' have immutable properties, but the structs
-// themselves (e.g. 'MM4NonbondedParameters' are mutable. This creates
+// themselves (e.g. 'MM4AtomParameters' are mutable. This creates
 // consistent behavior with the C API, where a copy of the struct's data is
 // returned. It is possible to modify the copy, which will not affect the source
 // of truth.
@@ -97,6 +97,10 @@ public class MM4Parameters {
           let descriptorBonds = descriptor.bonds else {
       fatalError("Descriptor did not have any atomic numbers or bonds.")
     }
+    
+    // Set the properties for conveniently iterating over the atoms.
+    atoms.count = descriptorAtomicNumbers.count
+    atoms.indices = 0..<descriptorAtomicNumbers.count
     
     // Check the bond orders.
     if let bondOrders = descriptor.bondOrders {

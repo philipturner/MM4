@@ -133,6 +133,7 @@ public class MM4ForceField {
     switchContext(context(descriptor: descriptor))
     
     // The external force object already zeroes these out; no need to update.
-    _externalForces = Array(repeating: .zero, count: system.atomCount)
+    _externalForces = Array(
+      repeating: .zero, count: system.parameters.atoms.count)
   }
 }

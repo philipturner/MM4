@@ -8,7 +8,7 @@
 // MARK: - Functions for assigning per-atom parameters.
 
 /// Parameters for one atom.
-public class MM4Atoms {
+public struct MM4Atoms {
   /// The number of protons in the atom's nucleus.
   public internal(set) var atomicNumbers: [UInt8] = []
   
@@ -18,14 +18,17 @@ public class MM4Atoms {
   /// The MM4 code for each atom in the system.
   public internal(set) var codes: [MM4AtomCode] = []
   
-  /// Each value corresponds to the atom at the same array index.
-  public internal(set) var extendedParameters: [MM4AtomExtendedParameters?] = []
+  /// Convenient property for iterating over the atoms.
+  public internal(set) var count: Int = 0
+  
+  /// Convenient property for iterating over the atoms.
+  public internal(set) var indices: Range<Int> = 0..<0
   
   /// The mass of each atom after hydrogen mass repartitioning.
   public internal(set) var masses: [Float] = []
   
   /// Each value corresponds to the atom at the same array index.
-  public internal(set) var nonbondedParameters: [MM4NonbondedParameters] = []
+  public internal(set) var parameters: [MM4AtomParameters] = []
   
   /// The smallest ring this is involved in.
   public internal(set) var ringTypes: [UInt8] = []
@@ -106,7 +109,10 @@ public enum MM4CenterType: UInt8 {
 /// containing Si, Ge should be treated with MM3 heuristics:
 /// - Dispersion factors for 1,4 nonbonded exceptions are eliminated.
 /// - Hydrogen reduction factors for bonded hydrogens change from 0.94 to 0.923.
-public struct MM4NonbondedParameters {
+public struct MM4AtomParameters {
+  /// Partial charge in units of proton charge.
+  public var charge: Float
+  
   /// Units: dimensionless
   public var dispersionFactor: Float
   
@@ -122,11 +128,6 @@ public struct MM4NonbondedParameters {
   ///
   /// > WARNING: Convert angstroms to nanometers.
   public var radius: (default: Float, hydrogen: Float)
-}
-
-public struct MM4AtomExtendedParameters {
-  /// Partial charge in units of proton charge.
-  public var charge: Float
 }
 
 extension MM4Parameters {
@@ -151,7 +152,7 @@ extension MM4Parameters {
   }
   
   func createAtomCodes() {
-    atoms.codes = atoms.atomicNumbers.indices.map { atomID in
+    atoms.codes = atoms.indices.map { atomID in
       let atomicNumber = atoms.atomicNumbers[atomID]
       let map = atomsToAtomsMap[atomID]
       var output: MM4AtomCode
@@ -229,7 +230,7 @@ extension MM4Parameters {
   
   func createCenterTypes() {
     let permittedAtomicNumbers: [UInt8] = [6, 7, 8, 14, 15, 16, 31]
-    for atomID in atoms.atomicNumbers.indices {
+    for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       guard permittedAtomicNumbers.contains(atomicNumber) else {
         precondition(
@@ -305,7 +306,7 @@ extension MM4Parameters {
   //   to create a single "R=0.85", I derived r=3.046 A, eps=0.0840.
   // - Si, P, S, Ge use the Hill function exactly instead of X/H vdW pairs.
   func createNonbondedParameters() {
-    for atomID in atoms.atomicNumbers.indices {
+    for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var epsilon: (default: Float, hydrogen: Float)
       var radius: (default: Float, hydrogen: Float)
@@ -363,8 +364,9 @@ extension MM4Parameters {
         hydrogenReductionFactor = 0.923
       }
       
-      atoms.nonbondedParameters.append(
-        MM4NonbondedParameters(
+      atoms.parameters.append(
+        MM4AtomParameters(
+          charge: 0,
           dispersionFactor: dispersionFactor,
           epsilon: epsilon,
           hydrogenReductionFactor: hydrogenReductionFactor,
@@ -402,3 +404,4 @@ extension MM4Parameters {
     nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
   }
 }
+

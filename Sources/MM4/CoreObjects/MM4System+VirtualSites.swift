@@ -8,7 +8,7 @@
 import OpenMM
 
 extension MM4System {
-  func createReorderedIndices(parameters: MM4Parameters) {
+  func createReorderedIndices() {
     let atomicNumbers = parameters.atoms.atomicNumbers
     var virtualSiteCount = 0
     for originalID in 0..<atomicNumbers.count {
@@ -39,21 +39,67 @@ extension MM4System {
     }
   }
   
-  func createMasses(parameters: MM4Parameters) {
-    let masses = parameters.atoms.masses
-    for reorderedID in reorderedIndices {
-      var mass: Double = 0
-      if reorderedID > -1 {
-        let originalID = originalIndices[Int(reorderedID)]
-        mass = Double(masses[Int(originalID)])
+  func createMasses() {
+    for (index, reorderedID) in reorderedIndices.enumerated() {
+      let originalID = originalIndices[Int(reorderedID)]
+      let atomicNumber = parameters.atoms.atomicNumbers[Int(originalID)]
+      var mass = parameters.atoms.masses[Int(originalID)]
+      
+      if index >= virtualSiteIndices.count {
+        if atomicNumber == 1 {
+          mass = 0
+        }
+      } else {
+        guard atomicNumber == 1 else {
+          fatalError("This should never happen.")
+        }
       }
-      system.addParticle(mass: mass)
+      system.addParticle(mass: Double(mass))
     }
-    
-    fatalError("Change this function to account for virtual sites.")
   }
   
-  func createVirtualSites(parameters: MM4Parameters) {
+  func createVirtualSites() {
     fatalError("Not implemented.")
+  }
+}
+
+extension MM4System {
+  func createExceptions(force: OpenMM_CustomNonbondedForce) {
+    for bond in parameters.bonds.indices {
+      let reordered = self.virtualSiteReorder(bond)
+      force.addExclusion(particles: reordered)
+    }
+    for exception in parameters.nonbondedExceptions13 {
+      let reordered = self.virtualSiteReorder(exception)
+      force.addExclusion(particles: reordered)
+    }
+    
+    let group = OpenMM_IntSet()
+    for atomID in parameters.atoms.indices {
+      let reordered = self.virtualSiteReorder(atomID)
+      group.insert(reordered)
+    }
+    force.addInteractionGroup(set1: group, set2: group)
+  }
+  
+  @inline(__always)
+  func virtualSiteReorder(_ index: Int) -> Int {
+    return virtualSiteIndices.count + index
+  }
+  
+  @inline(__always)
+  func virtualSiteReorder(_ indices: SIMD2<Int32>) -> SIMD2<Int> {
+    var output: SIMD2<Int32> = indices
+    let virtualSiteCount = Int32(truncatingIfNeeded: virtualSiteIndices.count)
+    output &+= SIMD2(repeating: virtualSiteCount)
+    return SIMD2<Int>(truncatingIfNeeded: output)
+  }
+  
+  @inline(__always)
+  func virtualSiteReorder(_ indices: SIMD4<Int32>) -> SIMD4<Int> {
+    var output: SIMD4<Int32> = indices
+    let virtualSiteCount = Int32(truncatingIfNeeded: virtualSiteIndices.count)
+    output &+= SIMD4(repeating: virtualSiteCount)
+    return SIMD4<Int>(truncatingIfNeeded: output)
   }
 }

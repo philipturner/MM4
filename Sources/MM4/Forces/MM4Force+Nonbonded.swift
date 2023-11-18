@@ -36,8 +36,8 @@ class MM4NonbondedForce: MM4Force {
     // different.
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
-        -2.25 * (length / r)^6 +
-        1.84e5 * exp(-12.00 * (r / length))
+        -2.25 * (radius / r)^6 +
+        1.84e5 * exp(-12.00 * (r / radius))
       );
       epsilon = select(isHydrogenBond, heteroatomEpsilon, hydrogenEpsilon);
       radius = select(isHydrogenBond, heteroatomRadius, hydrogenRadius);
@@ -60,8 +60,8 @@ class MM4NonbondedForce: MM4Force {
     
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
-    for atomID in atoms.atomicNumbers.indices {
-      let parameters = atoms.nonbondedParameters[atomID]
+    for atomID in system.originalIndices {
+      let parameters = atoms.parameters[Int(atomID)]
       
       // Units: kcal/mol -> kJ/mol
       let (epsilon, hydrogenEpsilon) = parameters.epsilon
@@ -75,7 +75,7 @@ class MM4NonbondedForce: MM4Force {
       force.addParticle(parameters: array)
     }
     
-    force.createExclusionsFromBonds(system.bondPairs, bondCutoff: 2)
+    system.createExceptions(force: force)
     super.init(forces: [force], forceGroup: 1)
   }
 }
@@ -94,45 +94,101 @@ class MM4NonbondedExceptionForce: MM4Force {
     let correction = dispersionFactor - 1
     let force = OpenMM_CustomBondForce(energy: """
       epsilon * (
-        \(-2.25 * correction) * (equilibriumLength / r)^6
+        \(-2.25 * correction) * (radius / r)^6
       );
       """)
     force.addPerBondParameter(name: "epsilon")
-    force.addPerBondParameter(name: "equilibriumLength")
+    force.addPerBondParameter(name: "radius")
     
-    let array = OpenMM_DoubleArray(size: 2)
+    // Separate force for (Si, Ge) to (H, C, Si, Ge) interactions.
+    let legacyForce = OpenMM_CustomBondForce(energy: """
+      legacyEpsilon * (
+        -2.25 * (legacyRadius / r)^6 +
+        1.84e5 * exp(-12.00 * (r / legacyRadius))
+      ) - epsilon * (
+        -2.25 * (radius / r)^6 +
+        1.84e5 * exp(-12.00 * (r / radius))
+      );
+      """)
+    legacyForce.addPerBondParameter(name: "epsilon")
+    legacyForce.addPerBondParameter(name: "radius")
+    legacyForce.addPerBondParameter(name: "legacyEpsilon")
+    legacyForce.addPerBondParameter(name: "legacyRadius")
+    
+    // TODO: Test how different choices affect the accuracy of molecular
+    // structures, similar to the testing of electrostatic exceptions:
+    // - dispersionFactor = 0.550
+    // - dispersionFactor = 1.000
+    // - applying the dispersion factor to the Pauli repulsion force
+    let array = OpenMM_DoubleArray(size: 4)
     let exceptions = system.parameters.nonbondedExceptions14
     let atoms = system.parameters.atoms
     for exception in exceptions {
-      let parameters1 = atoms.nonbondedParameters[Int(exception[0])]
-      let parameters2 = atoms.nonbondedParameters[Int(exception[1])]
+      let parameters1 = atoms.parameters[Int(exception[0])]
+      let parameters2 = atoms.parameters[Int(exception[1])]
       
-      if parameters1.dispersionFactor > 1.000 - 0.001 ||
-          parameters2.dispersionFactor > 1.000 - 0.001 {
-        // Skip corrections when either atom has a dispersion factor of 1.000.
-        continue
-      }
-      
-      var epsilon: Float
-      var equilibriumLength: Float
+      let epsilon: Float
+      let radius: Float
       if parameters1.epsilon.hydrogen * parameters2.epsilon.hydrogen < 0 {
         epsilon = max(parameters1.epsilon.hydrogen,
                       parameters2.epsilon.hydrogen)
-        equilibriumLength = max(parameters1.radius.hydrogen,
-                                parameters2.radius.hydrogen)
+        radius = max(parameters1.radius.hydrogen,
+                     parameters2.radius.hydrogen)
       } else {
         epsilon = sqrt(parameters1.epsilon.default *
                        parameters2.epsilon.default)
-        equilibriumLength = parameters1.radius.default +
-        /**/                parameters2.radius.default
+        radius = parameters1.radius.default +
+        /**/     parameters2.radius.default
       }
       
       // Units: kcal/mol -> kJ/mol, angstrom -> nm
       array[0] = Double(epsilon) * OpenMM_KJPerKcal
-      array[1] = Double(equilibriumLength) * OpenMM_NmPerAngstrom
+      array[1] = Double(radius) * OpenMM_NmPerAngstrom
+      var selectedForce = force
       
-      let particles = system.reorder(exception)
-      force.addBond(particles: particles, parameters: array)
+      let atomicNumber1 = atoms.atomicNumbers[Int(exception[0])]
+      let atomicNumber2 = atoms.atomicNumbers[Int(exception[0])]
+      let atomicNumbers = SIMD2(atomicNumber1, atomicNumber2)
+      let hydrogenMask = atomicNumbers .== 1
+      let carbonMask = atomicNumbers .== 6
+      let siliconMask = atomicNumbers .== 14
+      let germaniumMask = atomicNumbers .== 32
+      
+      // Use MM3 parameters for torsions involving Si, Ge. The parameters for
+      // an exception with an H bonded to C may be slightly off. They use the
+      // R=0.94 distance that MM3 was not parameterized with. The expected
+      // impact is small, dwarfed by the difference in C-Si and C-Ge exceptions.
+      // In addition, correcting the hydrogens would complicate the code.
+      if any(siliconMask .| germaniumMask),
+         all(hydrogenMask .| carbonMask .| siliconMask .| germaniumMask) {
+        // Change the 8-bit masks to 32-bit for selecting FP32 numbers.
+        let hydrogenMask = SIMD2<Int32>(truncatingIfNeeded: atomicNumbers) .== 1
+        let carbonMask = SIMD2<Int32>(truncatingIfNeeded: atomicNumbers) .== 6
+        
+        // Change the H/C epsilons to match MM3.
+        var epsilons = SIMD2(parameters1.epsilon.default,
+                             parameters2.epsilon.default)
+        epsilons.replace(with: 0.020, where: hydrogenMask)
+        epsilons.replace(with: 0.027, where: carbonMask)
+        
+        // Change the H/C radii to match MM3.
+        var radii = SIMD2(parameters1.radius.default,
+                          parameters2.radius.default)
+        radii.replace(with: 1.62, where: hydrogenMask)
+        radii.replace(with: 2.04, where: carbonMask)
+        
+        // Create alternative vdW parameters using the Hill function.
+        let legacyEpsilon = sqrt(epsilons[0] * epsilons[1])
+        let legacyRadius = radii[0] + radii[1]
+        
+        // Units: kcal/mol -> kJ/mol, angstrom -> nm
+        array[2] = Double(legacyEpsilon) * OpenMM_KJPerKcal
+        array[3] = Double(legacyRadius) * OpenMM_NmPerAngstrom
+        selectedForce = legacyForce
+      }
+      
+      let particles = system.virtualSiteReorder(exception)
+      selectedForce.addBond(particles: particles, parameters: array)
     }
     super.init(forces: [force], forceGroup: 1)
   }

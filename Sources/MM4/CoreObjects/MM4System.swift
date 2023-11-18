@@ -11,13 +11,6 @@ import OpenMM
 ///
 /// This object takes ownership of the `parameters` passed in.
 class MM4System {
-  /// Concise method for fetching the atom count. This should not be exposed to
-  /// the public API.
-  var atomCount: Int { parameters.atoms.atomicNumbers.count }
-  
-  /// Bond pairs using the reordered indices.
-  var bondPairs: OpenMM_BondArray
-  
   /// The forces used by the system.
   var forces: MM4Forces!
   
@@ -38,31 +31,21 @@ class MM4System {
   
   init(parameters: MM4Parameters) {
     // Initialize base properties.
-    self.bondPairs = OpenMM_BondArray(size: parameters.bonds.indices.count)
     self.system = OpenMM_System()
     self.parameters = parameters
     
     // Create virtual sites.
-    self.createReorderedIndices(parameters: parameters)
-    self.createMasses(parameters: parameters)
-    self.createVirtualSites(parameters: parameters)
+    self.createReorderedIndices()
+    self.createMasses()
+    self.createVirtualSites()
     
     // Create force objects.
-    self.createBondPairs(parameters: parameters)
     self.forces = MM4Forces(system: self)
     forces.addForces(to: system)
   }
 }
 
 extension MM4System {
-  private func createBondPairs(parameters: MM4Parameters) {
-    let bonds = parameters.bonds
-    for bondID in bonds.indices.indices {
-      let bond = bonds.indices[bondID]
-      bondPairs[bondID] = reorder(bond)
-    }
-  }
-  
   @inline(__always)
   func reorder(_ indices: SIMD2<Int32>) -> SIMD2<Int> {
     var output: SIMD2<Int32> = .zero
@@ -90,3 +73,4 @@ extension MM4System {
     return SIMD4(truncatingIfNeeded: output)
   }
 }
+

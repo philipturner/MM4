@@ -8,7 +8,7 @@
 // MARK: - Functions for assigning per-torsion parameters.
 
 /// Parameters for a group of 4 atoms.
-public class MM4Torsions {
+public struct MM4Torsions {
   /// Each value corresponds to the torsion at the same array index.
   public internal(set) var extendedParameters: [MM4TorsionExtendedParameters?] = []
   

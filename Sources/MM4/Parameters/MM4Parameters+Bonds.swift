@@ -8,7 +8,7 @@
 // MARK: - Functions for assigning per-bond parameters.
 
 /// Parameters for a group of 2 atoms.
-public class MM4Bonds {
+public struct MM4Bonds {
   /// Each value corresponds to the bond at the same array index.
   public internal(set) var extendedParameters: [MM4BondExtendedParameters?] = []
   
@@ -228,7 +228,6 @@ extension MM4Parameters {
   }
   
   func createPartialCharges() {
-    var charges = Array<Float>(repeating: 0, count: atoms.atomicNumbers.count)
     for (bondID, parameters) in bonds.extendedParameters.enumerated() {
       guard let parameters else { continue }
       let atomCharges = projectDipole(
@@ -237,7 +236,8 @@ extension MM4Parameters {
       let atomsMap = bondsToAtomsMap[bondID]
       for lane in 0..<2 {
         let atomID = atomsMap[lane]
-        charges[Int(atomID)] += atomCharges[lane]
+        let partialCharge = atomCharges[lane]
+        atoms.parameters[Int(atomID)].charge += partialCharge
       }
     }
   }

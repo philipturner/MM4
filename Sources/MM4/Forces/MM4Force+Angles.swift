@@ -205,7 +205,7 @@ class MM4BendBendForce: MM4Force {
     ]
     let atoms = system.parameters.atoms
     let angles = system.parameters.angles
-    for atomID in atoms.atomicNumbers.indices {
+    for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var valenceCount: Int
       switch atomicNumber {

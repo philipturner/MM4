@@ -72,6 +72,7 @@ class MM4ElectrostaticForce: MM4Force {
       dEdR += includeInteraction ? tempForce*invR*invR : 0;
     }
      */
+    
     let prefactor = MM4ElectrostaticForce.prefactor
     let (K, C) = MM4ElectrostaticForce.reactionFieldConstants
     let force = OpenMM_CustomNonbondedForce(energy: """
@@ -85,18 +86,15 @@ class MM4ElectrostaticForce: MM4Force {
     
     let array = OpenMM_DoubleArray(size: 1)
     let atoms = system.parameters.atoms
-    for atomID in atoms.atomicNumbers.indices {
-      var charge: Double = 0
-      if let parameters = atoms.extendedParameters[atomID] {
-        charge = Double(parameters.charge)
-      }
+    for atomID in system.originalIndices {
+      let parameters = atoms.parameters[Int(atomID)]
       
       // Units: elementary charge
-      array[0] = charge
+      array[0] = Double(parameters.charge)
       force.addParticle(parameters: array)
     }
     
-    force.createExclusionsFromBonds(system.bondPairs, bondCutoff: 2)
+    system.createExceptions(force: force)
     super.init(forces: [force], forceGroup: 1)
   }
 }
@@ -352,11 +350,18 @@ class MM4ElectrostaticExceptionForce: MM4Force {
           
           // WARNING: Before entering particles into the OpenMM kernel, swap the
           // two indices in 'bondLeft'.
-          particles[0] = Int(bondLeft[1])
-          particles[1] = Int(bondLeft[0])
-          particles[2] = Int(bondRight[0])
-          particles[3] = Int(bondRight[1])
+          var original: SIMD4<Int32> = .zero
+          original[0] = bondLeft[1]
+          original[1] = bondLeft[0]
+          original[2] = bondRight[0]
+          original[3] = bondRight[1]
+          
+          let reordered = system.virtualSiteReorder(original)
+          for lane in 0..<4 {
+            particles[lane] = reordered[lane]
+          }
           force.addBond(particles: particles, parameters: array)
+          fatalError("Account for virtual sites.")
         }
       }
     }

@@ -12,7 +12,7 @@
 /// The forcefield parameters may be slightly inaccurate for rings with mixed
 /// carbon and silicon atoms (not sure). In the future, this may be expanded to
 /// 3-atom and 4-atom rings.
-public class MM4Rings {
+public struct MM4Rings {
   /// Groups of atom indices that form a ring.
   public internal(set) var indices: [SIMD8<Int32>] = []
   
@@ -40,7 +40,7 @@ extension MM4Parameters {
       }
     }
     
-    var groups = atoms.atomicNumbers.indices.map { i in
+    var groups = atoms.indices.map { i in
       Group(indices: [Int32(i)], movedIndex: nil)
     }
     for bond in bonds.indices {

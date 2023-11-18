@@ -62,7 +62,8 @@ extension MM4ForceField {
     let thermalVelocities = thermalState.velocities!
     
     // Using reordered indices.
-    var anchorStatuses = [Bool](repeating: false, count: system.atomCount)
+    var anchorStatuses = [Bool](
+      repeating: false, count: system.parameters.atoms.count)
     for anchor in _anchors {
       anchorStatuses[Int(anchor)] = true
     }
@@ -194,7 +195,7 @@ extension MM4ForceField {
     
     // Set the system's velocities to the new ones, reverting changes to rigid
     // bodies that shouldn't be thermalized.
-    let array = OpenMM_Vec3Array(size: system.atomCount)
+    let array = OpenMM_Vec3Array(size: system.parameters.atoms.count)
     for (index, velocity) in newVelocities.enumerated() {
       array[index] = SIMD3<Double>(velocity)
     }
@@ -291,3 +292,4 @@ struct RotationalInertia {
     return (column0, column1, column2)
   }
 }
+
