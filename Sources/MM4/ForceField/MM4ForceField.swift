@@ -14,7 +14,10 @@ public class MM4ForceFieldDescriptor {
   public var positions: [SIMD3<Float>]?
   
   public init() {
-    
+    // TODO: Remove the API for initializing this with a descriptor. Instead,
+    // the atoms' positions should be set using the property-based API. Only an
+    // "MM4Parameters" object should be entered into the initializer.
+    fatalError()
   }
 }
 
@@ -107,6 +110,8 @@ public class MM4ForceFieldDescriptor {
 public class MM4ForceField {
   var system: MM4System
   
+  // var integrator: MM4Integrator
+  
   var contexts: [MM4IntegratorDescriptor: MM4Context] = [:]
   
   /// Store the latest context object, so you can transfer positions and
@@ -127,10 +132,6 @@ public class MM4ForceField {
       fatalError("No parameters were specified for the force field.")
     }
     system = MM4System(parameters: parameters)
-    
-    let descriptor = MM4IntegratorDescriptor()
-    descriptor.fusedTimeSteps = 1
-    switchContext(context(descriptor: descriptor))
     
     // The external force object already zeroes these out; no need to update.
     _externalForces = Array(

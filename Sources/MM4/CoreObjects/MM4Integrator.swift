@@ -9,12 +9,13 @@ import OpenMM
 
 /// A configuration for an integrator.
 class MM4IntegratorDescriptor: Hashable {
-  /// The number of force evaluations fused together to reduce redundant
-  /// computation of forces. Setting this to one creates a Verlet integrator.
-  var fusedTimeSteps: Int = 1
+  /// Whether to correct velocities for the start of leapfrog integration
+  /// intervals.
+  var start: Bool = false
   
-  // TODO: Specify whether this integrator is for the start/end, both, or
-  // neither of a coherent time interval. Remove "fused time steps".
+  /// Whether to correct velocities for the end of leapfrog integration
+  /// intervals.
+  var end: Bool = false
   
   init() {
     
@@ -24,14 +25,16 @@ class MM4IntegratorDescriptor: Hashable {
     lhs: MM4IntegratorDescriptor,
     rhs: MM4IntegratorDescriptor
   ) -> Bool {
-    guard lhs.fusedTimeSteps == rhs.fusedTimeSteps else {
+    guard lhs.start == rhs.start,
+          lhs.end == rhs.end else {
       return false
     }
     return true
   }
   
   func hash(into hasher: inout Hasher) {
-    hasher.combine(fusedTimeSteps)
+    hasher.combine(start)
+    hasher.combine(end)
   }
 }
 
@@ -42,41 +45,39 @@ class MM4Integrator {
   init(descriptor: MM4IntegratorDescriptor) {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 1 * OpenMM_PsPerFs)
     
-    for i in 0..<descriptor.fusedTimeSteps {
-      if i == 0 {
-        integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * f1 / m
-          """)
-        integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.25 * (dt / \(descriptor.fusedTimeSteps)) * f2 / m
-          """)
-      } else {
-        integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.5 * (dt * 2 / \(descriptor.fusedTimeSteps)) * f1 / m
-          """)
-        integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.25 * (dt * 2 / \(descriptor.fusedTimeSteps)) * f2 / m
-          """)
-      }
-      
-      integrator.addComputePerDof(variable: "x", expression: """
-        x + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * v
+    if descriptor.start {
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f1 / m
         """)
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * f2 / m
+        v + 0.25 * dt * f2 / m
         """)
-      integrator.addComputePerDof(variable: "x", expression: """
-        x + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * v
+    } else {
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 1.0 * dt * f1 / m
         """)
-      
-      if i + 1 == descriptor.fusedTimeSteps {
-        integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.25 * (dt / \(descriptor.fusedTimeSteps)) * f2 / m
-          """)
-        integrator.addComputePerDof(variable: "v", expression: """
-          v + 0.5 * (dt / \(descriptor.fusedTimeSteps)) * f1 / m
-          """)
-      }
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f2 / m
+        """)
+    }
+    
+    integrator.addComputePerDof(variable: "x", expression: """
+      x + 0.5 * dt * v
+      """)
+    integrator.addComputePerDof(variable: "v", expression: """
+      v + 0.5 * dt * f2 / m
+      """)
+    integrator.addComputePerDof(variable: "x", expression: """
+      x + 0.5 * dt * v
+      """)
+    
+    if descriptor.end {
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.25 * dt * f2 / m
+        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f1 / m
+        """)
     }
   }
   

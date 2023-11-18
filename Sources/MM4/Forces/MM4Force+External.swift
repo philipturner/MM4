@@ -30,35 +30,30 @@ class MM4ExternalForce: MM4Force {
   }
   
   /// > WARNING: Reorder the forces before entering into this object.
-  func updateForces(_ forces: [SIMD3<Float>]? = nil, context: MM4Context) {
+  func updateForces(_ forces: [SIMD3<Float>], context: MM4Context) {
     guard let forceObject = self.forces[0] as? OpenMM_CustomExternalForce else {
       fatalError("External force was not an external force.")
     }
     let array = OpenMM_DoubleArray(size: 3)
     
-    // This only needs to be performed if the forces have changed.
-    if let forces {
-      for atomID in forces.indices {
-        // Units: zJ/nm -> kJ/mol/nm
-        var force = SIMD3<Double>(forces[atomID])
-        force *= MM4KJPerMolPerZJ
-        
-        // Force is the negative gradient of potential energy.
-        force = -force
-        
-        for lane in 0..<3 {
-          array[lane] = force[lane]
-        }
-        forceObject.setParticleParameters(
-          index: atomID, particle: atomID, parameters: array)
+    for atomID in forces.indices {
+      // Units: zJ/nm -> kJ/mol/nm
+      var force = SIMD3<Double>(forces[atomID])
+      force *= MM4KJPerMolPerZJ
+      
+      // Force is the negative gradient of potential energy.
+      force = -force
+      
+      for lane in 0..<3 {
+        array[lane] = force[lane]
       }
+      forceObject.setParticleParameters(
+        index: atomID, particle: atomID, parameters: array)
     }
-    
-    // This needs to be performed if the context has changed.
     forceObject.updateParametersInContext(context.context)
     
-    // TODO: Non-lazily update all contexts that exist after the forces are
-    // updated. There should only be 4 contexts.
-    fatalError("Did not update all contexts.")
+    // TODO: Create a single context/integrator accepting a global parameter for
+    // number of loop iterations. Add while blocks to the OpenMM bindings.
+    fatalError("Rewrite the Integrator implementation from scratch.")
   }
 }
