@@ -35,11 +35,6 @@ class MM4Force {
 
 /// Wraps all the forces owned by a system.
 class MM4Forces {
-  // Force Group 0
-  // var rigidBodyElectrostatic: MM4ElectrostaticForce
-  // var rigidBodyExternal: MM4ExternalForce
-  // var rigidBodyNonbonded: MM4NonbondedForce
-  
   // Force Group 1
   var electrostatic: MM4ElectrostaticForce
   var electrostaticException: MM4ElectrostaticExceptionForce
@@ -54,6 +49,11 @@ class MM4Forces {
   var bendBend: MM4BendBendForce
   var bendExtended: MM4BendExtendedForce
   var stretch: MM4StretchForce
+  
+  // Force Group 3
+  // var rigidBodyElectrostatic: MM4ElectrostaticForce
+  // var rigidBodyExternal: MM4ExternalForce
+  // var rigidBodyNonbonded: MM4NonbondedForce
   
   init(system: MM4System) {
     // Force Group 0

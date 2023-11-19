@@ -4,7 +4,12 @@ General-purpose simulator for molecular nanotechnology.
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-## Parameters
+### Simulation
+
+Levels of theory:
+- Molecular dynamics
+- Rigid body dynamics
+- Hybrid approach for deformable bodies
 
 ### Supported Atoms
 
@@ -38,9 +43,22 @@ Key:
 | S               |   | O |   |   |   |   |   |   |   |
 | Ge              | X | O |   |   |   |   |   |   | X |
 
-## Forced Motions
+### Forced Motions
 
 |         | Force           | Velocity             |
 | ------- | --------------- | -------------------- |
 | Linear  | external force  | anchor with velocity |
-| Angular | not implemented | flywheel             |
+| Angular | external torque | flywheel             |
+
+### Releases
+
+v1.0.0
+- 5-member and 6-member carbon rings
+- Rigid body dynamics
+- External forces
+- Anchors
+
+Not included in the current version:
+- Support for non-carbon elements
+- Hybrid approach for deformable bodies
+- External torques

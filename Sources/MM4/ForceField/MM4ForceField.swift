@@ -101,8 +101,28 @@ public class MM4ForceField {
   /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
   
-  /// Stores whether energy is being tracked.
-  var _trackingEnergy: Bool = false
+  /// The level of theory used to simulate each rigid body.
+  ///
+  /// The default value is `.molecularDynamics` for each rigid body. All rigid
+  /// bodies must have the same level of theory.
+  public var levelOfTheory: [MM4LevelOfTheory] = []
+  
+  /// The largest time step that may be taken during simulation, in picoseconds.
+  /// Some steps may have a smaller duration.
+  ///
+  /// If not specified, `timeStep` defaults to the level of theory's default
+  /// time step.
+  public var timeStep: [MM4LevelOfTheory: Double] = [:]
+  
+  /// Whether to track and debug energy explosions during simulation.
+  ///
+  /// > Warning: Enabling this feature may significantly degrade performance.
+  ///
+  /// For simulation, this feature is disabled by default. It is always enabled
+  /// for minimization. In the future, this API may be deprecated. The
+  /// replacement will allow control over whether energy tracking occurs during
+  /// minimization.
+  public var trackingEnergy: Bool = false
   
   /// Create a simulator using the specified configuration.
   public init(parameters: MM4Parameters) {
@@ -113,5 +133,13 @@ public class MM4ForceField {
     // The external force object already zeroes these out; no need to update.
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)
+    
+    for _ in parameters.rigidBodies.indices {
+      levelOfTheory.append(.molecularDynamics)
+    }
+    
+    for level in MM4LevelOfTheory.allCases {
+      timeStep[level] = level.defaultTimeStep
+    }
   }
 }

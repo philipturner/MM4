@@ -7,19 +7,37 @@
 
 import OpenMM
 
+/// A level of theory for the simulator.
+public enum MM4LevelOfTheory: CaseIterable {
+  /// The default time step is 4.348 femtoseconds.
+  case molecularDynamics
+  
+  /// The default time step has yet to be determined.
+  case rigidBodyDynamics
+  
+  /// The default time step in picoseconds.
+  public var defaultTimeStep: Double {
+    switch self {
+    case .molecularDynamics:
+      return 100 / 23 * OpenMM_PsPerFs
+    case .rigidBodyDynamics:
+      return 100 / 23 * OpenMM_PsPerFs
+    }
+  }
+}
+
 extension MM4ForceField {
   /// Simulate the system's evolution for the specified time interval.
   ///
   /// - Parameter time: The time interval, in picoseconds.
-  /// - Parameter timeStep: The largest time step that may be taken during the
-  ///   simulation, in picoseconds. Some steps may have a smaller duration.
   /// - throws: <doc:MM4Error/energyDrift(_:)> if energy tracking is enabled.
-  public func simulate(
-    time: Double,
-    timeStep: Double = 100 / 23 * OpenMM_PsPerFs
-  ) throws {
+  public func simulate(time: Double) throws {
     // Check whether the arguments are valid.
-    guard time >= 0, timeStep > 0 else {
+    guard levelOfTheory.allSatisfy({ $0 == .molecularDynamics }) else {
+      fatalError("Rigid body dynamics not implemented yet.")
+    }
+    guard let timeStep = self.timeStep[.molecularDynamics],
+          timeStep > 0, time >= 0 else {
       fatalError("Time or time step was invalid.")
     }
     if time == 0 {

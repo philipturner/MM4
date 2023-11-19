@@ -97,6 +97,35 @@ extension MM4ForceField {
   }
 }
 
+extension MM4ForceField {
+  /// The system's total kinetic energy, in zeptojoules.
+  ///
+  /// > Note: This is a more ergonomic API, but less efficient than the batched
+  /// function <doc:MM4ForceField/state(descriptor:)>.
+  public var kineticEnergy: Double {
+    var descriptor = MM4StateDescriptor()
+    descriptor.energy = true
+    return state(descriptor: descriptor).kineticEnergy!
+  }
+  
+  /// The system's total potential energy, in zeptojoules.
+  ///
+  /// > Note: This is a more ergonomic API, but less efficient than the batched
+  /// function <doc:MM4ForceField/state(descriptor:)>.
+  public var potentialEnergy: Double {
+    var descriptor = MM4StateDescriptor()
+    descriptor.energy = true
+    return state(descriptor: descriptor).potentialEnergy!
+  }
+  
+  /// The threshold for energy explosion is 1 million zJ @ 10,000 atoms. This
+  /// implementation detail is not exposed to the public API yet. That fact may
+  /// change if a significant need arises.
+  var thresholdEnergy: Double {
+    1e6 * (Double(system.parameters.atoms.count) / 1e4)
+  }
+}
+
 // MARK: - Simulation Setup
 
 extension MM4ForceField {
