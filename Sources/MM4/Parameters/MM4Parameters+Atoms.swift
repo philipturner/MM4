@@ -36,7 +36,7 @@ public struct MM4Atoms {
 
 /// MM4 codes for an element or an atom in a specific functional group.
 public enum MM4AtomCode: UInt8, RawRepresentable {
-  /// Carbon (sp3)
+  /// Carbon
   ///
   /// MM4 atom code: 1
   case alkaneCarbon = 1
@@ -81,7 +81,7 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 31
   case germanium = 31
   
-  /// Carbon (sp3, 5-ring)
+  /// Carbon (5-ring)
   ///
   /// MM4 atom code: 123
   case cyclopentaneCarbon = 123
@@ -104,7 +104,7 @@ public enum MM4CenterType: UInt8 {
   case quaternary = 4
 }
 
-/// Parameters for the van der Waals force on a specific atom. Special values
+/// Parameters for the vdW and electrostatic forces on an atom. Special values
 /// are provided for hydrogen parameters, where applicable. Interactions
 /// containing Si, Ge should be treated with MM3 heuristics:
 /// - Dispersion factors for 1,4 nonbonded exceptions are eliminated.
@@ -322,6 +322,11 @@ extension MM4Parameters {
         epsilon = (default: 0.017, hydrogen: -1)
         radius = (default: 1.640, hydrogen: -1)
       case 6:
+        // If a carbon belongs to a rigid body with a certain amount of HMR,
+        // assume all hydrogens it contacts have the same amount of HMR. This
+        // may not be 100% accurate, but seems like the most logical course of
+        // action. Most often, people will use the same amount of HMR for each
+        // rigid body.
         let rigidBodyID = atomsToRigidBodiesMap[atomID]
         let t = hydrogenMassRepartitioning[Int(rigidBodyID)]
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440

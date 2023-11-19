@@ -32,16 +32,17 @@ extension MM4ForceField {
   /// - Parameter time: The time interval, in picoseconds.
   /// - throws: <doc:MM4Error/energyDrift(_:)> if energy tracking is enabled.
   public func simulate(time: Double) throws {
-    // Check whether the arguments are valid.
-    guard levelOfTheory.allSatisfy({ $0 == .molecularDynamics }) else {
+    guard _levelOfTheory.allSatisfy({ $0 == .molecularDynamics }) else {
       fatalError("Rigid body dynamics not implemented yet.")
-    }
-    guard let timeStep = self.timeStep[.molecularDynamics],
-          timeStep > 0, time >= 0 else {
-      fatalError("Time or time step was invalid.")
     }
     if time == 0 {
       return
+    }
+    
+    // Check whether the arguments are valid.
+    let timeStep = self._timeStep[.molecularDynamics]!
+    guard time > 0, timeStep > 0 else {
+      fatalError("Time or time step was invalid.")
     }
     
     // Create rough estimate of step count.
@@ -108,3 +109,27 @@ extension MM4ForceField {
     }
   }
 }
+
+extension MM4ForceField {
+  /// The level of theory used to simulate each rigid body.
+  ///
+  /// The default value is `.molecularDynamics` for each rigid body. All rigid
+  /// bodies must have the same level of theory, until hybrid simulation is
+  /// supported.
+  public func setLevelOfTheory(_ level: MM4LevelOfTheory, rigidBodyIndex: Int) {
+    guard rigidBodyIndex >= 0, rigidBodyIndex < _levelOfTheory.count else {
+      fatalError("Rigid body index out of bounds.")
+    }
+    _levelOfTheory[rigidBodyIndex] = level
+  }
+  
+  /// The largest time step that may be taken during simulation, in picoseconds.
+  /// Some steps may have a smaller duration.
+  ///
+  /// If not specified, the time step defaults to the value of
+  /// [`defaultTimeStep`](<doc:MM4LevelOfTheory/defaultTimeStep>).
+  public func setTimeStep(_ timeStep: Double, levelOfTheory: MM4LevelOfTheory) {
+    _timeStep[levelOfTheory] = timeStep
+  }
+}
+

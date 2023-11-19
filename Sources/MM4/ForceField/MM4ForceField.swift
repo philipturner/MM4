@@ -62,7 +62,7 @@
 /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
 /// without constraints. Expensive forces like torsions, nonbonded, and
 /// electrostatic can execute at double the timestep. The value you enter for
-/// [`timeStep`](<doc:MM4ForceField/simulate(time:timeStep:)>)
+/// [`setTimeStep`](<doc:MM4ForceField/setTimeStep>)
 /// specifies the execution rate of expensive forces. Always
 /// assume the C-H stretching forces execute at half the specified timestep.
 /// For example, in the note below, bond stretching forces don't actually
@@ -101,18 +101,11 @@ public class MM4ForceField {
   /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
   
-  /// The level of theory used to simulate each rigid body.
-  ///
-  /// The default value is `.molecularDynamics` for each rigid body. All rigid
-  /// bodies must have the same level of theory.
-  public var levelOfTheory: [MM4LevelOfTheory] = []
+  /// Stores the level of theory for each rigid body.
+  var _levelOfTheory: [MM4LevelOfTheory] = []
   
-  /// The largest time step that may be taken during simulation, in picoseconds.
-  /// Some steps may have a smaller duration.
-  ///
-  /// If not specified, `timeStep` defaults to the level of theory's default
-  /// time step.
-  public var timeStep: [MM4LevelOfTheory: Double] = [:]
+  /// Stores the time step for each level of theory.
+  var _timeStep: [MM4LevelOfTheory: Double] = [:]
   
   /// Whether to track and debug energy explosions during simulation.
   ///
@@ -135,11 +128,11 @@ public class MM4ForceField {
       repeating: .zero, count: system.parameters.atoms.count)
     
     for _ in parameters.rigidBodies.indices {
-      levelOfTheory.append(.molecularDynamics)
+      _levelOfTheory.append(.molecularDynamics)
     }
     
     for level in MM4LevelOfTheory.allCases {
-      timeStep[level] = level.defaultTimeStep
+      _timeStep[level] = level.defaultTimeStep
     }
   }
 }

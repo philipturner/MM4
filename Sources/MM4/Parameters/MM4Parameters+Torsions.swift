@@ -77,8 +77,8 @@ public struct MM4TorsionParameters {
   public var Kts3: Float
 }
 
-/// Parameters for the various torsion forces unique to non-H/C/Si-containing
-/// compounds (V4, V6, 3-term torsion-stretch, torsion-bend). This also includes
+/// Parameters for the various torsion forces unique to highly electronegative
+/// elements (V4, V6, 3-term torsion-stretch, torsion-bend). This also includes
 /// the bend-torsion-bend force, which is omitted from C-H torsions for
 /// efficiency.
 public struct MM4TorsionExtendedParameters {
