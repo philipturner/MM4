@@ -52,13 +52,18 @@ Key:
 
 ### Releases
 
+Current version: not released yet
+
 v1.0.0
-- 5-member and 6-member carbon rings
-- Rigid body dynamics
+- 6-member carbon rings
 - External forces
 - Anchors
 
-Not included in the current version:
+v1.1.0
+- Accurate simulation of 5-member carbon rings
+- Rigid body dynamics
+
+Future versions:
 - Support for non-carbon elements
 - Hybrid approach for deformable bodies
 - External torques

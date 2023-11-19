@@ -131,23 +131,24 @@ public struct MM4AtomParameters {
 }
 
 extension MM4Parameters {
-  // Mass repartitioning is a quite easy task. It can be reimplemented from
-  // scratch in 'RigidBody'.
   func createMasses() {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
       MM4MassParameters.global.mass(atomicNumber: atomicNumber)
     }
-    for atomID in 0..<atoms.atomicNumbers.count
-    where atoms.atomicNumbers[atomID] == 1 {
-      atoms.masses[atomID] += hydrogenMassRepartitioning
-      
-      // HMR affects any tetravalent atom.
-      let map = atomsToBondsMap[atomID]
-      guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
-        fatalError("Hydrogen did not have exactly 1 bond.")
+    
+    let sequence = zip(rigidBodies, hydrogenMassRepartitioning)
+    for (rigidBody, hydrogenMassRepartitioning) in sequence {
+      for atomID in rigidBody
+      where atoms.atomicNumbers[Int(atomID)] == 1 {
+        atoms.masses[Int(atomID)] += hydrogenMassRepartitioning
+        
+        let map = atomsToBondsMap[Int(atomID)]
+        guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
+          fatalError("Hydrogen did not have exactly 1 bond.")
+        }
+        let substituentID = Int(other(atomID: atomID, bondID: map[0]))
+        atoms.masses[substituentID] -= hydrogenMassRepartitioning
       }
-      let substituentID = Int(other(atomID: atomID, bondID: map[0]))
-      atoms.masses[substituentID] -= hydrogenMassRepartitioning
     }
   }
   
@@ -321,7 +322,8 @@ extension MM4Parameters {
         epsilon = (default: 0.017, hydrogen: -1)
         radius = (default: 1.640, hydrogen: -1)
       case 6:
-        let t = Float(hydrogenMassRepartitioning) - 0
+        let rigidBodyID = atomsToRigidBodiesMap[atomID]
+        let t = hydrogenMassRepartitioning[Int(rigidBodyID)]
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (default: 0.037, hydrogen: 0.024)
         radius = (default: 1.960, hydrogen: hydrogenRadius)

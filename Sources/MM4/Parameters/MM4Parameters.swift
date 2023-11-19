@@ -10,38 +10,27 @@ public class MM4ParametersDescriptor {
   /// Required. The number of protons in the atom's nucleus.
   public var atomicNumbers: [UInt8]?
   
-  /// Required. Pairs of atom indices representing (potentially multiple)
-  /// covalent bonds.
+  /// Required. Pairs of atom indices representing sigma bonds.
   ///
   /// The bonding topology must arrange atoms from a single rigid body
   /// contiguously in memory. Otherwise, there will be an error when creating
   /// the parameters.
   public var bonds: [SIMD2<UInt32>]?
   
-  /// Optional. The bond order for each covalent bond, which may be fractional.
-  ///
-  /// If not specified, all covalent bonds are treated as sigma bonds.
-  public var bondOrders: [Float]?
-  
-  /// Required. The amount of mass (in amu) to redistribute from a substituent
+  /// Optional. The amount of mass (in amu) to redistribute from a substituent
   /// atom to each covalently bonded hydrogen.
   ///
-  /// The default is 1 amu.
-  public var hydrogenMassRepartitioning: Double = 1.0
+  /// If not specified, the default is 1 amu.
+  ///
+  /// Each array element corresponds to a different rigid body. See the note in
+  /// <doc:MM4ParametersDescriptor/bonds> about ordering the atoms from each
+  /// rigid body.
+  public var hydrogenMassRepartitioning: [Float]?
   
   public init() {
     
   }
 }
-
-// Owning classes like 'MM4Atoms' have immutable properties, but the structs
-// themselves (e.g. 'MM4AtomParameters' are mutable. This creates
-// consistent behavior with the C API, where a copy of the struct's data is
-// returned. It is possible to modify the copy, which will not affect the source
-// of truth.
-//
-// Another note, both the Swift and C APIs might have function call overhead to
-// access a single element of any parameters array.
 
 /// A set of force field parameters.
 public class MM4Parameters {
@@ -61,8 +50,8 @@ public class MM4Parameters {
   public internal(set) var rings: MM4Rings = MM4Rings()
   
   /// The amount of mass (in amu) redistributed from a substituent atom to each
-  /// covalently bonded hydrogen.
-  var hydrogenMassRepartitioning: Float = -1
+  /// covalently bonded hydrogen. Each array slot corresponds to a rigid body.
+  var hydrogenMassRepartitioning: [Float] = []
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   var nonbondedExceptions13: [SIMD2<Int32>] = []
@@ -78,6 +67,9 @@ public class MM4Parameters {
   
   /// Map from atoms to connected atoms that can be efficiently traversed.
   var atomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
+  
+  /// Map from atoms to rigid bodies that can be efficiently traversed.
+  var atomsToRigidBodiesMap: [Int32] = []
   
   /// Grouping of atoms into rigid bodies.
   var rigidBodies: [Range<Int32>] = []
@@ -102,12 +94,6 @@ public class MM4Parameters {
     atoms.count = descriptorAtomicNumbers.count
     atoms.indices = 0..<descriptorAtomicNumbers.count
     
-    // Check the bond orders.
-    if let bondOrders = descriptor.bondOrders {
-      precondition(
-        bondOrders.allSatisfy { $0 == 1 }, "Pi bonds are not supported yet.")
-    }
-    
     // Compile the bonds into a map.
     bondsToAtomsMap = .allocate(capacity: descriptorBonds.count + 1)
     bondsToAtomsMap += 1
@@ -122,10 +108,10 @@ public class MM4Parameters {
     }
     
     atoms.atomicNumbers = descriptorAtomicNumbers
-    atomsToBondsMap = .allocate(capacity: atoms.atomicNumbers.count + 1)
+    atomsToBondsMap = .allocate(capacity: atoms.count + 1)
     atomsToBondsMap += 1
     atomsToBondsMap[-1] = SIMD4(repeating: -1)
-    for atomID in 0..<atoms.atomicNumbers.count {
+    for atomID in 0..<atoms.count {
       atomsToBondsMap[atomID] = SIMD4(repeating: -1)
     }
     
@@ -149,10 +135,10 @@ public class MM4Parameters {
       }
     }
     
-    atomsToAtomsMap = .allocate(capacity: atoms.atomicNumbers.count + 1)
+    atomsToAtomsMap = .allocate(capacity: atoms.count + 1)
     atomsToAtomsMap += 1
     atomsToAtomsMap[-1] = SIMD4(repeating: -1)
-    for atomID in 0..<atoms.atomicNumbers.count {
+    for atomID in 0..<atoms.count {
       let bondsMap = atomsToBondsMap[atomID]
       var atomsMap = SIMD4<Int32>(repeating: -1)
       for lane in 0..<4 {
@@ -168,7 +154,17 @@ public class MM4Parameters {
     createCenterTypes()
     
     // Per-Atom Parameters
-    hydrogenMassRepartitioning = Float(descriptor.hydrogenMassRepartitioning)
+    if let hydrogenMassRepartitioning = descriptor.hydrogenMassRepartitioning {
+      guard hydrogenMassRepartitioning.count == rigidBodies.count else {
+        fatalError(
+          "Specified hydrogen mass repartitioning does not match number of rigid bodies.")
+      }
+      self.hydrogenMassRepartitioning = hydrogenMassRepartitioning
+    } else {
+      self.hydrogenMassRepartitioning = Array(
+        repeating: 1.0, count: rigidBodies.count)
+    }
+    
     createMasses()
     createNonbondedParameters()
     createNonbondedExceptions()

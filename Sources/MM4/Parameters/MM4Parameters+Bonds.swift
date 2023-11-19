@@ -379,7 +379,7 @@ extension MM4Parameters {
       return nil
     }
     
-    for atom0 in 0..<Int32(atoms.atomicNumbers.count) {
+    for atom0 in 0..<Int32(atoms.count) {
       let zeroLevelAtoms = atomsToAtomsMap[Int(atom0)]
       
       for lane in 0..<4 where zeroLevelAtoms[lane] != -1 {

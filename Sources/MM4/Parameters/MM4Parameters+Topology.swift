@@ -1,5 +1,5 @@
 //
-//  MM4Parameters+Rings.swift
+//  MM4Parameters+Topology.swift
 //
 //
 //  Created by Philip Turner on 10/7/23.
@@ -96,7 +96,7 @@ extension MM4Parameters {
     sortedGroups.sort(by: { $0.lowerBound < $1.lowerBound })
     guard sortedGroups.count > 0,
           sortedGroups.first!.first! == 0,
-          sortedGroups.last!.last! == atoms.atomicNumbers.count - 1 else {
+          sortedGroups.last!.last! == atoms.count - 1 else {
       fatalError("Groups did not cover the entire system.")
     }
     for i in 1..<sortedGroups.count {
@@ -106,11 +106,20 @@ extension MM4Parameters {
       }
     }
     self.rigidBodies = sortedGroups
+    
+    // Create a map from atoms to rigid bodies.
+    self.atomsToRigidBodiesMap = Array(repeating: -1, count: atoms.count)
+    for (index, rigidBody) in self.rigidBodies.enumerated() {
+      let rigidBodyID = Int32(truncatingIfNeeded: index)
+      for atomID in rigidBody {
+        atomsToRigidBodiesMap[Int(atomID)] = rigidBodyID
+      }
+    }
   }
   
   func createTopology() {
     // Traverse the bond topology.
-    for atom1 in 0..<Int32(atoms.atomicNumbers.count) {
+    for atom1 in 0..<Int32(atoms.count) {
       let map1 = atomsToAtomsMap[Int(atom1)]
       var ringType: UInt8 = 6
       
@@ -217,7 +226,7 @@ extension MM4Parameters {
     }
     
     rings.indices = ringsMap.keys.map { $0 }
-    atoms.ringTypes = .init(repeating: 6, count: atoms.atomicNumbers.count)
+    atoms.ringTypes = .init(repeating: 6, count: atoms.count)
     bonds.ringTypes = .init(repeating: 6, count: bonds.indices.count)
     angles.ringTypes = .init(repeating: 6, count: angles.indices.count)
     torsions.ringTypes = .init(repeating: 6, count: torsions.indices.count)
