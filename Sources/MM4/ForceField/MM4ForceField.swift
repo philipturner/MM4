@@ -5,22 +5,6 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
-/// A configuration for a force field simulator.
-public class MM4ForceFieldDescriptor {
-  /// Required. The set of parameters defining the forcefield.
-  public var parameters: MM4Parameters?
-  
-  /// Required. The position (in nanometers) of each atom's nucleus.
-  public var positions: [SIMD3<Float>]?
-  
-  public init() {
-    // TODO: Remove the API for initializing this with a descriptor. Instead,
-    // the atoms' positions should be set using the property-based API. Only an
-    // "MM4Parameters" object should be entered into the initializer.
-    fatalError()
-  }
-}
-
 /// The MM2 force field used to create _Nanosystems (1992)_, but updated with
 /// modern ab initio calculations.
 ///
@@ -72,14 +56,13 @@ public class MM4ForceFieldDescriptor {
 ///   to precision (whether the arrows hit the same place every time).
 ///   Conservation of energy only affects the number of significant figures of
 ///   measured energy (precision). It does not make system dynamics more
-///   accurate, except in the case where energy systematically drifts upward
-///   (explodes).
+///   accurate, except in the case where energy systematically drifts upward.
 ///
 /// The integrator uses a multiple time-stepping (MTS) scheme. Cheaper bonded
 /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
 /// without constraints. Expensive forces like torsions, nonbonded, and
 /// electrostatic can execute at double the timestep. The value you enter for
-/// [`maximumTimeStep`](<doc:MM4ForceField/simulate(time:maximumTimeStep:)>)
+/// [`timeStep`](<doc:MM4ForceField/simulate(time:timeStep:)>)
 /// specifies the execution rate of expensive forces. Always
 /// assume the C-H stretching forces execute at half the specified timestep.
 /// For example, in the note below, bond stretching forces don't actually
@@ -110,28 +93,22 @@ public class MM4ForceFieldDescriptor {
 public class MM4ForceField {
   var system: MM4System
   
-  // var integrator: MM4Integrator
-  
-  var contexts: [MM4IntegratorDescriptor: MM4Context] = [:]
-  
-  /// Store the latest context object, so you can transfer positions and
-  /// velocities in between context switches.
-  var latestContext: MM4Context!
+  var context: MM4Context
   
   /// Stores the reordered anchor IDs.
   var _anchors: [Int32] = []
   
-  /// Stores the reordered external forces.
+  /// Stores the non-reordered external forces.
   var _externalForces: [SIMD3<Float>] = []
   
+  /// Stores whether energy is being tracked.
+  var _trackingEnergy: Bool = false
+  
   /// Create a simulator using the specified configuration.
-  public init(descriptor: MM4ForceFieldDescriptor) {
+  public init(parameters: MM4Parameters) {
     MM4Plugins.global.load()
-    
-    guard let parameters = descriptor.parameters else {
-      fatalError("No parameters were specified for the force field.")
-    }
     system = MM4System(parameters: parameters)
+    context = MM4Context(system: system)
     
     // The external force object already zeroes these out; no need to update.
     _externalForces = Array(

@@ -9,38 +9,43 @@ import OpenMM
 
 /// Stores an OpenMM context generated from an integrator variant.
 class MM4Context {
+  var compoundIntegrator: OpenMM_CompoundIntegrator
   var context: OpenMM_Context
+  var integrators: [MM4IntegratorDescriptor: Int] = [:]
   
-  init(system: MM4System, integrator: MM4Integrator) {
+  init(system: MM4System) {
+    self.compoundIntegrator = OpenMM_CompoundIntegrator()
+    
+    for start in [false, true] {
+      for end in [false, true] {
+        var descriptor = MM4IntegratorDescriptor()
+        descriptor.start = start
+        descriptor.end = end
+        
+        let integrator = MM4Integrator(descriptor: descriptor)
+        let index = compoundIntegrator.addIntegrator(integrator.integrator)
+        integrators[descriptor] = index
+      }
+    }
+    
     self.context = OpenMM_Context(
-      system: system.system, integrator: integrator.integrator)
+      system: system.system, integrator: compoundIntegrator)
+  }
+  
+  var currentIntegrator: MM4IntegratorDescriptor {
+    get { fatalError("Not implemented.") }
+    set {
+      guard let index = integrators[newValue] else {
+        fatalError("This should never happen.")
+      }
+      compoundIntegrator.currentIntegrator = index
+    }
+  }
+  
+  /// Modeled after how the OpenMM `integrator.step` API is typically used -
+  /// without an argument label for steps.
+  func step(_ steps: Int, timeStep: Double) {
+    compoundIntegrator.stepSize = timeStep
+    compoundIntegrator.step(steps)
   }
 }
-
-extension MM4ForceField {
-//  func context(descriptor: MM4IntegratorDescriptor) -> MM4Context {
-//    if let context = contexts[descriptor] {
-//      return context
-//    }
-//    
-//    let integrator = MM4Integrator(descriptor: descriptor)
-//    let context = MM4Context(system: system, integrator: integrator)
-//    contexts[descriptor] = context
-//    return context
-//  }
-  
-//  func switchContext(_ context: MM4Context) {
-//    if latestContext === context {
-//      // There is no need to switch contexts.
-//      return
-//    }
-//    
-//    let state = latestContext.context.state(types: [.positions, .velocities])
-//    context.context.state = state
-//    latestContext = context
-//    
-//    // Update any forces whose parameters change based on user input.
-//    system.forces.external.updateForces(context: context)
-//  }
-}
-

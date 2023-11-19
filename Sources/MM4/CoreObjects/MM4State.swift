@@ -8,7 +8,7 @@
 import OpenMM
 
 /// A configuration for a frame of a simulation.
-public class MM4StateDescriptor {
+public struct MM4StateDescriptor {
   /// Required. Whether to report the system's total kinetic and potential
   /// energy.
   ///
@@ -80,7 +80,7 @@ extension MM4ForceField {
       dataTypes = [dataTypes, .velocities]
     }
     
-    let query = latestContext.context.state(types: dataTypes)
+    let query = context.context.state(types: dataTypes)
     
     // Convert the OpenMM array to a different data type, and map from reordered
     // to original indices.
@@ -94,8 +94,8 @@ extension MM4ForceField {
    
     let state = MM4State()
     if descriptor.energy {
-      state.kineticEnergy = query.kineticEnergy
-      state.potentialEnergy = query.potentialEnergy
+      state.kineticEnergy = query.kineticEnergy * MM4ZJPerKJPerMol
+      state.potentialEnergy = query.potentialEnergy * MM4ZJPerKJPerMol
     }
     if descriptor.forces {
       state.forces = convertArray(query.forces)

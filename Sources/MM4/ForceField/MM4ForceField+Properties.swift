@@ -14,7 +14,7 @@ import OpenMM
 // should handle most of the data processing. One should only transfer data
 // in/out of OpenMM to set up the simulation.
 
-// TODO: Add external torques during the next development round.
+// Idea for adding torques:
 // - Can't constrain "anchors" to have constant angular velocity, only constant
 //   linear velocity.
 // - A simulation can achieve near-constant angular velocity with a large
@@ -40,21 +40,9 @@ extension MM4ForceField {
   public var forces: [SIMD3<Float>] {
     get {
       // No need to convert between original and reordered indices.
-      let descriptor = MM4StateDescriptor()
+      var descriptor = MM4StateDescriptor()
       descriptor.forces = true
       return state(descriptor: descriptor).forces!
-    }
-  }
-  
-  /// The system's total kinetic energy, in zeptojoules.
-  ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
-  public var kineticEnergy: Double {
-    get {
-      let descriptor = MM4StateDescriptor()
-      descriptor.energy = true
-      return state(descriptor: descriptor).kineticEnergy!
     }
   }
   
@@ -65,7 +53,7 @@ extension MM4ForceField {
   public var positions: [SIMD3<Float>] {
     get {
       // No need to convert between original and reordered indices.
-      let descriptor = MM4StateDescriptor()
+      var descriptor = MM4StateDescriptor()
       descriptor.positions = true
       return state(descriptor: descriptor).positions!
     }
@@ -76,19 +64,7 @@ extension MM4ForceField {
         let position = newValue[Int(original)]
         array[reordered] = SIMD3<Double>(position)
       }
-      latestContext.context.positions = array
-    }
-  }
-  
-  /// The system's total potential energy, in zeptojoules.
-  ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
-  public var potentialEnergy: Double {
-    get {
-      let descriptor = MM4StateDescriptor()
-      descriptor.energy = true
-      return state(descriptor: descriptor).potentialEnergy!
+      context.context.positions = array
     }
   }
   
@@ -105,7 +81,7 @@ extension MM4ForceField {
   public var velocities: [SIMD3<Float>] {
     get {
       // No need to convert between original and reordered indices.
-      let descriptor = MM4StateDescriptor()
+      var descriptor = MM4StateDescriptor()
       descriptor.velocities = true
       return state(descriptor: descriptor).velocities!
     }
@@ -116,7 +92,7 @@ extension MM4ForceField {
         let velocity = newValue[Int(original)]
         array[reordered] = SIMD3<Double>(velocity)
       }
-      latestContext.context.velocities = array
+      context.context.velocities = array
     }
   }
 }
@@ -169,31 +145,29 @@ extension MM4ForceField {
       _anchors.forEach { index in
         system.system.setParticleMass(0, index: Int(index))
       }
+      
+      // TODO: Finish the implementation. Change so that anchors are stored in
+      // the pre-reordering format. Perform some extra checks during
+      // thermalization to convert between formats.
+      fatalError("Account for masses of virtual sites when setting anchors.")
     }
   }
   
   /// The constant force (in piconewtons) exerted on each atom.
   ///
-  /// The default value is all zeroes for every particle, which may be used to
-  /// deactivate the backing OpenMM force object.
+  /// The default value is zero for every atom.
   public var externalForces: [SIMD3<Float>] {
     get {
-      // original -> reordered -> original
-      system.reorderedIndices.map {
-        _externalForces[Int($0)]
-      }
+      _externalForces
     }
     set {
       guard newValue.count == system.parameters.atoms.count else {
         fatalError("Too few atoms.")
       }
+      _externalForces = newValue
       
-      // reordered -> original -> reordered
-      _externalForces = system.originalIndices.map {
-        newValue[Int($0)]
-      }
-      system.forces.external.updateForces(
-        _externalForces, context: latestContext)
+      let force = system.forces.external
+      force.updateForces(_externalForces, context: context)
     }
   }
   
@@ -237,4 +211,3 @@ extension MM4ForceField {
     }
   }
 }
-

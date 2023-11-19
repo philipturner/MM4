@@ -48,7 +48,7 @@ extension MM4ForceField {
     // https://www.physicsforums.com/threads/how-can-angular-velocity-be-independent-of-the-choice-of-origin.986098/#:~:text=Both%20the%20angular%20momentum%20and,the%20angular%20velocity%20does%20not.
     
     // Using reordered indices.
-    let descriptor = MM4StateDescriptor()
+    var descriptor = MM4StateDescriptor()
     descriptor.positions = true
     descriptor.velocities = true
     let originalState = state(descriptor: descriptor)
@@ -56,7 +56,7 @@ extension MM4ForceField {
     let bulkVelocities = originalState.velocities!
     
     // Using reordered indices.
-    latestContext.context.setVelocitiesToTemperature(temperature)
+    context.context.setVelocitiesToTemperature(temperature)
     descriptor.positions = false
     let thermalState = state(descriptor: descriptor)
     let thermalVelocities = thermalState.velocities!

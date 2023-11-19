@@ -8,7 +8,7 @@
 import OpenMM
 
 /// A configuration for an integrator.
-class MM4IntegratorDescriptor: Hashable {
+struct MM4IntegratorDescriptor: Hashable {
   /// Whether to correct velocities for the start of leapfrog integration
   /// intervals.
   var start: Bool = false
@@ -43,7 +43,7 @@ class MM4Integrator {
   
   /// Create an integrator using the specified configuration.
   init(descriptor: MM4IntegratorDescriptor) {
-    self.integrator = OpenMM_CustomIntegrator(stepSize: 1 * OpenMM_PsPerFs)
+    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
     if descriptor.start {
       integrator.addComputePerDof(variable: "v", expression: """
@@ -79,12 +79,5 @@ class MM4Integrator {
         v + 0.5 * dt * f1 / m
         """)
     }
-  }
-  
-  /// Modeled after how the OpenMM `integrator.step` API is typically used -
-  /// without an argument label for steps.
-  func step(_ steps: Int, timeStep: Double) {
-    integrator.stepSize = timeStep
-    integrator.step(steps)
   }
 }

@@ -10,6 +10,10 @@
 
 #include <cstdint>
 
+// WARNING: This header is heavily outdated. There are no C bindings planned
+// at the moment. It is being preserved as a reference, in case bindings are
+// needed in the future.
+
 // MARK: - Types
 
 __attribute__((aligned(16)))
