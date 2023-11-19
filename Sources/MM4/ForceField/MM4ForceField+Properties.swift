@@ -120,36 +120,26 @@ extension MM4ForceField {
       }
     }
     set {
-      // Reset every atom's mass to the one provided by the parameters. Then,
-      // selectively set the anchors to zero. This may have more overhead, but
-      // not that much more (~overhead of setting positions). It also reduces
-      // the chance for bugs in a rarely tested edge case.
-      for (index, mass) in system.parameters.atoms.masses.enumerated() {
-        let reordered = system.reorderedIndices[Int(index)]
-        system.system.setParticleMass(Double(mass), index: Int(reordered))
-      }
-      
-      // reordered -> original -> reordered
-      _anchors = system.originalIndices.map {
-        let anchor = newValue[Int($0)]
-        return Int32(truncatingIfNeeded: anchor)
-      }
+      _anchors = newValue.map { Int32(truncatingIfNeeded: $0) }
       _anchors.sort()
-      if _anchors.count > 0 {
-        for anchorID in 1..<_anchors.count {
-          if _anchors[anchorID - 1] == _anchors[anchorID] {
-            fatalError("Anchor '\(anchorID)' was entered multiple times.")
-          }
+      for anchorID in 1..<_anchors.count {
+        if _anchors[anchorID - 1] == _anchors[anchorID] {
+          fatalError("Anchor '\(anchorID)' was entered multiple times.")
         }
       }
-      _anchors.forEach { index in
-        system.system.setParticleMass(0, index: Int(index))
-      }
       
-      // TODO: Finish the implementation. Change so that anchors are stored in
-      // the pre-reordering format. Perform some extra checks during
-      // thermalization to convert between formats.
-      fatalError("Account for masses of virtual sites when setting anchors.")
+      // Reset every atom's mass to the one provided by the parameters. Then,
+      // selectively set the anchors to zero. This may have more overhead, but
+      // not that much more (~overhead of setting positions).
+      for (originalID, mass) in system.parameters.atoms.masses.enumerated() {
+        // Does not change the mass of virtual sites.
+        let reorderedID = system.reorderedIndices[Int(originalID)]
+        system.system.setParticleMass(Double(mass), index: Int(reorderedID))
+      }
+      _anchors.forEach { originalID in
+        let reorderedID = system.reorderedIndices[Int(originalID)]
+        system.system.setParticleMass(0, index: Int(reorderedID))
+      }
     }
   }
   
@@ -167,7 +157,8 @@ extension MM4ForceField {
       _externalForces = newValue
       
       let force = system.forces.external
-      force.updateForces(_externalForces, context: context)
+      force.updateForces(_externalForces, system: system)
+      force.updateParametersInConext(context)
     }
   }
   

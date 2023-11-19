@@ -95,10 +95,10 @@ public class MM4ForceField {
   
   var context: MM4Context
   
-  /// Stores the reordered anchor IDs.
+  /// Stores the anchor IDs before reordering.
   var _anchors: [Int32] = []
   
-  /// Stores the non-reordered external forces.
+  /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
   
   /// Stores whether energy is being tracked.

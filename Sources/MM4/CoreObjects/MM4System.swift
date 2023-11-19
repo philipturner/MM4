@@ -29,6 +29,9 @@ class MM4System {
   /// The number of virtual sites.
   var virtualSiteCount: Int = 0
   
+  /// Whether each atom is a virtual site.
+  var virtualSiteMask: [Bool] = []
+  
   init(parameters: MM4Parameters) {
     // Initialize base properties.
     self.system = OpenMM_System()
@@ -38,6 +41,7 @@ class MM4System {
     self.createReorderedIndices()
     self.createMasses()
     self.createVirtualSites()
+    self.createVirtualSiteMask()
     
     // Create force objects.
     self.forces = MM4Forces(system: self)

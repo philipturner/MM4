@@ -41,13 +41,11 @@ extension MM4ForceField {
     rigidBodies: [Int]? = nil
   ) throws {
     // The code currently doesn't recognize the case of 2+ collinear anchors.
-    // That will be deferred until the second development round, when constant
-    // torques are introduced.
+    // That will be deferred to later, when constant torques are introduced.
     //
     // Notes about angular momentum:
     // https://www.physicsforums.com/threads/how-can-angular-velocity-be-independent-of-the-choice-of-origin.986098/#:~:text=Both%20the%20angular%20momentum%20and,the%20angular%20velocity%20does%20not.
     
-    // Using reordered indices.
     var descriptor = MM4StateDescriptor()
     descriptor.positions = true
     descriptor.velocities = true
@@ -55,17 +53,15 @@ extension MM4ForceField {
     let positions = originalState.positions!
     let bulkVelocities = originalState.velocities!
     
-    // Using reordered indices.
     context.context.setVelocitiesToTemperature(temperature)
     descriptor.positions = false
     let thermalState = state(descriptor: descriptor)
     let thermalVelocities = thermalState.velocities!
     
-    // Using reordered indices.
-    var anchorStatuses = [Bool](
+    var anchorMask = [Bool](
       repeating: false, count: system.parameters.atoms.count)
     for anchor in _anchors {
-      anchorStatuses[Int(anchor)] = true
+      anchorMask[Int(anchor)] = true
     }
     
     var activeRigidBodies: [Int]
@@ -78,41 +74,36 @@ extension MM4ForceField {
       }
     }
     
-    // Set the system's velocities to these at the end of the function. Note,
-    // these are in reordered indices, while the 'velocities' property uses
-    // original indices. Do not set these using the 'velocities' property.
-    var newVelocities: [SIMD3<Float>] = bulkVelocities
+    // Set the system's velocities to these at the end of the function.
+    var newVelocities = bulkVelocities
     
-    // Don't forget to always map atom IDs to reordered IDs!
     for rigidBodyID in activeRigidBodies {
-      // Last anchor ID is reordered.
       let range = system.parameters.rigidBodies[rigidBodyID]
       var anchorCount = 0
-      var lastAnchorID: Int32 = -1
       for originalID in range {
-        let atomID = system.reorderedIndices[Int(originalID)]
-        if anchorStatuses[Int(atomID)] {
+        if anchorMask[Int(originalID)] {
           anchorCount += 1
-          lastAnchorID = atomID
         }
       }
       
       let atoms = system.parameters.atoms
-      var totalMass: Double = .zero
+      var anchorMass: Double = .zero
+      var nonAnchorMass: Double = .zero
       var centerOfMass: SIMD3<Float>
-      if anchorCount == 1 {
-        // Reading with a reordered index.
-        centerOfMass = positions[Int(lastAnchorID)]
-      } else {
-        var positionSum: SIMD3<Double> = .zero
+      do {
+        var accumulator: SIMD3<Double> = .zero
         for originalID in range {
-          let atomID = system.reorderedIndices[Int(originalID)]
-          let mass = Double(atoms.masses[Int(originalID)])
-          let position = positions[Int(atomID)]
-          totalMass += mass
-          positionSum += mass * SIMD3<Double>(position)
+          let atomID = Int(originalID)
+          let mass = Double(atoms.masses[atomID])
+          if (anchorCount == 0) || anchorMask[atomID] {
+            anchorMass += mass
+            accumulator += mass * SIMD3<Double>(positions[atomID])
+          }
+          if (anchorCount == 0) || !anchorMask[atomID] {
+            nonAnchorMass += mass
+          }
         }
-        centerOfMass = SIMD3<Float>(positionSum / totalMass)
+        centerOfMass = SIMD3<Float>(accumulator / anchorMass)
       }
       
       // Find the original/thermalized linear/angular velocities, while
@@ -123,36 +114,47 @@ extension MM4ForceField {
       var thermalAngularMomentum: SIMD3<Double> = .zero
       var rotationalInertia: RotationalInertia = .init()
       for originalID in range {
-        let atomID = system.reorderedIndices[Int(originalID)]
-        let mass = Double(atoms.masses[Int(originalID)])
-        let position = positions[Int(atomID)]
-        let bulkVelocity = bulkVelocities[Int(atomID)]
-        let thermalVelocity = thermalVelocities[Int(atomID)]
-        bulkMomentum += mass * SIMD3(bulkVelocity)
-        thermalMomentum += mass * SIMD3(thermalVelocity)
+        let atomID = Int(originalID)
+        let mass = Double(atoms.masses[atomID])
+        let bulkVelocity = bulkVelocities[atomID]
+        let thermalVelocity = thermalVelocities[atomID]
+        if (anchorCount == 0) || anchorMask[atomID] {
+          bulkMomentum += mass * SIMD3(bulkVelocity)
+        }
+        if (anchorCount == 0) || !anchorMask[atomID] {
+          thermalMomentum += mass * SIMD3(thermalVelocity)
+        }
         
         // From Wikipedia:
         // https://en.wikipedia.org/wiki/Rigid_body_dynamics#Linear_and_angular_momentum
         //
         // L = m * (R - R_cm) cross d/dt (R - R_cm)
         // assume R_cm is stationary
+        //
+        // v = dR / dt
         // L = m * (R - R_cm) cross v
-        let relativePosition = position - centerOfMass
-        let bulkAngularVelocity = cross(relativePosition, bulkVelocity)
-        let thermalAngularVelocity = cross(relativePosition, thermalVelocity)
-        bulkAngularMomentum += mass * SIMD3(bulkAngularVelocity)
-        thermalAngularMomentum += mass * SIMD3(thermalAngularVelocity)
-        rotationalInertia.append(mass: mass, relativePosition: relativePosition)
-      }
-      
-      // If the system has >1 anchor points, suppress the angular velocity.
-      if anchorCount > 1 {
-        bulkAngularMomentum = .zero
+        let relativePosition = positions[atomID] - centerOfMass
+        let bulkAngularTerm = cross(relativePosition, bulkVelocity)
+        let thermalAngularTerm = cross(relativePosition, thermalVelocity)
+        
+        // If the system has >1 anchor points, suppress the angular momentum.
+        // The singular anchor for exactly 1 anchor point will have zero
+        // angular momentum or inertia, as it's defined as the center of mass.
+        if (anchorCount <= 1) {
+          // Unlike linear velocity, bulk angular velocity can be defined by
+          // non-anchor atoms.
+          bulkAngularMomentum += mass * SIMD3(bulkAngularTerm)
+        }
+        if (anchorCount == 0) || !anchorMask[atomID] {
+          thermalAngularMomentum += mass * SIMD3(thermalAngularTerm)
+          rotationalInertia
+            .append(mass: mass, relativePosition: relativePosition)
+        }
       }
       
       // Matrix:
       // L = I * w
-      // (I^{-1}) L = w
+      // I^{-1} L = w
       // w = angular velocity
       //
       // Resulting vector:
@@ -168,11 +170,17 @@ extension MM4ForceField {
         output += momentum.x * inverse.0
         output += momentum.y * inverse.1
         output += momentum.z * inverse.2
-        return SIMD3<Float>(output)
+        
+        // Provide a fail-safe if the entire rigid body consists of anchors.
+        if all(momentum .== 0) {
+          return .zero
+        } else {
+          return SIMD3<Float>(output)
+        }
       }
       
-      let bulkVelocity = bulkMomentum / totalMass
-      let thermalVelocity = thermalMomentum / totalMass
+      let bulkVelocity = bulkMomentum / anchorMass
+      let thermalVelocity = thermalMomentum / nonAnchorMass
       let velocityCorrection = -SIMD3<Float>(thermalVelocity - bulkVelocity)
       
       let bulkAngularVelocity = project(momentum: bulkAngularMomentum)
@@ -182,23 +190,21 @@ extension MM4ForceField {
       
       // Apply the correction to rotational and angular velocity.
       for originalID in range {
-        let atomID = system.reorderedIndices[Int(originalID)]
-        let position = positions[Int(atomID)]
-        var velocity = thermalVelocities[Int(atomID)]
+        let atomID = Int(originalID)
+        var velocity = thermalVelocities[atomID]
         velocity += velocityCorrection
         
-        let relativePosition = position - centerOfMass
+        let relativePosition = positions[atomID] - centerOfMass
         velocity += cross(angularVelocityCorrection, relativePosition)
-        newVelocities[Int(atomID)] = velocity
+        if !anchorMask[atomID] {
+          newVelocities[atomID] = velocity
+        }
       }
     }
     
     // Set the system's velocities to the new ones, reverting changes to rigid
     // bodies that shouldn't be thermalized.
-    let array = OpenMM_Vec3Array(size: system.parameters.atoms.count)
-    for (index, velocity) in newVelocities.enumerated() {
-      array[index] = SIMD3<Double>(velocity)
-    }
+    self.velocities = newVelocities
   }
 }
 

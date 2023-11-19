@@ -81,6 +81,21 @@ extension MM4System {
       system.setVirtualSite(virtualSite, index: virtualSiteID)
     }
   }
+  
+  func createVirtualSiteMask() {
+    virtualSiteMask.reserveCapacity(reorderedIndices.count)
+    for reorderedID in reorderedIndices.indices {
+      if reorderedID >= virtualSiteCount {
+        let originalID = Int(originalIndices[reorderedID])
+        let atomicNumber = parameters.atoms.atomicNumbers[originalID]
+        if atomicNumber == 1 {
+          virtualSiteMask.append(false)
+          continue
+        }
+      }
+      virtualSiteMask.append(true)
+    }
+  }
 }
 
 extension MM4System {

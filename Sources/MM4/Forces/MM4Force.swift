@@ -36,11 +36,14 @@ class MM4Force {
 /// Wraps all the forces owned by a system.
 class MM4Forces {
   // Force Group 0
-  var external: MM4ExternalForce
+  // var rigidBodyElectrostatic: MM4ElectrostaticForce
+  // var rigidBodyExternal: MM4ExternalForce
+  // var rigidBodyNonbonded: MM4NonbondedForce
   
   // Force Group 1
   var electrostatic: MM4ElectrostaticForce
   var electrostaticException: MM4ElectrostaticExceptionForce
+  var external: MM4ExternalForce
   var nonbonded: MM4NonbondedForce
   var nonbondedException: MM4NonbondedExceptionForce
   var torsion: MM4TorsionForce

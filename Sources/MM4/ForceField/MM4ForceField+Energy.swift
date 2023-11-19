@@ -13,11 +13,9 @@ extension MM4ForceField {
   /// > Note: This is a more ergonomic API, but less efficient than the batched
   /// function <doc:MM4ForceField/state(descriptor:)>.
   public var kineticEnergy: Double {
-    get {
-      var descriptor = MM4StateDescriptor()
-      descriptor.energy = true
-      return state(descriptor: descriptor).kineticEnergy!
-    }
+    var descriptor = MM4StateDescriptor()
+    descriptor.energy = true
+    return state(descriptor: descriptor).kineticEnergy!
   }
   
   /// The system's total potential energy, in zeptojoules.
@@ -25,11 +23,9 @@ extension MM4ForceField {
   /// > Note: This is a more ergonomic API, but less efficient than the batched
   /// function <doc:MM4ForceField/state(descriptor:)>.
   public var potentialEnergy: Double {
-    get {
-      var descriptor = MM4StateDescriptor()
-      descriptor.energy = true
-      return state(descriptor: descriptor).potentialEnergy!
-    }
+    var descriptor = MM4StateDescriptor()
+    descriptor.energy = true
+    return state(descriptor: descriptor).potentialEnergy!
   }
   
   /// Whether to track and debug energy explosions during simulation.
