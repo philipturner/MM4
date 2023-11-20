@@ -11,12 +11,18 @@ extension MM4ForceField {
   // TODO: Remove this function entirely, transferring the functionality to
   // `MM4RigidBody`. The effect can be emulated by changing a rigid body's
   // temperature, then importing it into the simulator.
+  // - Keep the new documentation that requires users to specify heat capacity.
   
   // TODO: Copy the OpenMM code for initializing thermal velocities.
+  
+  // TODO: Rescale velocities after zeroing out the object's momentum, to
+  // perfectly match the desired temperature.
   
   /// Create random thermal velocities, while conserving the total (bulk)
   /// momentum of each rigid body.
   ///
+  /// - Parameter heatCapacity: The material's heat capacity in J/mol-K at the
+  ///   specified temperature.
   /// - Parameter temperature: The temperature to randomize thermal velocites
   ///   at, in kelvin.
   /// - Parameter rigidBodies: Indices of the rigid bodies to thermalize. If not
@@ -27,6 +33,17 @@ extension MM4ForceField {
   /// Thermalizing is recommended for any simulation that replicates macroscale
   /// conditions. The default is temperature 298.15 K, but other useful
   /// temperatures include liquid nitrogen (77.00 K) and liquid helium (4.15 K).
+  ///
+  /// > WARNING:
+  /// There is no trivial method to translate thermal energy into temperature.
+  /// Diamond has been well-studied, with a
+  /// [theoretical function](http://dspace.rri.res.in/bitstream/2289/1763/1/1957%20Proc%20Indian%20Acad%20Sci%20A%20V46%20p323-332.pdf)
+  /// reported by C. V. Raman in 1957. Diamond has
+  /// [significantly different](https://physics.stackexchange.com/a/583043) heat
+  /// capacity characteristics than other solids; other materials have higher
+  /// heat capacities. You are encouraged to use sources like Raman when
+  /// deciding on the value for `heatCapacity`. For reference, he calculated and
+  /// measured the heat capacity of diamond at 298 K as roughly 7.39 J/mol-K.
   ///
   /// The velocity of anchors does not change during thermalization. Each rigid
   /// body's bulk velocity is conserved at the average velocity of all
@@ -43,9 +60,14 @@ extension MM4ForceField {
   /// linear velocity, in addition to the same axis (with a tight margin for
   /// floating point error).
   public func thermalize(
+    heatCapacity: Double,
     temperature: Double = 298.15,
     rigidBodies: [Int]? = nil
   ) throws {
+    // TODO: Replace OpenMM implementation with custom implementation, extract
+    // this functionality out into 'MM4RigidBody'.
+    fatalError("Incorrect mapping from temperature to energy.")
+    
     // The code currently doesn't recognize the case of 2+ collinear anchors.
     // That will be deferred to later, when constant torques are introduced.
     //

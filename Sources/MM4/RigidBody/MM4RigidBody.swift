@@ -33,14 +33,27 @@ import QuaternionModule
  }
  */
 
+public struct MM4RigidBodyDescriptor {
+  public var atomicNumbers: [UInt8]?
+  public var bonds: [SIMD2<UInt32>]?
+  public var positions: [SIMD3<Float>]?
+  
+  public init() {
+    
+  }
+}
+
 public struct MM4RigidBody {
   // MARK: - Properties summarizing topology
   
-  public var anchors: [UInt32]
+  public var anchors: [UInt32] = []
   public var atomicNumbers: [UInt8]
   public var bonds: [SIMD2<UInt32>]
   public var hydrogenMassRepartitioning: Float = 1.0
-  public var positions: [SIMD3<Float>]
+  
+  // TODO: Function for checking integrity of atom count.
+  var atomCount: Int { atomicNumbers.count }
+  var _positions: [MM4FloatVector]
   
   // MARK: - Properties summarizing velocity
   
@@ -62,17 +75,33 @@ public struct MM4RigidBody {
   /// When importing velocities, all anchors must have the same velocity.
   public var linearVelocity: SIMD3<Float> = .zero
   
+  /// Thermal energy in zeptojoules, calculated as total energy minus the
+  /// contributions from bulk linear and angular velocity.
+  ///
   /// Kinetic energy contributions from anchors are omitted when calculating
   /// temperature.
-  public var temperature: Double = 0.0 // E = 3/2 NkT
+  public var thermalEnergy: Double = 0.0
   
   // MARK: - Computed properties
   
   public var masses: [Float] {
     get { fatalError() }
   }
+  public var positions: [SIMD3<Float>] {
+    get { fatalError() }
+    set { fatalError() }
+  }
   public var velocities: [Float] {
     get { fatalError() }
     set { fatalError() }
+  }
+  
+  // functions for writing/reading the computed properties from
+  // pre-allocated memory or slices of larger buffers
+  
+  // MARK: - Initializer
+  
+  public init(descriptor: MM4RigidBodyDescriptor) throws {
+    fatalError("Not implemented.")
   }
 }

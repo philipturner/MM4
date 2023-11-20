@@ -6,7 +6,7 @@
 //
 
 /// A configuration for a set of force field parameters.
-public class MM4ParametersDescriptor {
+public struct MM4ParametersDescriptor {
   /// Required. The number of protons in the atom's nucleus.
   public var atomicNumbers: [UInt8]?
   
