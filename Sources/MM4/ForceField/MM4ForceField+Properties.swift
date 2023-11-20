@@ -130,16 +130,6 @@ extension MM4ForceField {
 
 extension MM4ForceField {
   /// Indices of atoms that should ignore forces exerted on them.
-  ///
-  /// > Warning: Anchors may cause energy measurements to be
-  /// nonsensical. This needs to be investigated further.
-  ///
-  /// This is implemented by treating particle like it has infinite mass (in
-  /// OpenMM, by setting the mass to zero). Either set the particle's velocity
-  /// to zero, or give all anchors in same rigid body the same linear velocity.
-  /// Otherwise, the divergent paths will eventually rip the rigid body apart.
-  /// The library currently doesn't check for adherence to this rule, but may
-  /// enforce it in the future.
   public var anchors: [UInt32] {
     get {
       // original -> reordered -> original

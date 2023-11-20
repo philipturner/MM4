@@ -23,7 +23,7 @@ let package = Package(
       name: "MM4",
       dependencies: [
         .product(name: "OpenMM", package: "swift-openmm"),
-        .product(name: "QuaternionModule", package: "swift-numerics"),
+        .product(name: "Numerics", package: "swift-numerics"),
       ]),
     .testTarget(
       name: "MM4Tests",

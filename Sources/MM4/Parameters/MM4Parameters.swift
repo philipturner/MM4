@@ -7,7 +7,7 @@
 
 /// A configuration for a set of force field parameters.
 public struct MM4ParametersDescriptor {
-  /// Required. The number of protons in the atom's nucleus.
+  /// Required. The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8]?
   
   /// Required. Pairs of atom indices representing sigma bonds.
@@ -87,7 +87,7 @@ public class MM4Parameters {
     // Ensure the required descriptor properties were set.
     guard let descriptorAtomicNumbers = descriptor.atomicNumbers,
           let descriptorBonds = descriptor.bonds else {
-      fatalError("Descriptor did not have any atomic numbers or bonds.")
+      fatalError("Descriptor did not have the required properties.")
     }
     
     // Set the properties for conveniently iterating over the atoms.

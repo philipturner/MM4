@@ -29,36 +29,6 @@ extension MM4ForceField {
   ///   specified, it will thermalize the entire system.
   /// - throws: An error if two anchors have the same position, which interferes
   ///   with the heuristic for conserving angular momentum.
-  ///
-  /// Thermalizing is recommended for any simulation that replicates macroscale
-  /// conditions. The default is temperature 298.15 K, but other useful
-  /// temperatures include liquid nitrogen (77.00 K) and liquid helium (4.15 K).
-  ///
-  /// > WARNING:
-  /// There is no trivial method to translate thermal energy into temperature.
-  /// Diamond has been well-studied, with a
-  /// [theoretical function](http://dspace.rri.res.in/bitstream/2289/1763/1/1957%20Proc%20Indian%20Acad%20Sci%20A%20V46%20p323-332.pdf)
-  /// reported by C. V. Raman in 1957. Diamond has
-  /// [significantly different](https://physics.stackexchange.com/a/583043) heat
-  /// capacity characteristics than other solids; other materials have higher
-  /// heat capacities. You are encouraged to use sources like Raman when
-  /// deciding on the value for `heatCapacity`. For reference, he calculated and
-  /// measured the heat capacity of diamond at 298 K as roughly 7.39 J/mol-K.
-  ///
-  /// The velocity of anchors does not change during thermalization. Each rigid
-  /// body's bulk velocity is conserved at the average velocity of all
-  /// anchors (where each anchor has the same weight). Angular momentum is
-  /// constrained according to the number of anchors present.
-  /// - 0 anchors: conserve linear and angular momentum around center of mass.
-  /// - 1 anchor: conserve linear and angular momentum around anchor.
-  /// - collinear\* anchors: conserve linear momentum around average of
-  ///   anchors, constrain angular momentum to the shared axis.
-  /// - anchors form plane: conserve linear momentum around average of anchors,
-  ///   force angular momentum to zero.
-  ///
-  /// > \*To be classified as collinear, a group of anchors must share the same
-  /// linear velocity, in addition to the same axis (with a tight margin for
-  /// floating point error).
   public func thermalize(
     heatCapacity: Double,
     temperature: Double = 298.15,

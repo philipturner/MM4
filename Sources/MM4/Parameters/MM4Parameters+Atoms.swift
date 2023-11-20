@@ -9,7 +9,7 @@
 
 /// Parameters for one atom.
 public struct MM4Atoms {
-  /// The number of protons in the atom's nucleus.
+  /// The number of protons in each atom's nucleus.
   public internal(set) var atomicNumbers: [UInt8] = []
   
   /// The center type used to assign different parameters.
@@ -24,7 +24,7 @@ public struct MM4Atoms {
   /// Convenient property for iterating over the atoms.
   public internal(set) var indices: Range<Int> = 0..<0
   
-  /// The mass of each atom after hydrogen mass repartitioning.
+  /// The mass (in amu) of each atom after hydrogen mass repartitioning.
   public internal(set) var masses: [Float] = []
   
   /// Each value corresponds to the atom at the same array index.
