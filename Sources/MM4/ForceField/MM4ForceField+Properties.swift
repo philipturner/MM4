@@ -198,15 +198,6 @@ extension MM4ForceField {
   /// may overlap the same atom. If the array of rigid bodies is unspecified, it
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
-  ///
-  /// If a body can flex around a joint, it is no longer a rigid body.
-  /// Suppressing macroscopic motion from randomly initialized thermal
-  /// velocities becomes non-trivial. For such cases, you must explicitly
-  /// thermalize the velocities.
-  /// <doc:MM4ForceField/thermalize(temperature:rigidBodies:)> lets you choose
-  /// which rigid bodies are thermalized using the MM4 algorithm. Remove
-  /// flexible bodies from the list and manually thermalize using a similar
-  /// algorithm.
   public var rigidBodies: [Range<UInt32>] {
     get {
       // Create a new array with a different type. This isn't the fastest

@@ -62,7 +62,7 @@
 /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
 /// without constraints. Expensive forces like torsions, nonbonded, and
 /// electrostatic can execute at double the timestep. The value you enter for
-/// [`setTimeStep`](<doc:MM4ForceField/setTimeStep>)
+/// [`timeStep`](<doc:MM4ForceField/setTimeStep(_:levelOfTheory:)>)
 /// specifies the execution rate of expensive forces. Always
 /// assume the C-H stretching forces execute at half the specified timestep.
 /// For example, in the note below, bond stretching forces don't actually
