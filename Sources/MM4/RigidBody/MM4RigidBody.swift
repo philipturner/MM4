@@ -99,17 +99,15 @@ public struct MM4RigidBody {
   /// When importing velocities, all anchors must have the same velocity.
   public var linearVelocity: SIMD3<Float> = .zero
   
-  /// Kinetic energy as reported by OpenMM, including thermal energy.
-  public var kineticEnergy: Double {
+  /// Kinetic energy contribution from organized mechanical energy (linear
+  /// velocity, angular velocity). Contributions from anchors are omitted.
+  public var freeKineticEnergy: Double {
     fatalError("Not implemented.")
   }
   
-  /// Thermal energy in zeptojoules, calculated as kinetic energy minus the
-  /// contributions from bulk linear and angular velocity.
-  ///
-  /// Kinetic energy contributions from anchors are omitted when calculating
-  /// temperature.
-  public var thermalEnergy: Double = 0.0
+  /// Kinetic energy contribution from disorganized thermal energy.
+  /// Contributions from anchors are omitted.
+  public var thermalKineticEnergy: Double = 0.0
   
   // MARK: - Initializer
   

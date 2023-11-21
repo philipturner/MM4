@@ -6,8 +6,8 @@
 //
 
 extension MM4RigidBody {
-  /// Estimate of the true heat capacity, which may not be the correct number
-  /// for simulating thermodynamic properties with molecular dynamics.
+  /// Estimate of the true heat capacity, which may not be the most appropriate
+  /// number for simulating thermodynamic properties.
   ///
   /// > WARNING: Molecular dynamics does not simulate certain quantum effects,
   ///   such as freezing of higher energy vibrational modes. Freezing is the
@@ -33,17 +33,18 @@ extension MM4RigidBody {
   }
   
   /// Set the thermal kinetic energy to match a given temperature, assuming
-  /// positions are energy-minimized at 0 K. Some of the energy will be lost to
-  /// thermal potential energy during a simulation. Potential energy is stored
-  /// implicitly in the atoms' positions.
+  /// positions are energy-minimized at 0 K.
   ///
   /// - Parameter temperature: The temperature to match the thermal energy to,
   ///   in kelvin.
   /// - Parameter heatCapacity: The partitioning of overall thermal energy in
   ///   thermodynamic units per atom (kT or R).
   ///
-  /// Typical use case: minimize at zero kelvin, initialize the simulator at
-  /// room temperature, and never attempt to extract temperature from the
+  /// Some of the energy will be lost to thermal potential energy during a
+  /// simulation. This information can technically be recovered from the atoms'
+  /// positions. Typical use cases minimize the system at 0 K, then initialize
+  /// the simulator at room temperature. It is not anticipated that users will
+  /// extract temperature (e.g. local temperature differentials) from the
   /// simulation.
   ///
   /// > WARNING: There is no trivial method to translate between thermal energy
@@ -76,7 +77,7 @@ extension MM4RigidBody {
     //
     // E = C N kT
     let kT = MM4BoltzInZJPerK * temperature
-    thermalEnergy = heatCapacity * Double(atomCount) * kT
+    thermalKineticEnergy = heatCapacity * Double(atomCount) * kT
   }
   
   /// Units: kelvin.
