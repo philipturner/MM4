@@ -36,3 +36,9 @@ public let MM4EAngstromPerDebye: Double = 0.2081943
 ///
 /// Converts from elementary charge \* angstroms to debyes.
 public let MM4DebyePerEAngstrom: Double = 1 / 0.2081943
+
+/// 0.008314
+public let MM4BoltzInKJPerMolPerK: Double = 8.314462618 / 1000
+
+/// 0.013806
+public let MM4BoltzInZJPerK: Double = 8.314462618 / 1000 * MM4ZJPerKJPerMol

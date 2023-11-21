@@ -7,6 +7,18 @@
 
 import OpenMM
 
+/// Cross-platform implementation of the cross product.
+///
+/// Source: [Wikipedia](https://en.wikipedia.org/wiki/Cross_product#Computing)
+fileprivate func cross<T: BinaryFloatingPoint & SIMDScalar>(
+  _ x: SIMD3<T>, _ y: SIMD3<T>
+) -> SIMD3<T> {
+  let s1 = x[1] * y[2] - x[2] * y[1]
+  let s2 = x[2] * y[0] - x[0] * y[2]
+  let s3 = x[0] * y[1] - x[1] * y[0]
+  return SIMD3(s1, s2, s3)
+}
+
 extension MM4ForceField {
   // TODO: Remove this function entirely, transferring the functionality to
   // `MM4RigidBody`. The effect can be emulated by changing a rigid body's
@@ -110,7 +122,7 @@ extension MM4ForceField {
       var thermalMomentum: SIMD3<Double> = .zero
       var bulkAngularMomentum: SIMD3<Double> = .zero
       var thermalAngularMomentum: SIMD3<Double> = .zero
-      var rotationalInertia: MM4RotationalInertia = .init()
+      var rotationalInertia: MM4AngularMass = .init()
       for originalID in range {
         let atomID = Int(originalID)
         let mass = Double(atoms.masses[atomID])

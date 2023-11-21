@@ -1,31 +1,19 @@
 //
-//  MM4RotationalInertia.swift
+//  MM4AngularMass.swift
 //
 //
-//  Created by Philip Turner on 11/19/23.
+//  Created by Philip Turner on 11/20/23.
 //
 
-/// Cross-platform implementation of the cross product.
-///
-/// Source: [Wikipedia](https://en.wikipedia.org/wiki/Cross_product#Computing)
-func cross<T: BinaryFloatingPoint & SIMDScalar>(
-  _ x: SIMD3<T>, _ y: SIMD3<T>
-) -> SIMD3<T> {
-  let s1 = x[1] * y[2] - x[2] * y[1]
-  let s2 = x[2] * y[0] - x[0] * y[2]
-  let s3 = x[0] * y[1] - x[1] * y[0]
-  return SIMD3(s1, s2, s3)
-}
-
-/// Cross-platform implementation of the 3x3 matrix inverse.
+/// Moment of inertia.
 ///
 /// Source: [Stack Overflow](https://stackoverflow.com/a/18504573)
-struct MM4RotationalInertia {
-  /// The accumulator for the rigid body's moment of inertia.
-  var columns: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+public struct MM4AngularMass {
+  /// Symmetric matrix specifying the rigid body's moment of inertia.
+  public var columns: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
   
   /// Initialize a moment of inertia with zero mass.
-  init() {
+  public init() {
     self.columns = (.zero, .zero, .zero)
   }
   
@@ -52,9 +40,9 @@ struct MM4RotationalInertia {
     columns.2 += mass * SIMD3<Double>(column2)
   }
   
-  // The matrix is symmetric, but not exactly orthonormal. Inversion is not a
-  // simple transpose operation.
-  var inverse: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
+  /// The matrix is symmetric, but not exactly orthonormal. Inversion is not a
+  /// simple transpose operation.
+  public var inverse: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
     // Source: https://stackoverflow.com/a/18504573
     //
     // double det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -

@@ -7,31 +7,6 @@
 
 import Numerics
 
-/*
- - MM4RigidBody structure that encapsulates all the rigid body calculations from thermalize(); MolecularRenderer will extend it with Lattice/Solid initializer that performs Morton reordering: rigid bodies are detached from specific simulators
- - MM4ForcesField initializer directly accepting rigid bodies, API to import/export to one rigid body at a time (but cache the I/O accesses into OpenMM)
-   - export(to: inout RigidBody, index: Int)
-   - import(from: RigidBody, index: Int)
- 
- /// Means to extract atom positions and atomic numbers.
- public struct RigidBody {
-   // atomicNumbers
-   // bonds
-   // relativePositions
-   // relativeVelocities
-   // - stores positions/velocities in a local coordinate space, internally
-   //   projects to the global space using rigid body transforms
-   
-   // centerOfMass, rotationalInertia
-   // position, rotation
-   // velocity, angularVelocity
-   
-   // init(solid:) -> materializes Solid topology
-   // init(lattice:) -> materializes Lattice topology
-   // private init(...) -> reduces code duplication between Lattice and Solid
- }
- */
-
 public struct MM4RigidBodyDescriptor {
   /// Required. The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8]?
@@ -96,7 +71,10 @@ public struct MM4RigidBody {
   public internal(set) var masses: [Float]
   
   /// A convenient method for accessing the atom count.
-  var atomCount: Int { atomicNumbers.count }
+  var atomCount: Int
+  
+  /// A convenient method for accessing the atom vector count.
+  var atomVectorCount: Int
   
   /// The high-performance storage format for atom positions.
   var _positions: [MM4FloatVector]
@@ -121,7 +99,12 @@ public struct MM4RigidBody {
   /// When importing velocities, all anchors must have the same velocity.
   public var linearVelocity: SIMD3<Float> = .zero
   
-  /// Thermal energy in zeptojoules, calculated as total energy minus the
+  /// Kinetic energy as reported by OpenMM, including thermal energy.
+  public var kineticEnergy: Double {
+    fatalError("Not implemented.")
+  }
+  
+  /// Thermal energy in zeptojoules, calculated as kinetic energy minus the
   /// contributions from bulk linear and angular velocity.
   ///
   /// Kinetic energy contributions from anchors are omitted when calculating
@@ -138,29 +121,20 @@ public struct MM4RigidBody {
       fatalError("Descriptor did not have the required properties.")
     }
     
+    let descriptorHMR = descriptor.hydrogenMassRepartitioning
     self.atomicNumbers = descriptorAtomicNumbers
     self.bonds = descriptorBonds
-    self.hydrogenMassRepartitioning = descriptor.hydrogenMassRepartitioning ?? 1.0
-    self.masses = descriptorAtomicNumbers.map { atomicNumber in
-      MM4MassParameters.global.mass(atomicNumber: atomicNumber)
-    }
+    self.hydrogenMassRepartitioning = descriptorHMR ?? 1.0
+    self.masses = []
     
-    for bond in bonds {
-      let atomicNumber1 = atomicNumbers[Int(bond[0])]
-      let atomicNumber2 = atomicNumbers[Int(bond[1])]
-      guard atomicNumber1 == 1 || atomicNumber2 == 1 else {
-        continue
-      }
-      if atomicNumber1 == atomicNumber2 {
-        fatalError("Hydrogen cannot be bonded to another hydrogen.")
-      }
-      
-      let hydrogen = (atomicNumber1 == 1) ? bond[0] : bond[1]
-      let nonHydrogen = (atomicNumber1 == 1) ? bond[1] : bond[0]
-      masses[Int(hydrogen)] += hydrogenMassRepartitioning
-      masses[Int(nonHydrogen)] -= hydrogenMassRepartitioning
-    }
+    self.atomCount = atomicNumbers.count
+    self.atomVectorCount = atomicNumbers.count + MM4VectorWidth - 1
+    self.atomVectorCount /= MM4VectorWidth
+    self._positions = Array(repeating: .zero, count: 3 * atomCount)
     
-    fatalError("Call into position setter.")
+    createMasses()
+    positions.withUnsafeBufferPointer {
+      setPositions($0)
+    }
   }
 }
