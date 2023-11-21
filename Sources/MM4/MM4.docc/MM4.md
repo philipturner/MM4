@@ -1,11 +1,11 @@
-# ````
+# ``MM4``
 
- The MM2 force field used to create _Nanosystems (1992)_, but updated with
+The MM2 force field used to create _Nanosystems (1992)_, but updated with
  modern ab initio calculations.
 
 ## Overview
 
- The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
+The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
  restrictions on permitted bond types. Elements except C, Si, Ge must have
  every covalent bond shared with a carbon atom. In addition, no dissimilar
  non-H/C atoms may be separated by a bond once removed. Within these
@@ -87,9 +87,3 @@
  cheap forces at 0.5 fs. Integration error scales O(h^2), so this should be
  around 16x more precise. Any smaller timestep, and rounding error from
  FP32 will overtake integration error.
-
-## Topics
-
-### <!--@START_MENU_TOKEN@Group<!--@END_MENU_TOKEN@-->-->
-
-- <!--@START_MENU_TOKEN@``Symbol``<!--@END_MENU_TOKEN@-->-->
