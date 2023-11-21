@@ -6,12 +6,41 @@
 //
 
 extension MM4RigidBody {
-  /// Set the thermal energy to match a given temperature.
+  /// Estimate of the true heat capacity, which may not be the correct number
+  /// for simulating thermodynamic properties with molecular dynamics.
   ///
-  /// - Parameter enthalpy: The material's thermodynamic enthalpy at the specified
-  ///   temperature, in kT per atom.
+  /// > WARNING: Molecular dynamics does not simulate certain quantum effects,
+  ///   such as freezing of higher energy vibrational modes. Freezing is the
+  ///   primary reason for diamond's exceptionally low heat capacity. Perform
+  ///   simulations at both 3 kT and the estimated heat capacity (0.75-2.5 kT).
+  ///   Report whether the system functions efficiently and correctly in both
+  ///   sets of conditions.
+  ///
+  /// Heat capacity is derived from data for C, SiC, and Si. The object is
+  /// matched to one of these materials based on its elemental composition.
+  /// - Elements with Z=6 to Z=8 are treated like carbon.
+  /// - Elements with Z=14 to Z=32 are treated like silicon.
+  /// - Heat capacity of octane (0.87 kT) is close to diamond (0.74 kT) at 298 K
+  ///   ([Gang et al., 1998](https://sci-hub.live/https://doi.org/10.1016/S0301-0104(97)00369-8)).
+  ///   Therefore, hydrogens and halogens likely have the same thermodynamic
+  ///   characteristics as whatever bulk they are attached to. These atoms are
+  ///   omitted from the enthalpy derivation.
+  /// - The elemental composition is mapped to a spectrum: 100% carbon to
+  ///   100% silicon. Moissanite falls at the halfway point. The result is
+  ///   interpolated between the two closest materials.
+  public var heatCapacity: Double {
+    fatalError("Not implemented.")
+  }
+  
+  /// Set the thermal kinetic energy to match a given temperature, assuming
+  /// positions are energy-minimized at 0 K. Some of the energy will be lost to
+  /// thermal potential energy during a simulation. Potential energy is stored
+  /// implicitly in the atoms' positions.
+  ///
   /// - Parameter temperature: The temperature to match the thermal energy to,
   ///   in kelvin.
+  /// - Parameter heatCapacity: The partitioning of overall thermal energy in
+  ///   thermodynamic units per atom (kT or R).
   ///
   /// Typical use case: minimize at zero kelvin, initialize the simulator at
   /// room temperature, and never attempt to extract temperature from the
@@ -26,55 +55,28 @@ extension MM4RigidBody {
   /// to map temperature to heat capacity for diamond. Experimental measurements
   /// matched the prediction with around 1% margin of error.
   ///
-  /// Enthalpy in kT equals the number of J/mol divided by 8.314. For
-  /// reference, here are some common enthalpies:
+  /// Heat capacity in kT/atom equals the value in J/mol-K divided by 8.314. For
+  /// reference, here are some common heat capacities:
   /// - By the equipartition theorem, ideal gases are 1.5 kT.
   /// - Most crystalline solids approach 3.0 kT at high temperatures.
-  /// - Diamond: 0.21 kT at 298 K, 0.61 kT at 500 K ([Raman, 1957](http://dspace.rri.res.in/bitstream/2289/1763/1/1957%20Proc%20Indian%20Acad%20Sci%20A%20V46%20p323-332.pdf)).
-  /// - Moissanite: 0.66 kT at 298 K, 1.21 kT at 500 K ([Chekhovskoy, 1971](https://doi.org/10.1016/S0021-9614(71)80045-9)).
-  /// - Silicon: 0.65 kT at 298 K, 0.92 kT at 500 K ([Desai, 1985](https://srd.nist.gov/JPCRD/jpcrd298.pdf)).
+  /// - Diamond: 0.74 kT at 298 K, 1.62 kT at 500 K ([Raman, 1957](http://dspace.rri.res.in/bitstream/2289/1763/1/1957%20Proc%20Indian%20Acad%20Sci%20A%20V46%20p323-332.pdf)).
+  /// - Moissanite: 1.62 kT at 298 K, 2.31 kT at 500 K ([Chekhovskoy, 1971](https://doi.org/10.1016/S0021-9614(71)80045-9)).
+  /// - Silicon: 2.41 kT at 298 K, 2.84 kT at 500 K ([Desai, 1985](https://srd.nist.gov/JPCRD/jpcrd298.pdf)).
   ///
-  /// Take the integral of heat capacity over the entire temperature
-  /// range. The result is the absolute deviation from zero-point energy, or the
-  /// enthalpy. This process be quite laborious, so it has already been done for
-  /// common diamondoid materials: diamond (C), moissanite (SiC), and silicon
-  /// (Si). The chart shows enthalpies over the range from absolute zero to
-  /// thermal decomposition temperature.
-  ///
-  /// ![Material Enthalpies](MaterialEnthalpies)
-  ///
-  /// If enthalpy is not specified, it will be derived from data for C, SiC, and
-  /// Si.
-  /// - Hydrogen and halogens are omitted (see explanation below).
-  /// - Elements with Z=6 to Z=8 are treated like carbon.
-  /// - Elements with Z=14 to Z=32 are treated like silicon.
-  /// - The elemental composition is mapped to a spectrum: 100% carbon to
-  ///   100% silicon. The enthalpy is interpolated between the two closest
-  ///   materials.
-  ///
-  /// Diamond has a moderately low heat capacity at 298 K, roughly 0.8 kT.
-  /// When integrated over temperature, that translates to an extremely low
-  /// enthalpy, just 0.2 kT. This reflects that diamond is an excellent heat
-  /// conductor. It expels thermal energy that would pile up in other materials.
-  ///
-  /// Heat capacity of octane is 0.87 kT/atom at 298 K, close to diamond
-  /// ([Gang et al., 1998](https://sci-hub.live/https://doi.org/10.1016/S0301-0104(97)00369-8)).
-  /// Enthalpy likely matches diamond as well. Therefore, hydrogens and
-  /// halogens likely have the same thermodynamic characteristics as whatever
-  /// bulk they are attached to. These atoms are omitted from the enthalpy
-  /// derivation.
-  public mutating func setTemperature(
-    _ temperature: Double,
-    enthalpy: Double? = nil
+  /// ![Material Heat Capacities](MaterialHeatCapacities)
+  public mutating func setThermalKineticEnergy(
+    temperature: Double,
+    heatCapacity: Double
   ) {
-    // TODO: Derive enthalpy from elemental composition.
-    
-    // H is enthalpy
-    // E is thermal energy
-    // N is number of atoms
-    // E = H N kT
+    // E = thermal energy
+    // C = heat capacity
+    // N = number of atoms
+    // k = Boltzmann constant
+    // T = temperature
+    //
+    // E = C N kT
     let kT = MM4BoltzInZJPerK * temperature
-    thermalEnergy = enthalpy! * Double(atomCount) * kT
+    thermalEnergy = heatCapacity * Double(atomCount) * kT
   }
   
   /// Units: kelvin.
@@ -279,203 +281,203 @@ extension MM4RigidBody {
   ]
   
   /// Units: kT at the corresponding temperature.
-  fileprivate static let diamondLookupEnthalpies: [Double] = [
+  fileprivate static let diamondLookupCapacities: [Double] = [
     0,
-    0.00000001043738984,
-    0.0000000521869492,
-    0.0000001565608476,
-    0.0000003548712546,
-    0.0000006784303397,
-    0.000001158550272,
-    0.000001826543222,
-    0.000002713721359,
-    0.000003851396851,
-    0.00000527088187,
-    0.000007003488583,
-    0.000009080529162,
-    0.00001153331577,
-    0.00001439316059,
-    0.00001769137578,
-    0.00004283337047,
-    0.00008308013208,
-    0.0001422019813,
-    0.0003393959603,
-    0.0006590048661,
-    0.001132080306,
-    0.001807875205,
-    0.002751903567,
-    0.004048089463,
-    0.005812207402,
-    0.01136035145,
-    0.02006087468,
-    0.03243633093,
-    0.04420952307,
-    0.06871995066,
-    0.09879599475,
-    0.1335957859,
-    0.172743708,
-    0.2157167667,
-    0.3094642095,
-    0.4094214054,
-    0.5115166943,
-    0.6127686228,
-    0.8047792115,
-    0.9790249674,
-    1.133958743,
-    1.270594149,
-    1.390898077,
-    1.497037153,
+    0.00000002087545327,
+    0.0000001670036262,
+    0.0000005636372384,
+    0.00000133602901,
+    0.000002609431659,
+    0.000004509097907,
+    0.000007160280473,
+    0.00001068823208,
+    0.00001521820544,
+    0.00002087545327,
+    0.00002778522831,
+    0.00003607278326,
+    0.00004586337084,
+    0.00005728224378,
+    0.0000704546548,
+    0.0001660716863,
+    0.0003220784219,
+    0.0005535722877,
+    0.001308443589,
+    0.002566562425,
+    0.004428578302,
+    0.007297089247,
+    0.01142371903,
+    0.01741236469,
+    0.02596757277,
+    0.05223709406,
+    0.09229559779,
+    0.1458411354,
+    0.1937503007,
+    0.2868510945,
+    0.3919795045,
+    0.5016371422,
+    0.6268451287,
+    0.7500401251,
+    0.9939138802,
+    1.224401251,
+    1.432242483,
+    1.615927833,
+    1.913850373,
+    2.135279288,
+    2.301854222,
+    2.425653115,
+    2.521773394,
+    2.595247534,
   ]
   
   /// Units: kT at the corresponding temperature.
-  fileprivate static let moissaniteLookupEnthalpies: [Double] = [
+  fileprivate static let moissaniteLookupCapacities: [Double] = [
     0,
-    0.00000006919430319,
-    0.0000005535544255,
-    0.000001868246186,
-    0.000004428435404,
-    0.000008649287898,
-    0.00001494596949,
-    0.00002373364599,
-    0.00003542748323,
-    0.00005044264702,
-    0.00006919430319,
-    0.00009209761754,
-    0.0001195677559,
-    0.0001520198841,
-    0.0001898691679,
-    0.0002335307733,
-    0.0005535544255,
-    0.00183679423,
-    0.00435295071,
-    0.008504608901,
-    0.01480338729,
-    0.02329241998,
-    0.03459715159,
-    0.04948441076,
-    0.067181378,
-    0.08715051079,
-    0.1096624866,
-    0.1341304954,
-    0.1603151128,
-    0.1877052734,
-    0.2163894572,
-    0.2459912982,
-    0.2764976398,
-    0.3076332369,
-    0.3393037013,
-    0.3713128062,
-    0.403843115,
-    0.4364984501,
-    0.4692631834,
-    0.5020235408,
-    0.5347800271,
-    0.5672534997,
-    0.5774770262,
-    0.599564144,
-    0.6318155684,
-    0.6580911698,
-    0.6640136949,
-    0.9630588925,
-    1.208761573,
-    1.407370191,
-    1.570081643,
-    1.705954093,
-    1.821138145,
-    1.920582241,
-    2.007206646,
-    2.084006604,
-    2.152281542,
-    2.213858251,
-    2.269573145,
-    2.320210794,
-    2.366667183,
-    2.409219829,
-    2.448485113,
-    2.484704524,
-    2.518433002,
-    2.54978148,
-    2.578950993,
-    2.606109074,
-    2.631698385,
-    2.655512838,
-    2.678029213,
-    2.699117001,
-    2.71901075,
+    0.000000283076738,
+    0.000002264613904,
+    0.000007643071927,
+    0.00001811691123,
+    0.00003538459225,
+    0.00006114457541,
+    0.00009709532115,
+    0.0001449352899,
+    0.000206362942,
+    0.000283076738,
+    0.0003767751383,
+    0.0004891566033,
+    0.0006219195935,
+    0.0007767625692,
+    0.0009553839909,
+    0.002264613904,
+    0.007297089247,
+    0.0176136637,
+    0.0344724561,
+    0.05887996151,
+    0.09184267501,
+    0.1401544383,
+    0.1962665384,
+    0.2556497474,
+    0.3220784219,
+    0.3917782054,
+    0.4639942266,
+    0.5357070002,
+    0.6089295165,
+    0.6821520327,
+    0.7581424104,
+    0.8318681742,
+    0.9045874429,
+    0.9763002165,
+    1.048516238,
+    1.120732259,
+    1.189425547,
+    1.256860717,
+    1.321276401,
+    1.382420977,
+    1.441300938,
+    1.459417849,
+    1.505213375,
+    1.568370941,
+    1.616682704,
+    1.627250902,
+    2.054004811,
+    2.310157806,
+    2.482016839,
+    2.606822228,
+    2.702439259,
+    2.780442627,
+    2.845864806,
+    2.903738273,
+    2.951546789,
+    2.994322829,
+    3.032066394,
+    3.064777484,
+    3.094972336,
+    3.12265095,
+    3.145297089,
+    3.165426991,
+    3.183040654,
+    3.200654318,
+    3.215751744,
+    3.225816695,
+    3.238397883,
+    3.248462834,
+    3.258527784,
+    3.266076497,
+    3.27362521,
+    3.278657686,
   ]
   
   /// Units: kT at the corresponding temperature.
-  fileprivate static let siliconLookupEnthalpies: [Double] = [
+  fileprivate static let siliconLookupCapacities: [Double] = [
     0,
-    0.0000002327324468,
-    0.000001163662234,
-    0.000003493191747,
-    0.000007903732211,
-    0.00001510427566,
-    0.00002579461309,
-    0.00004066640831,
-    0.00006043120491,
-    0.00008577998134,
-    0.0001174250057,
-    0.0004619611177,
-    0.001286872295,
-    0.003032440181,
-    0.006132782741,
-    0.0108022152,
-    0.01714579034,
-    0.02508656128,
-    0.03434983706,
-    0.05586217792,
-    0.08001681391,
-    0.09275570797,
-    0.1058416773,
-    0.1327566389,
-    0.1600708368,
-    0.1878640016,
-    0.2161466899,
-    0.2303182241,
-    0.2444821168,
-    0.2727515926,
-    0.3007979179,
-    0.3284750033,
-    0.3557277337,
-    0.3691698038,
-    0.3824748205,
-    0.4086758269,
-    0.4342953967,
-    0.4592404751,
-    0.4834472272,
-    0.4952876226,
-    0.5069596629,
-    0.5297731125,
-    0.5518776396,
-    0.5732613672,
-    0.5939475875,
-    0.6003261982,
-    0.6139709882,
-    0.6333603009,
-    0.648715153,
-    0.6521317115,
-    0.7373209279,
-    0.8088803821,
-    0.8704178545,
-    0.9234966379,
-    0.9698769419,
-    1.010431552,
-    1.046504859,
-    1.078627589,
-    1.107830406,
-    1.134209763,
-    1.158617667,
-    1.181048598,
-    1.201941313,
-    1.221346132,
-    1.256722345,
-    1.288207109,
-    1.316467152,
-    1.342193485,
-    1.365812667,
-    1.387644618,
-    1.40545128,
+    0.0000009309598268,
+    0.000007447678614,
+    0.00002516237671,
+    0.0000593817657,
+    0.0001162496993,
+    0.0002007457301,
+    0.0003188597546,
+    0.0004763050277,
+    0.0006780129901,
+    0.0009309598268,
+    0.003673322107,
+    0.01137358672,
+    0.0286865528,
+    0.05785422179,
+    0.09742602839,
+    0.1487851816,
+    0.205677171,
+    0.2652152995,
+    0.3885013231,
+    0.5113062305,
+    0.5731296608,
+    0.6354342074,
+    0.7569160452,
+    0.8667308155,
+    0.9965119076,
+    1.112581188,
+    1.16923262,
+    1.225162377,
+    1.335939379,
+    1.437936012,
+    1.536685109,
+    1.630502766,
+    1.674404619,
+    1.718306471,
+    1.80298292,
+    1.881404859,
+    1.951286986,
+    2.015997113,
+    2.04919413,
+    2.079745008,
+    2.138320904,
+    2.191363964,
+    2.240197258,
+    2.287106086,
+    2.301299014,
+    2.331128217,
+    2.374067837,
+    2.406422901,
+    2.413519365,
+    2.564830407,
+    2.677171037,
+    2.76641809,
+    2.83714217,
+    2.892350253,
+    2.937214337,
+    2.976665865,
+    3.012990137,
+    3.047149387,
+    3.080105846,
+    3.111017561,
+    3.140485927,
+    3.168631224,
+    3.19569401,
+    3.246090931,
+    3.290834737,
+    3.332571566,
+    3.373225884,
+    3.412557133,
+    3.448881405,
+    3.479672841,
   ]
 }

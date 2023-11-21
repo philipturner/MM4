@@ -8,11 +8,11 @@
 import OpenMM
 
 extension MM4ForceField {
-  /// Minimize the system's energy using the L-BFGS algorithm.
+  /// Minimize the system's potential energy, removing thermal potential energy.
   ///
-  /// This is one of few such algorithms with O(n) computational complexity. It
-  /// is a limited-memory version of BFGS, an O(n^2) algorithm. BFGS, in turn,
-  /// is an improvement on O(n^3) methods such as Newton's method.
+  /// OpenMM uses the L-BFGS algorithm for gradient descent. It is an O(n)
+  /// version of BFGS, an O(n^2) algorithm. BFGS improves upon O(n^3) methods
+  /// such as Newton's method.
   ///
   /// - Parameter tolerance: Accepted uncertainty in potential energy,
   ///   in zeptojoules.
