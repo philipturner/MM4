@@ -69,6 +69,7 @@ extension MM4ForceField {
     var dataTypes: OpenMM_State.DataType = []
     if descriptor.energy {
       dataTypes = [dataTypes, .energy]
+      fatalError("TODO: Create a CPU context, move to that before any state measurements that require energy.")
     }
     if descriptor.forces {
       dataTypes = [dataTypes, .forces]
