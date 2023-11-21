@@ -70,13 +70,4 @@ extension MM4RigidBody {
     
     fatalError("Not implemented.")
   }
-  
-  public func getTemperature(enthalpy: Double? = nil) -> Double {
-    // C is heat capacity
-    // E is thermal energy
-    // N is number of atoms
-    // E = C N kT
-    // T = E / C N k
-    fatalError("Not implemented.")
-  }
 }
