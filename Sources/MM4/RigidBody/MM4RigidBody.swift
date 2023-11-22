@@ -14,11 +14,11 @@ public struct MM4RigidBodyDescriptor {
   /// Required. Pairs of atom indices representing sigma bonds.
   public var bonds: [SIMD2<UInt32>]?
   
-  /// Optional. The amount of mass (in amu) to redistribute from a substituent
+  /// Required. The amount of mass (in amu) to redistribute from a substituent
   /// atom to each covalently bonded hydrogen.
   ///
-  /// If not specified, the default is 1 amu.
-  public var hydrogenMassRepartitioning: Float?
+  /// The default is 1 amu.
+  public var hydrogenMassRepartitioning: Float = 1.0
   
   /// Required. The position (in nanometers) of each atom's nucleus.
   public var positions: [SIMD3<Float>]?
@@ -110,11 +110,10 @@ public struct MM4RigidBody {
       fatalError("Descriptor did not have the required properties.")
     }
     
-    let descriptorHMR = descriptor.hydrogenMassRepartitioning
     var desc = MM4ParametersDescriptor()
     desc.atomicNumbers = descriptorAtomicNumbers
     desc.bonds = descriptorBonds
-    desc.hydrogenMassRepartitioning = [descriptorHMR ?? 1.0]
+    desc.hydrogenMassRepartitioning = descriptor.hydrogenMassRepartitioning
     self.parameters = try MM4Parameters(descriptor: desc)
     self.centerOfMass.mass = parameters.atoms.masses.reduce(Double(0)) {
       $0 + Double($1)
@@ -131,9 +130,6 @@ public struct MM4RigidBody {
     }
     self.atomVectorMask = lastVector .>= UInt32(atomCount)
     
-    // TODO: Zero-pad the masses internally.
-    parameters.atoms.atomicNumbers
-      .reserveCapacity(atomVectorCount * MM4VectorWidth)
     self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
       $1 = 3 * descriptorAtomicNumbers.count

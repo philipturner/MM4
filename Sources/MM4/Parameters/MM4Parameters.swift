@@ -17,7 +17,7 @@ public struct MM4ParametersDescriptor {
   /// the parameters.
   public var bonds: [SIMD2<UInt32>]?
   
-  /// Optional. The amount of mass (in amu) to redistribute from a substituent
+  /// Required. The amount of mass (in amu) to redistribute from a substituent
   /// atom to each covalently bonded hydrogen.
   ///
   /// If not specified, the default is 1 amu.
@@ -25,7 +25,7 @@ public struct MM4ParametersDescriptor {
   /// Each array element corresponds to a different rigid body. See the note in
   /// <doc:MM4ParametersDescriptor/bonds> about ordering the atoms from each
   /// rigid body.
-  public var hydrogenMassRepartitioning: [Float]?
+  public var hydrogenMassRepartitioning: Float = 1.0
   
   // TODO: Force the user to specify the different rigid bodies, providing
   // flexibility to covalently connect two different "rigid bodies". Or, a
@@ -39,7 +39,10 @@ public struct MM4ParametersDescriptor {
   }
 }
 
-// TODO: Make `MM4Parameters` a struct instead of a class?
+// TODO: 1. Throw "missing parameter" errors when a parameter is missing
+// TODO: 2. Make `MM4Parameters` a struct instead of a class
+// TODO: 3. Make an `MM4Parameters` mutating function that appends parameters
+// from another instance.
 
 /// A set of force field parameters.
 public class MM4Parameters {
@@ -58,10 +61,6 @@ public class MM4Parameters {
   /// Parameters for a group of 5 atoms.
   public internal(set) var rings: MM4Rings = MM4Rings()
   
-  /// The amount of mass (in amu) redistributed from a substituent atom to each
-  /// covalently bonded hydrogen. Each array slot corresponds to a rigid body.
-  var hydrogenMassRepartitioning: [Float] = []
-  
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   var nonbondedExceptions13: [SIMD2<UInt32>] = []
   
@@ -76,12 +75,6 @@ public class MM4Parameters {
   
   /// Map from atoms to connected atoms that can be efficiently traversed.
   var atomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
-  
-  /// Map from atoms to rigid bodies that can be efficiently traversed.
-  var atomsToRigidBodiesMap: [Int32] = []
-  
-  /// Grouping of atoms into rigid bodies.
-  var rigidBodies: [Range<UInt32>] = []
   
   /// Create a set of parameters using the specified configuration.
   ///
@@ -102,6 +95,9 @@ public class MM4Parameters {
     // Set the properties for conveniently iterating over the atoms.
     atoms.count = descriptorAtomicNumbers.count
     atoms.indices = 0..<descriptorAtomicNumbers.count
+    guard atoms.count > 0 else {
+      fatalError("Behavior not yet defined when atom count is zero.")
+    }
     
     // Compile the bonds into a map.
     bondsToAtomsMap = .allocate(capacity: descriptorBonds.count + 1)
@@ -157,25 +153,15 @@ public class MM4Parameters {
     }
     
     // Topology
-    createRigidBodies()
     createTopology()
     createAtomCodes()
     createCenterTypes()
     
     // Per-Atom Parameters
-    if let hydrogenMassRepartitioning = descriptor.hydrogenMassRepartitioning {
-      guard hydrogenMassRepartitioning.count == rigidBodies.count else {
-        fatalError(
-          "Specified hydrogen mass repartitioning does not match number of rigid bodies.")
-      }
-      self.hydrogenMassRepartitioning = hydrogenMassRepartitioning
-    } else {
-      self.hydrogenMassRepartitioning = Array(
-        repeating: 1.0, count: rigidBodies.count)
-    }
-    
-    createMasses()
-    createNonbondedParameters()
+    let descriptorHMR = descriptor.hydrogenMassRepartitioning
+    createMasses(hydrogenMassRepartitioning: descriptorHMR)
+    createVectorPadding()
+    createNonbondedParameters(hydrogenMassRepartitioning: descriptorHMR)
     createNonbondedExceptions()
     
     // Per-Bond Parameters

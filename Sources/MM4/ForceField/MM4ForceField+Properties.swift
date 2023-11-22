@@ -142,7 +142,7 @@ extension MM4ForceField {
   /// closed system's net momentum stays conserved.
   public var rigidBodies: [Range<UInt32>] {
     _read {
-      yield system.parameters.rigidBodies
+      fatalError("TODO: New IR that stores rigid bodies in MM4ForceField")
     }
   }
 }

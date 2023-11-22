@@ -133,9 +133,9 @@ public class MM4ForceField {
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)
     
-    for _ in parameters.rigidBodies.indices {
-      _levelOfTheory.append(.molecularDynamics)
-    }
+    // This initializer is a bit more general; it doesn't require the data to
+    // originate in the format of separate rigid bodies.
+    _levelOfTheory = [.molecularDynamics]
     
     for level in MM4LevelOfTheory.allCases {
       _timeStep[level] = level.defaultTimeStep

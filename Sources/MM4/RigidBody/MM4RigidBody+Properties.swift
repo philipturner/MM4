@@ -16,12 +16,6 @@ extension MM4RigidBody {
     parameters.bonds.indices
   }
   
-  /// The amount of mass (in amu) to redistribute from a substituent atom to
-  /// each covalently bonded hydrogen.
-  public var hydrogenMassRepartitioning: Float {
-    parameters.hydrogenMassRepartitioning[0]
-  }
-  
   /// The object's total mass (in amu).
   public var mass: Double {
     centerOfMass.mass

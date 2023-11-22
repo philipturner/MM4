@@ -131,23 +131,39 @@ public struct MM4AtomParameters {
 }
 
 extension MM4Parameters {
-  func createMasses() {
+  func createMasses(hydrogenMassRepartitioning: Float) {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
       MM4MassParameters.global.mass(atomicNumber: atomicNumber)
     }
     
-    let sequence = zip(rigidBodies, hydrogenMassRepartitioning)
-    for (rigidBody, hydrogenMassRepartitioning) in sequence {
-      for atomID in rigidBody
-      where atoms.atomicNumbers[Int(atomID)] == 1 {
-        atoms.masses[Int(atomID)] += hydrogenMassRepartitioning
-        
-        let map = atomsToBondsMap[Int(atomID)]
-        guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
-          fatalError("Hydrogen did not have exactly 1 bond.")
-        }
-        let substituentID = Int(other(atomID: atomID, bondID: map[0]))
-        atoms.masses[substituentID] -= hydrogenMassRepartitioning
+    for atomID in atoms.indices
+    where atoms.atomicNumbers[Int(atomID)] == 1 {
+      atoms.masses[Int(atomID)] += hydrogenMassRepartitioning
+      
+      let map = atomsToBondsMap[Int(atomID)]
+      guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
+        fatalError("Hydrogen did not have exactly 1 bond.")
+      }
+      let substituentID = Int(other(atomID: atomID, bondID: map[0]))
+      atoms.masses[substituentID] -= hydrogenMassRepartitioning
+    }
+  }
+  
+  func createVectorPadding() {
+    let atomVectorCount = (atoms.count + MM4VectorWidth - 1) / MM4VectorWidth
+    atoms.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
+    atoms.atomicNumbers.withUnsafeMutableBufferPointer {
+      let baseAddress = $0.baseAddress!
+      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
+        baseAddress[i] = 0
+      }
+    }
+    
+    atoms.masses.reserveCapacity(atomVectorCount * MM4VectorWidth)
+    atoms.masses.withUnsafeMutableBufferPointer {
+      let baseAddress = $0.baseAddress!
+      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
+        baseAddress[i] = 0
       }
     }
   }
@@ -306,7 +322,7 @@ extension MM4Parameters {
   // - Using the strange relationship that conflates the different vdW adjustments
   //   to create a single "R=0.85", I derived r=3.046 A, eps=0.0840.
   // - Si, P, S, Ge use the Hill function exactly instead of X/H vdW pairs.
-  func createNonbondedParameters() {
+  func createNonbondedParameters(hydrogenMassRepartitioning: Float) {
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var epsilon: (default: Float, hydrogen: Float)
@@ -327,8 +343,7 @@ extension MM4Parameters {
         // may not be 100% accurate, but seems like the most logical course of
         // action. Most often, people will use the same amount of HMR for each
         // rigid body.
-        let rigidBodyID = atomsToRigidBodiesMap[atomID]
-        let t = hydrogenMassRepartitioning[Int(rigidBodyID)]
+        let t = hydrogenMassRepartitioning
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (default: 0.037, hydrogen: 0.024)
         radius = (default: 1.960, hydrogen: hydrogenRadius)
