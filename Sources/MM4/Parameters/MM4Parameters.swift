@@ -153,7 +153,7 @@ public class MM4Parameters {
     }
     
     // Topology
-    createTopology()
+    try createTopology()
     createAtomCodes()
     createCenterTypes()
     

@@ -16,7 +16,7 @@ public struct MM4Bonds {
   public internal(set) var indices: [SIMD2<UInt32>] = []
   
   /// Map from a group of atoms to a bond index.
-  public internal(set) var map: [SIMD2<UInt32>: Int32] = [:]
+  public internal(set) var map: [SIMD2<UInt32>: UInt32] = [:]
   
   /// Each value corresponds to the bond at the same array index.
   public internal(set) var parameters: [MM4BondParameters] = []
@@ -231,7 +231,7 @@ extension MM4Parameters {
     for (bondID, parameters) in bonds.extendedParameters.enumerated() {
       guard let parameters else { continue }
       let atomCharges = projectDipole(
-        parameters.dipoleMoment, bondID: Int32(bondID))
+        parameters.dipoleMoment, bondID: UInt32(truncatingIfNeeded: bondID))
       
       let atomsMap = bondsToAtomsMap[bondID]
       for lane in 0..<2 {
@@ -248,7 +248,7 @@ extension MM4Parameters {
   /// bond IDs are most often stored in compact 32-bit form, not extended
   /// 64-bit. This is not something exposed in a public API, so the choice is
   /// permissible.
-  func projectDipole(_ dipoleMoment: Float, bondID: Int32) -> SIMD2<Float> {
+  func projectDipole(_ dipoleMoment: Float, bondID: UInt32) -> SIMD2<Float> {
     // Units: angstrom
     let length = bonds.parameters[Int(bondID)].equilibriumLength
     
@@ -457,4 +457,5 @@ extension MM4Parameters {
     }
   }
 }
+
 

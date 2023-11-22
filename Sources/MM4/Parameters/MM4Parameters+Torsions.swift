@@ -16,7 +16,7 @@ public struct MM4Torsions {
   public internal(set) var indices: [SIMD4<UInt32>] = []
   
   /// Map from a group of atoms to a torsion index.
-  public internal(set) var map: [SIMD4<UInt32>: Int32] = [:]
+  public internal(set) var map: [SIMD4<UInt32>: UInt32] = [:]
   
   /// Each value corresponds to the torsion at the same array index.
   public internal(set) var parameters: [MM4TorsionParameters] = []

@@ -16,7 +16,7 @@ public struct MM4Angles {
   public internal(set) var indices: [SIMD3<UInt32>] = []
   
   /// Map from a group of atoms to an angle index.
-  public internal(set) var map: [SIMD3<UInt32>: Int32] = [:]
+  public internal(set) var map: [SIMD3<UInt32>: UInt32] = [:]
   
   /// Each value corresponds to the angle at the same array index.
   public internal(set) var parameters: [MM4AngleParameters] = []

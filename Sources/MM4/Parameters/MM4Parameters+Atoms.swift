@@ -180,18 +180,6 @@ extension MM4Parameters {
       case 1:
         output = .hydrogen
         valenceCount = 1
-      case 5:
-        let atomicNumbers = createAtomicNumbers(map: map)
-        var nitrogenMask: SIMD4<UInt8> = .zero
-        nitrogenMask.replace(with: .one, where: atomicNumbers .== 7)
-        let nitrogenCount = nitrogenMask.wrappedSum()
-        
-        if nitrogenCount == 1 {
-          valenceCount = 4
-          fatalError("B-N dative bond not supported.")
-        } else {
-          fatalError("Boron had invalid number of nitrogen bonds.")
-        }
       case 6:
         let ringType = atoms.ringTypes[atomID]
         switch ringType {
