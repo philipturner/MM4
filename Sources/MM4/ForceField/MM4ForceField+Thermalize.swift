@@ -7,6 +7,8 @@
 
 import OpenMM
 
+#if false
+
 /// Cross-platform implementation of the cross product.
 ///
 /// Source: [Wikipedia](https://en.wikipedia.org/wiki/Cross_product#Computing)
@@ -20,42 +22,12 @@ fileprivate func cross<T: BinaryFloatingPoint & SIMDScalar>(
 }
 
 extension MM4ForceField {
-  // TODO: Remove this function entirely, transferring the functionality to
-  // `MM4RigidBody`. The effect can be emulated by changing a rigid body's
-  // temperature, then importing it into the simulator.
-  // - Keep the new documentation that requires users to specify heat capacity.
-  
-  // TODO: Copy the OpenMM code for initializing thermal velocities.
-  
-  // TODO: Rescale velocities after zeroing out the object's momentum, to
-  // perfectly match the desired temperature.
-  
-  /// Create random thermal velocities, while conserving the total (bulk)
-  /// momentum of each rigid body.
-  ///
-  /// - Parameter heatCapacity: The material's heat capacity in J/mol-K at the
-  ///   specified temperature.
-  /// - Parameter temperature: The temperature to randomize thermal velocites
-  ///   at, in kelvin.
-  /// - Parameter rigidBodies: Indices of the rigid bodies to thermalize. If not
-  ///   specified, it will thermalize the entire system.
-  /// - throws: An error if two anchors have the same position, which interferes
-  ///   with the heuristic for conserving angular momentum.
-  public func thermalize(
+  // TODO: Remove this function entirely; it was replaced with MM4RigidBody.
+  private func thermalize(
     heatCapacity: Double,
     temperature: Double = 298.15,
     rigidBodies: [Int]? = nil
   ) throws {
-    // TODO: Replace OpenMM implementation with custom implementation, extract
-    // this functionality out into 'MM4RigidBody'.
-    fatalError("Incorrect mapping from temperature to energy.")
-    
-    // The code currently doesn't recognize the case of 2+ collinear anchors.
-    // That will be deferred to later, when constant torques are introduced.
-    //
-    // Notes about angular momentum:
-    // https://www.physicsforums.com/threads/how-can-angular-velocity-be-independent-of-the-choice-of-origin.986098/#:~:text=Both%20the%20angular%20momentum%20and,the%20angular%20velocity%20does%20not.
-    
     var descriptor = MM4StateDescriptor()
     descriptor.positions = true
     descriptor.velocities = true
@@ -217,3 +189,5 @@ extension MM4ForceField {
     self.velocities = newVelocities
   }
 }
+
+#endif

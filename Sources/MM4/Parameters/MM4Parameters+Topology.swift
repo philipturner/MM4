@@ -77,7 +77,7 @@ extension MM4Parameters {
     }
     
     // Check that each group is internally contiguous.
-    var sortedGroups: [Range<Int32>] = []
+    var sortedGroups: [Range<UInt32>] = []
     for group in groups where group.movedIndex == nil {
       guard group.indices != nil else {
         fatalError("Non-moved group had null indices.")
@@ -89,7 +89,9 @@ extension MM4Parameters {
           fatalError("Group indices were not contiguous.")
         }
       }
-      sortedGroups.append(indices.first!..<indices.last! + 1)
+      let lowerBound = UInt32(indices.first!)
+      let upperBound = UInt32(indices.last! + 1)
+      sortedGroups.append(lowerBound..<upperBound)
     }
     
     // Check that the list of groups spans all the atoms, with a 1-to-1 mapping.

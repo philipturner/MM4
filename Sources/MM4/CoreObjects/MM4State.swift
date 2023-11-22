@@ -20,6 +20,16 @@ public struct MM4StateDescriptor {
   /// The default is `false`.
   public var forces: Bool = false
   
+  /// Required. Whether to report energy and potentially force in higher
+  /// precision.
+  ///
+  /// The default is `false`.
+  ///
+  /// Precise measurements occur on the CPU, even when the GPU hardware may
+  /// have native mixed precision support. This choice provides fair, consistent
+  /// performance across different hardware vendors.
+  public var highPrecision: Bool = false
+  
   /// Required. Whether to report each atom's position.
   ///
   /// The default is `false`.
@@ -62,14 +72,21 @@ public class MM4State {
 extension MM4ForceField {
   /// Retrieve a frame of the simulation.
   ///
-  /// This should be more efficient than using the getters for `forces`,
+  /// This can be efficient than using the getters for `forces`,
   /// `positions`, `velocities`, or either of the energies in isolation.
   /// However, the API is less expressive.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
+    if descriptor.highPrecision {
+      // High precision requires a separate context that has a CPU platform.
+      // It must follow updates to the external force's parameters
+      // ('updateParametersInContext()'). This functionality is not a
+      // priority at the moment.
+      fatalError("High-precision energy not implemented.")
+    }
+    
     var dataTypes: OpenMM_State.DataType = []
     if descriptor.energy {
       dataTypes = [dataTypes, .energy]
-      fatalError("TODO: Create a CPU context, move to that before any state measurements that require energy.")
     }
     if descriptor.forces {
       dataTypes = [dataTypes, .forces]
@@ -92,7 +109,7 @@ extension MM4ForceField {
         return SIMD3<Float>(input[index])
       }
     }
-   
+    
     let state = MM4State()
     if descriptor.energy {
       state.kineticEnergy = query.kineticEnergy * MM4ZJPerKJPerMol
@@ -110,4 +127,3 @@ extension MM4ForceField {
     return state
   }
 }
-

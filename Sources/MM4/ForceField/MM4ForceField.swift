@@ -95,8 +95,12 @@ public class MM4ForceField {
   
   var context: MM4Context
   
+  /// Caches I/O to OpenMM prevent `MM4RigidBody` exports from being O(n^2).
+  var cachedState: MM4State
+  var updateRecord: MM4UpdateRecord
+  
   /// Stores the anchor IDs before reordering.
-  var _anchors: [Int32] = []
+  var _anchors: Set<UInt32> = []
   
   /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
@@ -107,14 +111,14 @@ public class MM4ForceField {
   /// Stores the time step for each level of theory.
   var _timeStep: [MM4LevelOfTheory: Double] = [:]
   
-  /// Whether to track and debug energy explosions during simulation.
+  /// Whether to track and debug energy explosions.
   ///
   /// > Warning: Enabling this feature may significantly degrade performance.
   ///
-  /// For simulation, this feature is disabled by default. It is always enabled
-  /// for minimization. In the future, this API may be deprecated. The
-  /// replacement will allow control over whether energy tracking occurs during
-  /// minimization.
+  /// This feature is disabled by default.
+  ///
+  /// The energy is fetched using low precision, as high precision is not needed
+  /// to detect energy explosions.
   public var trackingEnergy: Bool = false
   
   /// Create a simulator using the specified configuration.
@@ -122,6 +126,8 @@ public class MM4ForceField {
     MM4Plugins.global.load()
     system = MM4System(parameters: parameters)
     context = MM4Context(system: system)
+    cachedState = MM4State()
+    updateRecord = MM4UpdateRecord()
     
     // The external force object already zeroes these out; no need to update.
     _externalForces = Array(

@@ -32,6 +32,23 @@ extension MM4ForceField {
   /// - Parameter time: The time interval, in picoseconds.
   /// - throws: <doc:MM4Error/energyDrift(_:)> if energy tracking is enabled.
   public func simulate(time: Double) throws {
+    if updateRecord.active() {
+      flushUpdateRecord()
+      invalidatePositionsAndVelocities()
+      invalidateForcesAndEnergy()
+    }
+    
+    func createEnergy() -> Double {
+      if trackingEnergy {
+        return kineticEnergy + potentialEnergy
+      } else {
+        return 0
+      }
+    }
+    let startEnergy = createEnergy()
+    invalidatePositionsAndVelocities()
+    invalidateForcesAndEnergy()
+    
     guard _levelOfTheory.allSatisfy({ $0 == .molecularDynamics }) else {
       fatalError("Rigid body dynamics not implemented yet.")
     }
@@ -63,19 +80,6 @@ extension MM4ForceField {
     } else if remainder > 1 + epsilon {
       fatalError("This should never happen.")
     }
-    
-    func createEnergy() -> Double {
-      if trackingEnergy {
-        var stateDescriptor = MM4StateDescriptor()
-        stateDescriptor.energy = true
-        
-        let state = self.state(descriptor: stateDescriptor)
-        return state.kineticEnergy! + state.potentialEnergy!
-      } else {
-        return 0
-      }
-    }
-    let startEnergy = createEnergy()
     
     if quotient == 0 {
       var descriptor = MM4IntegratorDescriptor()
@@ -132,4 +136,3 @@ extension MM4ForceField {
     _timeStep[levelOfTheory] = timeStep
   }
 }
-

@@ -72,7 +72,7 @@ public class MM4Parameters {
   var atomsToRigidBodiesMap: [Int32] = []
   
   /// Grouping of atoms into rigid bodies.
-  var rigidBodies: [Range<Int32>] = []
+  var rigidBodies: [Range<UInt32>] = []
   
   /// Create a set of parameters using the specified configuration.
   ///

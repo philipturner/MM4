@@ -7,13 +7,6 @@
 
 import OpenMM
 
-// Ergonomic APIs for accessing a force field's state. These delegate to
-// a single-property instances of the batched functions, 'update' or 'state'.
-// They are not intended to be used as a primary interface for interacting with
-// the system (they have high overhead). Rather, the calling application's IR
-// should handle most of the data processing. One should only transfer data
-// in/out of OpenMM to set up the simulation.
-
 // Idea for adding torques:
 // - Can't constrain "anchors" to have constant angular velocity, only constant
 //   linear velocity.
@@ -30,92 +23,51 @@ import OpenMM
 // - Requires a new type (`MM4Torque`) that wraps a Swift `Quaternion` and an
 //   enumeration with an associated value, which specifies the type of origin.
 
-// MARK: - Batched Functions
-
 extension MM4ForceField {
   /// The net varying force (in piconewtons) exerted on each atom.
-  ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
   public var forces: [SIMD3<Float>] {
+    _read {
+      ensureForcesAndEnergyCached()
+      yield cachedState.forces!
+    }
+  }
+  
+  /// The system's total kinetic energy, in zeptojoules.
+  ///
+  /// To make the default behavior have high performance, energy is reported in
+  /// low precision. To request a high-precision estimate, fetch it using an
+  /// `MM4State`.
+  public var kineticEnergy: Double {
     get {
-      // No need to convert between original and reordered indices.
-      var descriptor = MM4StateDescriptor()
-      descriptor.forces = true
-      return state(descriptor: descriptor).forces!
+      ensureForcesAndEnergyCached()
+      return cachedState.kineticEnergy!
     }
   }
   
   /// The position (in nanometers) of each atom's nucleus.
-  ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
   public var positions: [SIMD3<Float>] {
-    get {
-      // No need to convert between original and reordered indices.
-      var descriptor = MM4StateDescriptor()
-      descriptor.positions = true
-      return state(descriptor: descriptor).positions!
+    _read {
+      ensurePositionsAndVelocitiesCached()
+      yield cachedState.positions!
     }
-    set {
-      // reordered -> original -> reordered
-      let array = OpenMM_Vec3Array(size: system.parameters.atoms.count)
-      for (reordered, original) in system.originalIndices.enumerated() {
-        let position = newValue[Int(original)]
-        array[reordered] = SIMD3<Double>(position)
-      }
-      context.context.positions = array
+    _modify {
+      ensurePositionsAndVelocitiesCached()
+      updateRecord.positions = true
+      updateRecord.velocities = true
+      yield &cachedState.positions!
     }
-  }
-  
-  /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
-  ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
-  ///
-  /// When thermalizing, the linear and angular momentum over every rigid body
-  /// is conserved. Then, the thermal velocities are reinitialized. If you want
-  /// more complex motion within the rigid body, fetch the thermalized
-  /// velocities. Add the desired bulk velocity component to them, them set the
-  /// new velocity values.
-  public var velocities: [SIMD3<Float>] {
-    get {
-      // No need to convert between original and reordered indices.
-      var descriptor = MM4StateDescriptor()
-      descriptor.velocities = true
-      return state(descriptor: descriptor).velocities!
-    }
-    set {
-      // reordered -> original -> reordered
-      let array = OpenMM_Vec3Array(size: system.parameters.atoms.count)
-      for (reordered, original) in system.originalIndices.enumerated() {
-        let velocity = newValue[Int(original)]
-        array[reordered] = SIMD3<Double>(velocity)
-      }
-      context.context.velocities = array
-    }
-  }
-}
-
-extension MM4ForceField {
-  /// The system's total kinetic energy, in zeptojoules.
-  ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
-  public var kineticEnergy: Double {
-    var descriptor = MM4StateDescriptor()
-    descriptor.energy = true
-    return state(descriptor: descriptor).kineticEnergy!
   }
   
   /// The system's total potential energy, in zeptojoules.
   ///
-  /// > Note: This is a more ergonomic API, but less efficient than the batched
-  /// function <doc:MM4ForceField/state(descriptor:)>.
+  /// To make the default behavior have high performance, energy is reported in
+  /// low precision. To request a high-precision estimate, fetch it using an
+  /// `MM4State`.
   public var potentialEnergy: Double {
-    var descriptor = MM4StateDescriptor()
-    descriptor.energy = true
-    return state(descriptor: descriptor).potentialEnergy!
+    get {
+      ensureForcesAndEnergyCached()
+      return cachedState.potentialEnergy!
+    }
   }
   
   /// The threshold for energy explosion is 1 million zJ @ 10,000 atoms. This
@@ -124,41 +76,37 @@ extension MM4ForceField {
   var thresholdEnergy: Double {
     1e6 * (Double(system.parameters.atoms.count) / 1e4)
   }
+  
+  /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
+  ///
+  /// When thermalizing, the linear and angular momentum over every rigid body
+  /// is conserved. Then, the thermal velocities are reinitialized. If you want
+  /// more complex motion within the rigid body, fetch the thermalized
+  /// velocities. Add the desired bulk velocity component to them, them set the
+  /// new velocity values.
+  public var velocities: [SIMD3<Float>] {
+    _read {
+      ensurePositionsAndVelocitiesCached()
+      yield cachedState.velocities!
+    }
+    _modify {
+      ensurePositionsAndVelocitiesCached()
+      updateRecord.positions = true
+      updateRecord.velocities = true
+      yield &cachedState.velocities!
+    }
+  }
 }
-
-// MARK: - Simulation Setup
 
 extension MM4ForceField {
   /// Indices of atoms that should ignore forces exerted on them.
-  public var anchors: [UInt32] {
-    get {
-      // original -> reordered -> original
-      system.reorderedIndices.map {
-        let anchor = _anchors[Int($0)]
-        return UInt32(truncatingIfNeeded: anchor)
-      }
+  public var anchors: Set<UInt32> {
+    _read {
+      yield _anchors
     }
-    set {
-      _anchors = newValue.map { Int32(truncatingIfNeeded: $0) }
-      _anchors.sort()
-      for anchorID in 1..<_anchors.count {
-        if _anchors[anchorID - 1] == _anchors[anchorID] {
-          fatalError("Anchor '\(anchorID)' was entered multiple times.")
-        }
-      }
-      
-      // Reset every atom's mass to the one provided by the parameters. Then,
-      // selectively set the anchors to zero. This may have more overhead, but
-      // not that much more (~overhead of setting positions).
-      for (originalID, mass) in system.parameters.atoms.masses.enumerated() {
-        // Does not change the mass of virtual sites.
-        let reorderedID = system.reorderedIndices[Int(originalID)]
-        system.system.setParticleMass(Double(mass), index: Int(reorderedID))
-      }
-      _anchors.forEach { originalID in
-        let reorderedID = system.reorderedIndices[Int(originalID)]
-        system.system.setParticleMass(0, index: Int(reorderedID))
-      }
+    _modify {
+      updateRecord.anchors = true
+      yield &_anchors
     }
   }
   
@@ -166,18 +114,12 @@ extension MM4ForceField {
   ///
   /// The default value is zero for every atom.
   public var externalForces: [SIMD3<Float>] {
-    get {
-      _externalForces
+    _read {
+      yield _externalForces
     }
-    set {
-      guard newValue.count == system.parameters.atoms.count else {
-        fatalError("Too few atoms.")
-      }
-      _externalForces = newValue
-      
-      let force = system.forces.external
-      force.updateForces(_externalForces, system: system)
-      force.updateParametersInConext(context)
+    _modify {
+      updateRecord.externalForces = true
+      yield &_externalForces
     }
   }
   
@@ -199,16 +141,8 @@ extension MM4ForceField {
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
   public var rigidBodies: [Range<UInt32>] {
-    get {
-      // Create a new array with a different type. This isn't the fastest
-      // approach, but the property should rarely be used in most cases. The
-      // user should already have a data structure that separates the atoms
-      // into rigid bodies during high-level operations.
-      system.parameters.rigidBodies.map {
-        let lowerBound = UInt32(truncatingIfNeeded: $0.lowerBound)
-        let upperBound = UInt32(truncatingIfNeeded: $0.upperBound)
-        return lowerBound..<upperBound
-      }
+    _read {
+      yield system.parameters.rigidBodies
     }
   }
 }
