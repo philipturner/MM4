@@ -55,16 +55,14 @@ Key:
 Current version: not released yet
 
 v1.0.0
-- Accurate simulation of 6-ring carbons
+- Accurate simulation of 5-ring carbons
 - Anchors
 - External forces
 
-v1.1.0
-- Accurate simulation of 5-ring carbons
-- Rigid body dynamics
-
 Future versions:
 - External torques
-- Hybrid approach for deformable bodies
-- Recognizing angular velocity of objects with multiple collinear anchors
+  - Recognizing angular velocity of objects with multiple collinear anchors
+- Rigid body dynamics
+  - Hybrid approach for deformable bodies
 - Support for non-carbon elements
+  - Priority: silicon for moissanite

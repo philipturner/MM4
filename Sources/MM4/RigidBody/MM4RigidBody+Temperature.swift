@@ -33,12 +33,12 @@ extension MM4RigidBody {
     var vNumSilicons: MM4UInt32Vector = .zero
     atomicNumbers.withUnsafeBufferPointer { buffer in
       let rawBaseAddress = OpaquePointer(buffer.baseAddress)
-      let baseAddress = UnsafeRawPointer(rawBaseAddress)!
+      let vBaseAddress = UnsafeRawPointer(rawBaseAddress)!
         .assumingMemoryBound(to: MM4UInt8Vector.self)
       
       for vID in 0..<atomVectorCount {
         let atomicNumber = MM4UInt32Vector(
-          truncatingIfNeeded: baseAddress[vID])
+          truncatingIfNeeded: vBaseAddress[vID])
         
         let isHalogen =
         (atomicNumber .== 1) .|

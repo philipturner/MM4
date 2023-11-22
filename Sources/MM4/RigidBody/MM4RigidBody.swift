@@ -29,6 +29,12 @@ public struct MM4RigidBodyDescriptor {
 }
 
 public struct MM4RigidBody {
+  // This type declaration is getting very unwieldy.
+  //
+  // TODO: Wrap all of these properties in delegate objects to de-clutter the
+  // central type declaration. This approach makes it easier to debug, so it is
+  // well worth the extra effort.
+  
   // MARK: - Properties summarizing topology
   
   /// Indices of atoms that should be treated as having infinite mass in a
@@ -64,11 +70,16 @@ public struct MM4RigidBody {
   /// force field parameters.
   public internal(set) var hydrogenMassRepartitioning: Float
   
+  /// The object's total mass (in amu).
+  public internal(set) var mass: Double = 0
+  
   /// The mass (in amu) of each atom after hydrogen mass repartitioning.
   ///
   /// This property is immutable because a future implementation may cache some
   /// force field parameters.
   public internal(set) var masses: [Float]
+  
+  // MARK: - Properties hidden from the public API
   
   /// A convenient method for accessing the atom count.
   var atomCount: Int
@@ -78,6 +89,9 @@ public struct MM4RigidBody {
   
   /// A convenient method for addressing the end of the list.
   var atomVectorMask: SIMDMask<MM4UInt32Vector.MaskStorage>
+  
+  /// The high-performance storage format for center of mass.
+  var _centerOfMass: MM4CenterOfMass = .init()
   
   /// The high-performance storage format for atom positions.
   var _positions: [MM4FloatVector]
@@ -100,7 +114,7 @@ public struct MM4RigidBody {
   
   /// Every anchor's velocity is set to the rigid body's linear velocity.
   /// When importing velocities, all anchors must have the same velocity.
-  public var linearVelocity: SIMD3<Float> = .zero
+  public var velocity: SIMD3<Float> = .zero
   
   /// Kinetic energy contribution from organized mechanical energy (linear
   /// velocity, angular velocity). Contributions from anchors are omitted.
