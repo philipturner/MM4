@@ -10,19 +10,19 @@
 /// Parameters for a group of 3 atoms.
 public struct MM4Angles {
   /// Each value corresponds to the angle at the same array index.
-  public internal(set) var extendedParameters: [MM4AngleExtendedParameters?] = []
+  public var extendedParameters: [MM4AngleExtendedParameters?] = []
   
   /// Groups of atom indices that form an angle.
-  public internal(set) var indices: [SIMD3<UInt32>] = []
+  public var indices: [SIMD3<UInt32>] = []
   
   /// Map from a group of atoms to an angle index.
-  public internal(set) var map: [SIMD3<UInt32>: UInt32] = [:]
+  public var map: [SIMD3<UInt32>: UInt32] = [:]
   
   /// Each value corresponds to the angle at the same array index.
-  public internal(set) var parameters: [MM4AngleParameters] = []
+  public var parameters: [MM4AngleParameters] = []
   
   /// The smallest ring this is involved in.
-  public internal(set) var ringTypes: [UInt8] = []
+  public var ringTypes: [UInt8] = []
 }
 
 /// Parameters for an angle between two bonds, including bending stiffness
@@ -64,7 +64,7 @@ public struct MM4AngleExtendedParameters {
 
 extension MM4Parameters {
   /// - throws: `.missingParameter`
-  func createAngleParameters() throws {
+  mutating func createAngleParameters() throws {
     for angleID in angles.indices.indices {
       let angle = angles.indices[angleID]
       let ringType = angles.ringTypes[angleID]

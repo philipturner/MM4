@@ -51,7 +51,7 @@ public struct MM4RigidBody {
   public var anchors: Set<UInt32> = []
   
   /// The force field parameters cached for this rigid body.
-  public internal(set) var parameters: MM4Parameters
+  public let parameters: MM4Parameters
   
   // MARK: - Properties hidden from the public API
   
@@ -139,4 +139,3 @@ public struct MM4RigidBody {
     }
   }
 }
-

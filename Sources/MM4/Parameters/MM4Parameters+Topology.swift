@@ -7,45 +7,28 @@
 
 // MARK: - Functions for generating the topology and assigning ring types.
 
-/// Parameters for a group of 5 or less atoms.
+/// Parameters for a group of 3 to 5 atoms.
 public struct MM4Rings {
   /// Groups of atom indices that form a ring.
   ///
   /// The unused vector lanes are set to `UInt32.max`.
-  public internal(set) var indices: [SIMD8<UInt32>] = []
+  public var indices: [SIMD8<UInt32>] = []
   
   /// Map from a group of atoms to a ring index.
-  public internal(set) var map: [SIMD8<UInt32>: UInt32] = [:]
+  public var map: [SIMD8<UInt32>: UInt32] = [:]
   
   /// The number of atoms in the ring.
-  public internal(set) var ringTypes: [UInt8] = []
+  public var ringTypes: [UInt8] = []
 }
 
 extension MM4Parameters {
-  /// - throws: Nothing
-  func createBondsToAtomsMap() throws {
-    bondsToAtomsMap += 1
-    bondsToAtomsMap[-1] = SIMD2(repeating: -1)
-    for bondID in bonds.indices.indices {
-      var bond = bonds.indices[bondID]
-      
-      // Sort the indices in the bond, so the lower appears first.
-      bond = SIMD2(bond.min(), bond.max())
-      bonds.indices[bondID] = bond
-      bondsToAtomsMap[bondID] = SIMD2(truncatingIfNeeded: bond)
-    }
-  }
-  
   /// - throws: `.openValenceShell`
-  func createAtomsToBondsMap() throws {
-    atomsToBondsMap += 1
-    atomsToBondsMap[-1] = SIMD4(repeating: -1)
-    for atomID in 0..<atoms.count {
-      atomsToBondsMap[atomID] = SIMD4(repeating: -1)
-    }
+  mutating func createAtomsToBondsMap() throws {
+    atomsToBondsMap = Array(
+      repeating: SIMD4(repeating: -1), count: atoms.count)
     
     for bondID in 0..<bonds.indices.count {
-      let bond = bondsToAtomsMap[bondID]
+      let bond = bonds.indices[bondID]
       for j in 0..<2 {
         let atomID = Int(bond[j])
         var map = atomsToBondsMap[atomID]
@@ -62,7 +45,7 @@ extension MM4Parameters {
           var neighbors: [MM4Address] = []
           for lane in 0..<4 {
             let bondID = Int(map[lane])
-            let bond = bondsToAtomsMap[Int(map[lane])]
+            let bond = bonds.indices[Int(map[lane])]
             let otherID = other(atomID: bond[j], bondID: bondID)
             neighbors.append(createAddress(otherID))
           }
@@ -77,29 +60,37 @@ extension MM4Parameters {
   }
   
   /// - throws: Nothing
-  func createAtomsToAtomsMap() throws {
-    atomsToAtomsMap += 1
-    atomsToAtomsMap[-1] = SIMD4(repeating: -1)
+  mutating func createAtomsToAtomsMap() throws {
+    atomsToAtomsMap.reserveCapacity(atoms.count)
     for atomID in 0..<atoms.count {
       let bondsMap = atomsToBondsMap[atomID]
       var atomsMap = SIMD4<Int32>(repeating: -1)
       for lane in 0..<4 {
-        atomsMap[lane] = other(atomID: atomID, bondID: bondsMap[lane])
+        let otherID = other(atomID: atomID, bondID: bondsMap[lane])
+        atomsMap[lane] = Int32(truncatingIfNeeded: otherID)
       }
-      atomsToAtomsMap[atomID] = atomsMap
+      atomsToAtomsMap.append(atomsMap)
     }
   }
   
   /// - throws: `.unsupportedRing`
-  func createTopology() throws {
-    // Traverse the bond topology.
+  mutating func createTopology() throws {
+    var vAtomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
+    vAtomsToAtomsMap = .allocate(capacity: atoms.count + 1)
+    vAtomsToAtomsMap += 1
+    vAtomsToAtomsMap[-1] = SIMD4(repeating: -1)
+    vAtomsToAtomsMap.initialize(from: atomsToAtomsMap, count: atoms.count)
+    defer {
+      (vAtomsToAtomsMap - 1).deallocate()
+    }
+    
     for atom1 in 0..<UInt32(atoms.count) {
-      let map1 = atomsToAtomsMap[Int(atom1)]
+      let map1 = vAtomsToAtomsMap[Int(atom1)]
       var ringType: UInt8 = 6
       
       for lane2 in 0..<4 where map1[lane2] != -1 {
         let atom2 = UInt32(truncatingIfNeeded: map1[lane2])
-        let map2 = atomsToAtomsMap[Int(atom2)]
+        let map2 = vAtomsToAtomsMap[Int(atom2)]
         
         for lane3 in 0..<4 where map2[lane3] != -1 {
           let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
@@ -107,7 +98,7 @@ extension MM4Parameters {
           if atom1 < atom3 {
             angles.map[SIMD3(atom1, atom2, atom3)] = .max
           }
-          let map3 = atomsToAtomsMap[Int(atom3)]
+          let map3 = vAtomsToAtomsMap[Int(atom3)]
           
           for lane4 in 0..<4 where map3[lane4] != -1 {
             let atom4 = UInt32(truncatingIfNeeded: map3[lane4])
@@ -120,15 +111,15 @@ extension MM4Parameters {
               torsions.map[SIMD4(atom1, atom2, atom3, atom4)] = .max
             }
             
-            let map4 = atomsToAtomsMap[Int(atom4)]
+            let map4 = vAtomsToAtomsMap[Int(atom4)]
             var maskA: SIMD4<Int32> = .init(repeating: 6)
             var maskB: SIMD4<Int32> = .init(repeating: 6)
             var maskC: SIMD4<Int32> = .init(repeating: 6)
             var maskD: SIMD4<Int32> = .init(repeating: 6)
-            let mapA = atomsToAtomsMap[Int(map4[0])]
-            let mapB = atomsToAtomsMap[Int(map4[1])]
-            let mapC = atomsToAtomsMap[Int(map4[2])]
-            let mapD = atomsToAtomsMap[Int(map4[3])]
+            let mapA = vAtomsToAtomsMap[Int(map4[0])]
+            let mapB = vAtomsToAtomsMap[Int(map4[1])]
+            let mapC = vAtomsToAtomsMap[Int(map4[2])]
+            let mapD = vAtomsToAtomsMap[Int(map4[3])]
             
             let fives = SIMD4<Int32>(repeating: 5)
             let atom = Int32(truncatingIfNeeded: atom1)
@@ -158,7 +149,7 @@ extension MM4Parameters {
                 throw MM4Error.unsupportedRing(addresses)
               }
               
-              let map4 = atomsToAtomsMap[Int(atom4)]
+              let map4 = vAtomsToAtomsMap[Int(atom4)]
               for lane5 in 0..<4 where atom1 == map4[lane5] {
                 addresses.append(createAddress(atom4))
                 throw MM4Error.unsupportedRing(addresses)
@@ -179,8 +170,8 @@ extension MM4Parameters {
     for torsion in torsions.indices {
       // Mask out the -1 indices, then check whether any atoms from the first
       // atom's map match the fourth atom's map.
-      let map1 = atomsToAtomsMap[Int(torsion[0])]
-      let map4 = atomsToAtomsMap[Int(torsion[1])]
+      let map1 = vAtomsToAtomsMap[Int(torsion[0])]
+      let map4 = vAtomsToAtomsMap[Int(torsion[1])]
       
       var match1: SIMD4<Int32> = .zero
       var match2: SIMD4<Int32> = .zero
@@ -266,7 +257,7 @@ extension MM4Parameters {
   }
   
   /// - throws: `.unsupportedCenterType`
-  func createCenterTypes() throws {
+  mutating func createCenterTypes() throws {
     let permittedAtomicNumbers: [UInt8] = [6, 7, 8, 14, 15, 16, 32]
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
@@ -327,3 +318,4 @@ extension MM4Parameters {
     }
   }
 }
+

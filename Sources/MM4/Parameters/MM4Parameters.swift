@@ -39,27 +39,25 @@ public struct MM4ParametersDescriptor {
   }
 }
 
-// TODO: 1. Make `MM4Parameters` a struct instead of a class
-// - Can the atoms-to-atoms map be deleted when exiting the initializer?
-// TODO: 2. Make an `MM4Parameters` mutating function that appends parameters
+// TODO: Make an `MM4Parameters` mutating function that appends parameters
 // from another instance.
 
 /// A set of force field parameters.
-public class MM4Parameters {
+public struct MM4Parameters {
   /// Parameters for one atom.
-  public internal(set) var atoms: MM4Atoms = MM4Atoms()
+  public var atoms: MM4Atoms = MM4Atoms()
   
   /// Parameters for a group of 2 atoms.
-  public internal(set) var bonds: MM4Bonds = MM4Bonds()
+  public var bonds: MM4Bonds = MM4Bonds()
   
   /// Parameters for a group of 3 atoms.
-  public internal(set) var angles: MM4Angles = MM4Angles()
+  public var angles: MM4Angles = MM4Angles()
   
   /// Parameters for a group of 4 atoms.
-  public internal(set) var torsions: MM4Torsions = MM4Torsions()
+  public var torsions: MM4Torsions = MM4Torsions()
   
   /// Parameters for a group of 5 atoms.
-  public internal(set) var rings: MM4Rings = MM4Rings()
+  public var rings: MM4Rings = MM4Rings()
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   var nonbondedExceptions13: [SIMD2<UInt32>] = []
@@ -67,14 +65,11 @@ public class MM4Parameters {
   /// Atom pairs that have reduced nonbonded and electrostatic interactions.
   var nonbondedExceptions14: [SIMD2<UInt32>] = []
   
-  /// Map from bonds to atoms that can be efficiently traversed.
-  var bondsToAtomsMap: UnsafeMutablePointer<SIMD2<Int32>>
-  
   /// Map from atoms to bonds that can be efficiently traversed.
-  var atomsToBondsMap: UnsafeMutablePointer<SIMD4<Int32>>
+  var atomsToBondsMap: [SIMD4<Int32>] = []
   
   /// Map from atoms to connected atoms that can be efficiently traversed.
-  var atomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
+  var atomsToAtomsMap: [SIMD4<Int32>] = []
   
   /// Create a set of parameters using the specified configuration.
   ///
@@ -97,14 +92,11 @@ public class MM4Parameters {
     atoms.atomicNumbers = descriptorAtomicNumbers
     atoms.count = descriptorAtomicNumbers.count
     atoms.indices = 0..<descriptorAtomicNumbers.count
-    bonds.indices = descriptorBonds
-    
-    bondsToAtomsMap = .allocate(capacity: bonds.indices.count + 1)
-    atomsToBondsMap = .allocate(capacity: atoms.count + 1)
-    atomsToAtomsMap = .allocate(capacity: atoms.count + 1)
+    bonds.indices = descriptorBonds.map { bond in
+      return SIMD2(bond.min(), bond.max())
+    }
     
     // Topology
-    try createBondsToAtomsMap()
     try createAtomsToBondsMap()
     try createAtomsToAtomsMap()
     try createTopology()
@@ -124,11 +116,4 @@ public class MM4Parameters {
     try createTorsionParameters()
     createPartialCharges()
   }
-  
-  deinit {
-    (atomsToBondsMap - 1).deallocate()
-    (bondsToAtomsMap - 1).deallocate()
-    (atomsToAtomsMap - 1).deallocate()
-  }
 }
-

@@ -10,19 +10,19 @@
 /// Parameters for a group of 2 atoms.
 public struct MM4Bonds {
   /// Each value corresponds to the bond at the same array index.
-  public internal(set) var extendedParameters: [MM4BondExtendedParameters?] = []
+  public var extendedParameters: [MM4BondExtendedParameters?] = []
   
   /// Groups of atom indices that form a bond.
-  public internal(set) var indices: [SIMD2<UInt32>] = []
+  public var indices: [SIMD2<UInt32>] = []
   
   /// Map from a group of atoms to a bond index.
-  public internal(set) var map: [SIMD2<UInt32>: UInt32] = [:]
+  public var map: [SIMD2<UInt32>: UInt32] = [:]
   
   /// Each value corresponds to the bond at the same array index.
-  public internal(set) var parameters: [MM4BondParameters] = []
+  public var parameters: [MM4BondParameters] = []
   
   /// The smallest ring this is involved in.
-  public internal(set) var ringTypes: [UInt8] = []
+  public var ringTypes: [UInt8] = []
 }
 
 /// Morse stretching parameters for a covalent bond.
@@ -54,7 +54,7 @@ public struct MM4BondExtendedParameters {
 
 extension MM4Parameters {
   /// - throws: `.missingParameter`
-  func createBondParameters() throws {
+  mutating func createBondParameters() throws {
     for bondID in bonds.indices.indices {
       let bond = bonds.indices[bondID]
       let ringType = bonds.ringTypes[bondID]
@@ -427,7 +427,7 @@ extension MM4Parameters {
     }
   }
   
-  func createPartialCharges() {
+  mutating func createPartialCharges() {
     // Add electronegativity corrections to bond length.
     let electronegativeCorrections = electrostaticEffect(sign: -1)
     let electropositiveCorrections = electrostaticEffect(sign: +1)
@@ -455,14 +455,15 @@ extension MM4Parameters {
       let atomCharges = projectDipole(
         parameters.dipoleMoment, bondID: UInt32(truncatingIfNeeded: bondID))
       
-      let atomsMap = bondsToAtomsMap[bondID]
+      let bond = bonds.indices[bondID]
       for lane in 0..<2 {
-        let atomID = atomsMap[lane]
+        let atomID = bond[lane]
         let partialCharge = atomCharges[lane]
         atoms.parameters[Int(atomID)].charge += partialCharge
       }
     }
   }
 }
+
 
 

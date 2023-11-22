@@ -10,28 +10,28 @@
 /// Parameters for one atom.
 public struct MM4Atoms {
   /// The number of protons in each atom's nucleus.
-  public internal(set) var atomicNumbers: [UInt8] = []
+  public var atomicNumbers: [UInt8] = []
   
   /// The center type used to assign different parameters.
-  public internal(set) var centerTypes: [MM4CenterType?] = []
+  public var centerTypes: [MM4CenterType?] = []
   
   /// The MM4 code for each atom in the system.
-  public internal(set) var codes: [MM4AtomCode] = []
+  public var codes: [MM4AtomCode] = []
   
   /// Convenient property for iterating over the atoms.
-  public internal(set) var count: Int = 0
+  public var count: Int = 0
   
   /// Convenient property for iterating over the atoms.
-  public internal(set) var indices: Range<Int> = 0..<0
+  public var indices: Range<Int> = 0..<0
   
   /// The mass (in amu) of each atom after hydrogen mass repartitioning.
-  public internal(set) var masses: [Float] = []
+  public var masses: [Float] = []
   
   /// Each value corresponds to the atom at the same array index.
-  public internal(set) var parameters: [MM4AtomParameters] = []
+  public var parameters: [MM4AtomParameters] = []
   
   /// The smallest ring this is involved in.
-  public internal(set) var ringTypes: [UInt8] = []
+  public var ringTypes: [UInt8] = []
 }
 
 /// MM4 codes for an element or an atom in a specific functional group.
@@ -132,7 +132,7 @@ public struct MM4AtomParameters {
 
 extension MM4Parameters {
   /// - throws: `.missingParameter`, `.openValenceShell`
-  func createAtomCodes() throws {
+  mutating func createAtomCodes() throws {
     atoms.codes = try atoms.indices.map { atomID in
       let atomicNumber = atoms.atomicNumbers[atomID]
       let map = atomsToAtomsMap[atomID]
@@ -202,7 +202,7 @@ extension MM4Parameters {
     }
   }
   
-  func createMasses(hydrogenMassRepartitioning: Float) {
+  mutating func createMasses(hydrogenMassRepartitioning: Float) {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
       MM4MassParameters.global.mass(atomicNumber: atomicNumber)
     }
@@ -217,7 +217,7 @@ extension MM4Parameters {
     }
   }
   
-  func createVectorPadding() {
+  mutating func createVectorPadding() {
     let atomVectorCount = (atoms.count + MM4VectorWidth - 1) / MM4VectorWidth
     atoms.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
     atoms.atomicNumbers.withUnsafeMutableBufferPointer {
@@ -267,7 +267,7 @@ extension MM4Parameters {
   // - Using the strange relationship that conflates the different vdW adjustments
   //   to create a single "R=0.85", I derived r=3.046 A, eps=0.0840.
   // - Si, P, S, Ge use the Hill function exactly instead of X/H vdW pairs.
-  func createNonbondedParameters(hydrogenMassRepartitioning: Float) {
+  mutating func createNonbondedParameters(hydrogenMassRepartitioning: Float) {
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var epsilon: (default: Float, hydrogen: Float)
@@ -341,7 +341,7 @@ extension MM4Parameters {
     }
   }
   
-  func createNonbondedExceptions() {
+  mutating func createNonbondedExceptions() {
     // Create nonbonded exceptions.
     var nonbondedExceptions13Map: [SIMD2<UInt32>: Bool] = [:]
     var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
@@ -371,3 +371,5 @@ extension MM4Parameters {
     nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
   }
 }
+
+

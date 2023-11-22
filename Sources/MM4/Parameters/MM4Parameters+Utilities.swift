@@ -9,8 +9,8 @@ extension MM4Parameters {
   @inline(__always)
   func other<T: FixedWidthInteger, U: FixedWidthInteger>(
     atomID: T, bondID: U
-  ) -> Int32 {
-    let bond = bondsToAtomsMap[Int(bondID)]
+  ) -> UInt32 {
+    let bond = bonds.indices[Int(bondID)]
     return (bond[0] == atomID) ? bond[1] : bond[0]
   }
   
@@ -131,4 +131,5 @@ extension MM4Parameters {
     }
   }
 }
+
 

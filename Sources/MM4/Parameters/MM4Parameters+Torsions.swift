@@ -10,19 +10,19 @@
 /// Parameters for a group of 4 atoms.
 public struct MM4Torsions {
   /// Each value corresponds to the torsion at the same array index.
-  public internal(set) var extendedParameters: [MM4TorsionExtendedParameters?] = []
+  public var extendedParameters: [MM4TorsionExtendedParameters?] = []
   
   /// Groups of atom indices that form a torsion.
-  public internal(set) var indices: [SIMD4<UInt32>] = []
+  public var indices: [SIMD4<UInt32>] = []
   
   /// Map from a group of atoms to a torsion index.
-  public internal(set) var map: [SIMD4<UInt32>: UInt32] = [:]
+  public var map: [SIMD4<UInt32>: UInt32] = [:]
   
   /// Each value corresponds to the torsion at the same array index.
-  public internal(set) var parameters: [MM4TorsionParameters] = []
+  public var parameters: [MM4TorsionParameters] = []
   
   /// The smallest ring this is involved in.
-  public internal(set) var ringTypes: [UInt8] = []
+  public var ringTypes: [UInt8] = []
 }
 
 /// Parameters for a torsion among hydrogen, carbon, and silicon atoms.
@@ -138,7 +138,7 @@ public struct MM4TorsionExtendedParameters {
 
 extension MM4Parameters {
   /// - throws: `.missingParameter`
-  func createTorsionParameters() throws {
+  mutating func createTorsionParameters() throws {
     for torsionID in torsions.indices.indices {
       let torsion = torsions.indices[torsionID]
       let ringType = torsions.ringTypes[torsionID]
