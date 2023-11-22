@@ -252,7 +252,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     force.addPerBondParameter(name: "chargeChargeProduct")
     
     // Collect all the torsions that exist between a 1,4 pair.
-    var pairsToTorsionsMap: [SIMD2<Int32>: SIMD8<Int32>] = [:]
+    var pairsToTorsionsMap: [SIMD2<UInt32>: SIMD8<Int32>] = [:]
     let bonds = system.parameters.bonds
     let torsions = system.parameters.torsions
     for torsionID in torsions.indices.indices {
@@ -276,8 +276,8 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     // Create force instances for each exception.
     let particles = OpenMM_IntArray(size: 4)
     let array = OpenMM_DoubleArray(size: 2)
-    var arrayLeft: [SIMD2<Int32>] = []
-    var arrayRight: [SIMD2<Int32>] = []
+    var arrayLeft: [SIMD2<UInt32>] = []
+    var arrayRight: [SIMD2<UInt32>] = []
     for exception in system.parameters.nonbondedExceptions14 {
       guard let map = pairsToTorsionsMap[exception] else {
         fatalError("No torsions found for 1,4 exception.")
@@ -298,7 +298,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
         let bondLeft = SIMD2(torsion[1], torsion[0])
         let bondRight = SIMD2(torsion[2], torsion[3])
         
-        func append(_ bond: SIMD2<Int32>, array: inout [SIMD2<Int32>]) {
+        func append(_ bond: SIMD2<UInt32>, array: inout [SIMD2<UInt32>]) {
           for i in 0..<array.count {
             if all(array[i] .== bond) {
               break
@@ -314,7 +314,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
       }
       
       /// - Returns: Dipole in e-nm, partial charges in e.
-      func project(_ bond: SIMD2<Int32>) -> (
+      func project(_ bond: SIMD2<UInt32>) -> (
         dipoleMoment: Float, charge: SIMD2<Float>
       )? {
         let sorted = system.parameters.sortBond(bond)
@@ -350,7 +350,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
           
           // WARNING: Before entering particles into the OpenMM kernel, swap the
           // two indices in 'bondLeft'.
-          var original: SIMD4<Int32> = .zero
+          var original: SIMD4<UInt32> = .zero
           original[0] = bondLeft[1]
           original[1] = bondLeft[0]
           original[2] = bondRight[0]

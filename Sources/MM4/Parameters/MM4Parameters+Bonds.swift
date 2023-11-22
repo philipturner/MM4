@@ -13,10 +13,10 @@ public struct MM4Bonds {
   public internal(set) var extendedParameters: [MM4BondExtendedParameters?] = []
   
   /// Groups of atom indices that form a bond.
-  public internal(set) var indices: [SIMD2<Int32>] = []
+  public internal(set) var indices: [SIMD2<UInt32>] = []
   
   /// Map from a group of atoms to a bond index.
-  public internal(set) var map: [SIMD2<Int32>: Int32] = [:]
+  public internal(set) var map: [SIMD2<UInt32>: Int32] = [:]
   
   /// Each value corresponds to the bond at the same array index.
   public internal(set) var parameters: [MM4BondParameters] = []
@@ -71,7 +71,7 @@ extension MM4Parameters {
       var equilibriumLength: Float
       var dipoleMoment: Float?
       
-      switch (sortedCodes[0], sortedCodes[1]) {        
+      switch (sortedCodes[0], sortedCodes[1]) {
         // Carbon
       case (1, 1):
         potentialWellDepth = 1.130
@@ -457,3 +457,4 @@ extension MM4Parameters {
     }
   }
 }
+

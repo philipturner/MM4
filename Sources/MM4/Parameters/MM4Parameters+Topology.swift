@@ -121,16 +121,16 @@ extension MM4Parameters {
   
   func createTopology() {
     // Traverse the bond topology.
-    for atom1 in 0..<Int32(atoms.count) {
+    for atom1 in 0..<UInt32(atoms.count) {
       let map1 = atomsToAtomsMap[Int(atom1)]
       var ringType: UInt8 = 6
       
       for lane2 in 0..<4 where map1[lane2] != -1 {
-        let atom2 = map1[lane2]
+        let atom2 = UInt32(truncatingIfNeeded: map1[lane2])
         let map2 = atomsToAtomsMap[Int(atom2)]
         
         for lane3 in 0..<4 where map2[lane3] != -1 {
-          let atom3 = map2[lane3]
+          let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
           if atom1 == atom3 { continue }
           if atom1 < atom3 {
             angles.map[SIMD3(atom1, atom2, atom3)] = -2
@@ -138,7 +138,7 @@ extension MM4Parameters {
           let map3 = atomsToAtomsMap[Int(atom3)]
           
           for lane4 in 0..<4 where map3[lane4] != -4 {
-            let atom4 = map3[lane4]
+            let atom4 = UInt32(truncatingIfNeeded: map3[lane4])
             if atom2 == atom4 {
               continue
             } else if atom1 == atom4 {
@@ -159,15 +159,16 @@ extension MM4Parameters {
             let map4 = atomsToAtomsMap[Int(map0[3])]
             
             let fives = SIMD4<Int32>(repeating: 5)
-            mask1.replace(with: fives, where: atom1 .== map1)
-            mask2.replace(with: fives, where: atom1 .== map2)
-            mask3.replace(with: fives, where: atom1 .== map3)
-            mask4.replace(with: fives, where: atom1 .== map4)
+            let atom = Int32(truncatingIfNeeded: atom1)
+            mask1.replace(with: fives, where: atom .== map1)
+            mask2.replace(with: fives, where: atom .== map2)
+            mask3.replace(with: fives, where: atom .== map3)
+            mask4.replace(with: fives, where: atom .== map4)
             
             mask1.replace(with: mask2, where: mask2 .< mask1)
             mask3.replace(with: mask4, where: mask4 .< mask3)
             mask1.replace(with: mask3, where: mask1 .< mask3)
-            mask1.replace(with: .init(repeating: 4), where: atom1 .== map0)
+            mask1.replace(with: .init(repeating: 4), where: atom .== map0)
             ringType = min(ringType, UInt8(truncatingIfNeeded: mask1.min()))
           }
         }
@@ -205,12 +206,12 @@ extension MM4Parameters {
       match1.replace(with: SIMD4.zero, where: map4 .== -1)
       
       for lane in 0..<4 where match1[lane] > 0 {
-        var array: [Int32] = []
+        var array: [UInt32] = []
         array.reserveCapacity(5)
         for i in 0..<4 {
           array.append(torsion[i])
         }
-        array.append(map4[lane])
+        array.append(UInt32(truncatingIfNeeded: map4[lane]))
         
         // Create a sorted list of atom indices.
         let minIndex = (0..<5).min(by: { array[$0] < array[$1] })!
@@ -221,7 +222,7 @@ extension MM4Parameters {
         var output: SIMD8<Int32> = .init(repeating: -1)
         for lane in 0..<5 {
           let index = wrap(minIndex + lane * increment)
-          output[lane] = array[index]
+          output[lane] = Int32(truncatingIfNeeded: array[index])
         }
         ringsMap[output] = -2
       }
@@ -260,9 +261,10 @@ extension MM4Parameters {
         let torsion = sortTorsion(SIMD4(angle, ring[wrap(lane + 3)]))
         
         guard atomID > -1,
-              let bondID = bonds.map[bond],
-              let angleID = angles.map[angle],
-              let torsionID = torsions.map[torsion] else {
+              let bondID = bonds.map[SIMD2(truncatingIfNeeded: bond)],
+              let angleID = angles.map[SIMD3(truncatingIfNeeded: angle)],
+              let torsionID = torsions.map[SIMD4(truncatingIfNeeded: torsion)]
+        else {
           fatalError("Invalid atom, bond, angle, or torsion in ring.")
         }
         atoms.ringTypes[Int(atomID)] = 5

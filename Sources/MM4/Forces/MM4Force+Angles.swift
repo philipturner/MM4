@@ -113,7 +113,7 @@ class MM4BendForce: MM4Force {
       let bondRight = system.parameters.sortBond(SIMD2(angle[1], angle[2]))
       
       @inline(__always)
-      func createLength(_ bond: SIMD2<Int32>) -> Double {
+      func createLength(_ bond: SIMD2<UInt32>) -> Double {
         guard let bondID = bonds.map[bond] else {
           fatalError("Invalid bond.")
         }
@@ -230,16 +230,18 @@ class MM4BendBendForce: MM4Force {
       let map = system.parameters.atomsToAtomsMap[atomID]
       particles[0] = Int(system.reorderedIndices[atomID])
       
-      let reorderedMap = system.reorder(map)
       for i in 0..<valenceCount {
-        particles[1 + i] = Int(reorderedMap[i])
+        let reorderedIndex = system.reorderedIndices[Int(map[i])]
+        particles[1 + i] = Int(reorderedIndex)
       }
       
       let array = parameterArrays[arrayIndex]
       for i in 0..<angleCount {
         let sequence = indexSequence[i]
         var angle = SIMD3(
-          map[sequence[0]], Int32(truncatingIfNeeded: atomID), map[sequence[1]])
+          UInt32(truncatingIfNeeded: map[sequence[0]]),
+          UInt32(truncatingIfNeeded: atomID),
+          UInt32(truncatingIfNeeded: map[sequence[1]]))
         angle = system.parameters.sortAngle(angle)
         guard let angleID = angles.map[angle] else {
           fatalError("Angle did not exist.")
@@ -331,13 +333,16 @@ class MM4BendExtendedForce: MM4Force {
         fatalError("Unexpected number of atoms matched angle.")
       }
       
-      let reorderedMap = system.reorder(map)
-      particles[0] = Int(system.reorderedIndices[Int(angle[1])])
+      let particleID0 = Int(angle[1])
+      particles[0] = Int(system.reorderedIndices[particleID0])
       for i in 0..<4 {
-        particles[1 + i] = Int(reorderedMap[i])
+        let reorderedIndex = system.reorderedIndices[Int(map[i])]
+        particles[1 + i] = Int(reorderedIndex)
         
         // Units: angstrom -> nm
-        var bond = SIMD2(angle[1], sortedMap[i])
+        let bondPart1: UInt32 = angle[1]
+        let bondPart2: UInt32 = UInt32(truncatingIfNeeded: sortedMap[i])
+        var bond = SIMD2<UInt32>(bondPart1, bondPart2)
         bond = system.parameters.sortBond(bond)
         guard let bondID = bonds.map[bond] else {
           fatalError("Bond was not in the map.")

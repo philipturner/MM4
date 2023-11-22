@@ -15,13 +15,13 @@ class MM4System {
   var forces: MM4Forces!
   
   /// Map from reordered indices to original indices.
-  var originalIndices: [Int32] = []
+  var originalIndices: [UInt32] = []
   
   /// The location where the parameters are owned.
   var parameters: MM4Parameters
   
   /// Indices may eventually be rearranged for performance.
-  var reorderedIndices: [Int32] = []
+  var reorderedIndices: [UInt32] = []
   
   /// The backing OpenMM system object.
   var system: OpenMM_System
@@ -51,8 +51,8 @@ class MM4System {
 
 extension MM4System {
   @inline(__always)
-  func reorder(_ indices: SIMD2<Int32>) -> SIMD2<Int> {
-    var output: SIMD2<Int32> = .zero
+  func reorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
+    var output: SIMD2<UInt32> = .zero
     for i in 0..<indices.scalarCount {
       output[i] = reorderedIndices[Int(output[i])]
     }
@@ -60,8 +60,8 @@ extension MM4System {
   }
   
   @inline(__always)
-  func reorder(_ indices: SIMD3<Int32>) -> SIMD3<Int> {
-    var output: SIMD3<Int32> = .zero
+  func reorder(_ indices: SIMD3<UInt32>) -> SIMD3<Int> {
+    var output: SIMD3<UInt32> = .zero
     for i in 0..<indices.scalarCount {
       output[i] = reorderedIndices[Int(output[i])]
     }
@@ -69,8 +69,8 @@ extension MM4System {
   }
   
   @inline(__always)
-  func reorder(_ indices: SIMD4<Int32>) -> SIMD4<Int> {
-    var output: SIMD4<Int32> = .zero
+  func reorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
+    var output: SIMD4<UInt32> = .zero
     for i in 0..<indices.scalarCount {
       output[i] = reorderedIndices[Int(output[i])]
     }

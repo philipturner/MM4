@@ -54,10 +54,10 @@ public class MM4Parameters {
   var hydrogenMassRepartitioning: [Float] = []
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
-  var nonbondedExceptions13: [SIMD2<Int32>] = []
+  var nonbondedExceptions13: [SIMD2<UInt32>] = []
   
   /// Atom pairs that have reduced nonbonded and electrostatic interactions.
-  var nonbondedExceptions14: [SIMD2<Int32>] = []
+  var nonbondedExceptions14: [SIMD2<UInt32>] = []
   
   /// Map from atoms to bonds that can be efficiently traversed.
   var atomsToBondsMap: UnsafeMutablePointer<SIMD4<Int32>>

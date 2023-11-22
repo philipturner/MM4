@@ -17,23 +17,23 @@ extension MM4System {
     }
     
     let particleCount = virtualSiteCount + atomicNumbers.count
-    self.reorderedIndices = Array(repeating: -1, count: atomicNumbers.count)
-    self.originalIndices = Array(repeating: -1, count: particleCount)
+    self.reorderedIndices = Array(repeating: .max, count: atomicNumbers.count)
+    self.originalIndices = Array(repeating: .max, count: particleCount)
     
     var virtualSitePointer = 0
     for originalID in 0..<atomicNumbers.count {
       if atomicNumbers[originalID] == 1 {
         let reorderedID = virtualSitePointer
         virtualSitePointer += 1
-        reorderedIndices[originalID] = Int32(truncatingIfNeeded: reorderedID)
-        originalIndices[reorderedID] = Int32(truncatingIfNeeded: originalID)
+        reorderedIndices[originalID] = UInt32(truncatingIfNeeded: reorderedID)
+        originalIndices[reorderedID] = UInt32(truncatingIfNeeded: originalID)
         
         let virtualSiteID = virtualSiteCount + originalID
-        originalIndices[virtualSiteID] = Int32(truncatingIfNeeded: originalID)
+        originalIndices[virtualSiteID] = UInt32(truncatingIfNeeded: originalID)
       } else {
         let reorderedID = virtualSiteCount + originalID
-        reorderedIndices[originalID] = Int32(truncatingIfNeeded: reorderedID)
-        originalIndices[reorderedID] = Int32(truncatingIfNeeded: originalID)
+        reorderedIndices[originalID] = UInt32(truncatingIfNeeded: reorderedID)
+        originalIndices[reorderedID] = UInt32(truncatingIfNeeded: originalID)
       }
     }
     guard virtualSitePointer == virtualSiteCount else {
@@ -74,7 +74,8 @@ extension MM4System {
       let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
       let weights = SIMD2(1 - reductionFactor, reductionFactor)
       
-      let reordered = self.reorder(SIMD2(otherID, originalID))
+      let reordered = self.reorder(SIMD2(
+        UInt32(truncatingIfNeeded: otherID), originalID))
       let virtualSite = OpenMM_TwoParticleAverageSite(
         particles: reordered, weights: weights)
       let virtualSiteID = virtualSiteCount + Int(originalID)
@@ -123,17 +124,17 @@ extension MM4System {
   }
   
   @inline(__always)
-  func virtualSiteReorder(_ indices: SIMD2<Int32>) -> SIMD2<Int> {
-    var output: SIMD2<Int32> = indices
-    let virtualSiteCount = Int32(truncatingIfNeeded: virtualSiteCount)
+  func virtualSiteReorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
+    var output: SIMD2<UInt32> = indices
+    let virtualSiteCount = UInt32(truncatingIfNeeded: virtualSiteCount)
     output &+= SIMD2(repeating: virtualSiteCount)
     return SIMD2<Int>(truncatingIfNeeded: output)
   }
   
   @inline(__always)
-  func virtualSiteReorder(_ indices: SIMD4<Int32>) -> SIMD4<Int> {
-    var output: SIMD4<Int32> = indices
-    let virtualSiteCount = Int32(truncatingIfNeeded: virtualSiteCount)
+  func virtualSiteReorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
+    var output: SIMD4<UInt32> = indices
+    let virtualSiteCount = UInt32(truncatingIfNeeded: virtualSiteCount)
     output &+= SIMD4(repeating: virtualSiteCount)
     return SIMD4<Int>(truncatingIfNeeded: output)
   }

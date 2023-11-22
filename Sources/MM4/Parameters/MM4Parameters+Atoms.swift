@@ -383,8 +383,8 @@ extension MM4Parameters {
   
   func createNonbondedExceptions() {
     // Create nonbonded exceptions.
-    var nonbondedExceptions13Map: [SIMD2<Int32>: Bool] = [:]
-    var nonbondedExceptions14Map: [SIMD2<Int32>: Bool] = [:]
+    var nonbondedExceptions13Map: [SIMD2<UInt32>: Bool] = [:]
+    var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
     for torsion in torsions.indices {
       guard torsion[0] < torsion[3] else {
         fatalError("Torsions were not sorted.")
@@ -411,4 +411,5 @@ extension MM4Parameters {
     nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
   }
 }
+
 

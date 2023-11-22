@@ -19,7 +19,7 @@ extension MM4Parameters {
   /// related projects.
   @inline(__always)
   func createAtomCodes<T: SIMD, U: SIMD>(group: T, zero: U) -> U
-  where T.Scalar == Int32, U.Scalar == UInt8 {
+  where T.Scalar == UInt32, U.Scalar == UInt8 {
     var codes = zero
     for lane in 0..<T.scalarCount {
       let atomID = group[lane]
