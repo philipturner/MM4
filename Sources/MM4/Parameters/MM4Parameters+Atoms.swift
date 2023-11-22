@@ -131,45 +131,9 @@ public struct MM4AtomParameters {
 }
 
 extension MM4Parameters {
-  func createMasses(hydrogenMassRepartitioning: Float) {
-    atoms.masses = atoms.atomicNumbers.map { atomicNumber in
-      MM4MassParameters.global.mass(atomicNumber: atomicNumber)
-    }
-    
-    for atomID in atoms.indices
-    where atoms.atomicNumbers[Int(atomID)] == 1 {
-      atoms.masses[Int(atomID)] += hydrogenMassRepartitioning
-      
-      let map = atomsToBondsMap[Int(atomID)]
-      guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
-        fatalError("Hydrogen did not have exactly 1 bond.")
-      }
-      let substituentID = Int(other(atomID: atomID, bondID: map[0]))
-      atoms.masses[substituentID] -= hydrogenMassRepartitioning
-    }
-  }
-  
-  func createVectorPadding() {
-    let atomVectorCount = (atoms.count + MM4VectorWidth - 1) / MM4VectorWidth
-    atoms.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
-    atoms.atomicNumbers.withUnsafeMutableBufferPointer {
-      let baseAddress = $0.baseAddress!
-      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
-        baseAddress[i] = 0
-      }
-    }
-    
-    atoms.masses.reserveCapacity(atomVectorCount * MM4VectorWidth)
-    atoms.masses.withUnsafeMutableBufferPointer {
-      let baseAddress = $0.baseAddress!
-      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
-        baseAddress[i] = 0
-      }
-    }
-  }
-  
-  func createAtomCodes() {
-    atoms.codes = atoms.indices.map { atomID in
+  /// - throws: `.missingParameter`, `.openValenceShell`
+  func createAtomCodes() throws {
+    atoms.codes = try atoms.indices.map { atomID in
       let atomicNumber = atoms.atomicNumbers[atomID]
       let map = atomsToAtomsMap[atomID]
       var output: MM4AtomCode
@@ -188,7 +152,7 @@ extension MM4Parameters {
         case 5:
           output = .cyclopentaneCarbon
         default:
-          fatalError("Unsupported carbon ring type: \(ringType)")
+          fatalError("This should never happen.")
         }
         valenceCount = 4
         supportsHydrogen = true
@@ -212,70 +176,63 @@ extension MM4Parameters {
         output = .germanium
         valenceCount = 4
       default:
-        fatalError("Atomic number \(atomicNumber) not recognized.")
+        let address = createAddress(atomID)
+        throw MM4Error.missingParameter([address])
       }
       
       if !supportsHydrogen {
         for lane in 0..<4 where map[lane] != -1 {
-          if atoms.atomicNumbers[Int(lane)] == 1 {
-            fatalError(
-              "Hydrogen not allowed for atomic number \(atomicNumber).")
+          let hydrogenID = Int(map[lane])
+          if atoms.atomicNumbers[hydrogenID] == 1 {
+            var addresses: [MM4Address] = []
+            addresses.append(createAddress(atomID))
+            addresses.append(createAddress(hydrogenID))
+            throw MM4Error.missingParameter(addresses)
           }
         }
       }
       var valenceMask: SIMD4<Int32> = .zero
       valenceMask.replace(with: .one, where: map .!= -1)
       guard valenceMask.wrappedSum() == valenceCount else {
-        fatalError(
-          "Valence count \(valenceMask.wrappedSum()) did not match expected \(valenceCount).")
+        let address = createAddress(atomID)
+        let neighbors = createAddresses(map)
+        throw MM4Error.openValenceShell(address, neighbors)
       }
       return output
     }
   }
   
-  func createCenterTypes() {
-    let permittedAtomicNumbers: [UInt8] = [6, 7, 8, 14, 15, 16, 31]
-    for atomID in atoms.indices {
-      let atomicNumber = atoms.atomicNumbers[atomID]
-      guard permittedAtomicNumbers.contains(atomicNumber) else {
-        precondition(
-          atomicNumber == 1 || atomicNumber == 9,
-          "Atomic number \(atomicNumber) not recognized.")
-        atoms.centerTypes.append(nil)
-        continue
-      }
+  func createMasses(hydrogenMassRepartitioning: Float) {
+    atoms.masses = atoms.atomicNumbers.map { atomicNumber in
+      MM4MassParameters.global.mass(atomicNumber: atomicNumber)
+    }
+    
+    for atomID in atoms.indices
+    where atoms.atomicNumbers[Int(atomID)] == 1 {
+      atoms.masses[Int(atomID)] += hydrogenMassRepartitioning
       
-      let map = atomsToAtomsMap[atomID]
-      var otherElements: SIMD4<UInt8> = .zero
-      for lane in 0..<4 {
-        if map[lane] == -1 {
-          otherElements[lane] = 1
-        } else {
-          let otherID = map[lane]
-          otherElements[lane] = atoms.atomicNumbers[Int(otherID)]
-        }
+      let map = atomsToBondsMap[Int(atomID)]
+      let substituentID = Int(other(atomID: atomID, bondID: map[0]))
+      atoms.masses[substituentID] -= hydrogenMassRepartitioning
+    }
+  }
+  
+  func createVectorPadding() {
+    let atomVectorCount = (atoms.count + MM4VectorWidth - 1) / MM4VectorWidth
+    atoms.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
+    atoms.atomicNumbers.withUnsafeMutableBufferPointer {
+      let baseAddress = $0.baseAddress!
+      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
+        baseAddress[i] = 0
       }
-      
-      // In MM4, fluorine is treated like carbon when determining carbon types.
-      // Allinger notes this may be a weakness of the forcefield. This idea has
-      // been extended to encapsulate all non-hydrogen atoms.
-      var matchMask: SIMD4<UInt8> = .zero
-      matchMask.replace(with: .one, where: otherElements .!= 1)
-      
-      var carbonType: MM4CenterType
-      switch matchMask.wrappedSum() {
-      case 4:
-        carbonType = .quaternary
-      case 3:
-        carbonType = .tertiary
-      case 2:
-        carbonType = .secondary
-      case 1:
-        carbonType = .primary
-      default:
-        fatalError("This should never happen.")
+    }
+    
+    atoms.masses.reserveCapacity(atomVectorCount * MM4VectorWidth)
+    atoms.masses.withUnsafeMutableBufferPointer {
+      let baseAddress = $0.baseAddress!
+      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
+        baseAddress[i] = 0
       }
-      atoms.centerTypes.append(carbonType)
     }
   }
   
@@ -357,7 +314,7 @@ extension MM4Parameters {
         epsilon = (default: 0.200, hydrogen: -1)
         radius = (default: 2.440, hydrogen: -1)
       default:
-        fatalError("Atomic number \(atomicNumber) not recognized.")
+        fatalError("This should never happen.")
       }
       
       // Pre-compute the Hill function for hydrogen interactions.
@@ -390,7 +347,7 @@ extension MM4Parameters {
     var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
     for torsion in torsions.indices {
       guard torsion[0] < torsion[3] else {
-        fatalError("Torsions were not sorted.")
+        fatalError("Torsion was not sorted.")
       }
       let pair = sortBond(SIMD2(torsion[0], torsion[3]))
       nonbondedExceptions14Map[pair] = true
@@ -414,5 +371,3 @@ extension MM4Parameters {
     nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
   }
 }
-
-

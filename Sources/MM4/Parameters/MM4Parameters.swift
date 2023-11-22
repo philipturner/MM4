@@ -41,6 +41,7 @@ public struct MM4ParametersDescriptor {
 
 // TODO: 1. Throw "missing parameter" errors when a parameter is missing
 // TODO: 2. Make `MM4Parameters` a struct instead of a class
+// - Can the atoms-to-atoms map be deleted when exiting the initializer?
 // TODO: 3. Make an `MM4Parameters` mutating function that appends parameters
 // from another instance.
 
@@ -67,11 +68,11 @@ public class MM4Parameters {
   /// Atom pairs that have reduced nonbonded and electrostatic interactions.
   var nonbondedExceptions14: [SIMD2<UInt32>] = []
   
-  /// Map from atoms to bonds that can be efficiently traversed.
-  var atomsToBondsMap: UnsafeMutablePointer<SIMD4<Int32>>
-  
   /// Map from bonds to atoms that can be efficiently traversed.
   var bondsToAtomsMap: UnsafeMutablePointer<SIMD2<Int32>>
+  
+  /// Map from atoms to bonds that can be efficiently traversed.
+  var atomsToBondsMap: UnsafeMutablePointer<SIMD4<Int32>>
   
   /// Map from atoms to connected atoms that can be efficiently traversed.
   var atomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
@@ -93,72 +94,26 @@ public class MM4Parameters {
     }
     
     // Set the properties for conveniently iterating over the atoms.
+    // Behavior should be well-defined when the atom count is zero.
+    atoms.atomicNumbers = descriptorAtomicNumbers
     atoms.count = descriptorAtomicNumbers.count
     atoms.indices = 0..<descriptorAtomicNumbers.count
-    guard atoms.count > 0 else {
-      fatalError("Behavior not yet defined when atom count is zero.")
-    }
+    bonds.indices = descriptorBonds
     
-    // Compile the bonds into a map.
-    bondsToAtomsMap = .allocate(capacity: descriptorBonds.count + 1)
-    bondsToAtomsMap += 1
-    bondsToAtomsMap[-1] = SIMD2(repeating: -1)
-    for bondID in 0..<descriptorBonds.count {
-      var bond = descriptorBonds[bondID]
-      
-      // Sort the indices in the bond, so the lower appears first.
-      bond = SIMD2(bond.min(), bond.max())
-      bondsToAtomsMap[bondID] = SIMD2(truncatingIfNeeded: bond)
-      bonds.indices.append(SIMD2(truncatingIfNeeded: bond))
-    }
-    
-    atoms.atomicNumbers = descriptorAtomicNumbers
+    bondsToAtomsMap = .allocate(capacity: bonds.indices.count + 1)
     atomsToBondsMap = .allocate(capacity: atoms.count + 1)
-    atomsToBondsMap += 1
-    atomsToBondsMap[-1] = SIMD4(repeating: -1)
-    for atomID in 0..<atoms.count {
-      atomsToBondsMap[atomID] = SIMD4(repeating: -1)
-    }
-    
-    for bondID in 0..<bonds.indices.count {
-      let bond = bondsToAtomsMap[bondID]
-      for j in 0..<2 {
-        let atomID = Int(bond[j])
-        var map = atomsToBondsMap[atomID]
-        var succeeded = false
-        for k in 0..<4 {
-          if map[k] == -1 {
-            map[k] = Int32(bondID)
-            succeeded = true
-            break
-          }
-        }
-        if !succeeded {
-          fatalError("An atom had more than 4 bonds.")
-        }
-        atomsToBondsMap[atomID] = map
-      }
-    }
-    
     atomsToAtomsMap = .allocate(capacity: atoms.count + 1)
-    atomsToAtomsMap += 1
-    atomsToAtomsMap[-1] = SIMD4(repeating: -1)
-    for atomID in 0..<atoms.count {
-      let bondsMap = atomsToBondsMap[atomID]
-      var atomsMap = SIMD4<Int32>(repeating: -1)
-      for lane in 0..<4 {
-        atomsMap[lane] = other(atomID: atomID, bondID: bondsMap[lane])
-      }
-      atomsToAtomsMap[atomID] = atomsMap
-    }
     
     // Topology
+    try createBondsToAtomsMap()
+    try createAtomsToBondsMap()
+    try createAtomsToAtomsMap()
     try createTopology()
-    createAtomCodes()
-    createCenterTypes()
+    try createCenterTypes()
     
     // Per-Atom Parameters
     let descriptorHMR = descriptor.hydrogenMassRepartitioning
+    try createAtomCodes()
     createMasses(hydrogenMassRepartitioning: descriptorHMR)
     createVectorPadding()
     createNonbondedParameters(hydrogenMassRepartitioning: descriptorHMR)

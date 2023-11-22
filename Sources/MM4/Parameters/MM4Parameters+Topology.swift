@@ -22,6 +22,75 @@ public struct MM4Rings {
 }
 
 extension MM4Parameters {
+  /// - throws: Nothing
+  func createBondsToAtomsMap() throws {
+    bondsToAtomsMap += 1
+    bondsToAtomsMap[-1] = SIMD2(repeating: -1)
+    for bondID in bonds.indices.indices {
+      var bond = bonds.indices[bondID]
+      
+      // Sort the indices in the bond, so the lower appears first.
+      bond = SIMD2(bond.min(), bond.max())
+      bonds.indices[bondID] = bond
+      bondsToAtomsMap[bondID] = SIMD2(truncatingIfNeeded: bond)
+    }
+  }
+  
+  /// - throws: `.openValenceShell`
+  func createAtomsToBondsMap() throws {
+    atomsToBondsMap += 1
+    atomsToBondsMap[-1] = SIMD4(repeating: -1)
+    for atomID in 0..<atoms.count {
+      atomsToBondsMap[atomID] = SIMD4(repeating: -1)
+    }
+    
+    for bondID in 0..<bonds.indices.count {
+      let bond = bondsToAtomsMap[bondID]
+      for j in 0..<2 {
+        let atomID = Int(bond[j])
+        var map = atomsToBondsMap[atomID]
+        var succeeded = false
+        for k in 0..<4 {
+          if map[k] == -1 {
+            map[k] = Int32(bondID)
+            succeeded = true
+            break
+          }
+        }
+        
+        if !succeeded {
+          var neighbors: [MM4Address] = []
+          for lane in 0..<4 {
+            let bondID = Int(map[lane])
+            let bond = bondsToAtomsMap[Int(map[lane])]
+            let otherID = other(atomID: bond[j], bondID: bondID)
+            neighbors.append(createAddress(otherID))
+          }
+          neighbors.append(createAddress(bond[1 - j]))
+          
+          let address = createAddress(bond[j])
+          throw MM4Error.openValenceShell(address, neighbors)
+        }
+        atomsToBondsMap[atomID] = map
+      }
+    }
+  }
+  
+  /// - throws: Nothing
+  func createAtomsToAtomsMap() throws {
+    atomsToAtomsMap += 1
+    atomsToAtomsMap[-1] = SIMD4(repeating: -1)
+    for atomID in 0..<atoms.count {
+      let bondsMap = atomsToBondsMap[atomID]
+      var atomsMap = SIMD4<Int32>(repeating: -1)
+      for lane in 0..<4 {
+        atomsMap[lane] = other(atomID: atomID, bondID: bondsMap[lane])
+      }
+      atomsToAtomsMap[atomID] = atomsMap
+    }
+  }
+  
+  /// - throws: `.unsupportedRing`
   func createTopology() throws {
     // Traverse the bond topology.
     for atom1 in 0..<UInt32(atoms.count) {
@@ -76,29 +145,23 @@ extension MM4Parameters {
           }
           
           if _slowPath(ringType < 5) {
-            func makeAddress(_ atomID: UInt32) -> MM4Address {
-              MM4Address(
-                rigidBodyIndex: 0,
-                atomIndex: atomID,
-                atomicNumber: atoms.atomicNumbers[Int(atomID)])
-            }
             var addresses: [MM4Address] = []
-            addresses.append(makeAddress(atom1))
-            addresses.append(makeAddress(atom2))
-            addresses.append(makeAddress(atom3))
+            addresses.append(createAddress(atom1))
+            addresses.append(createAddress(atom2))
+            addresses.append(createAddress(atom3))
             
             for lane4 in 0..<4 where map3[lane4] != -1 {
-              let atom4 = UInt32(truncatingIfNeeded: map3[lane4])
+              let atom4 = UInt32(map3[lane4])
               if atom2 == atom4 {
                 continue
               } else if atom1 == atom4 {
-                throw MM4Error.unsupportedRing(addresses, 3)
+                throw MM4Error.unsupportedRing(addresses)
               }
               
               let map4 = atomsToAtomsMap[Int(atom4)]
               for lane5 in 0..<4 where atom1 == map4[lane5] {
-                addresses.append(makeAddress(atom4))
-                throw MM4Error.unsupportedRing(addresses, 4)
+                addresses.append(createAddress(atom4))
+                throw MM4Error.unsupportedRing(addresses)
               }
             }
             fatalError("Ring type was less than 5, but faulting atom group was not found.")
@@ -201,5 +264,66 @@ extension MM4Parameters {
       }
     }
   }
+  
+  /// - throws: `.unsupportedCenterType`
+  func createCenterTypes() throws {
+    let permittedAtomicNumbers: [UInt8] = [6, 7, 8, 14, 15, 16, 32]
+    for atomID in atoms.indices {
+      let atomicNumber = atoms.atomicNumbers[atomID]
+      guard permittedAtomicNumbers.contains(atomicNumber) else {
+        precondition(
+          atomicNumber == 1 || atomicNumber == 9,
+          "Atomic number \(atomicNumber) not recognized.")
+        atoms.centerTypes.append(nil)
+        continue
+      }
+      
+      let map = atomsToAtomsMap[atomID]
+      var otherElements: SIMD4<UInt8> = .zero
+      for lane in 0..<4 {
+        if map[lane] == -1 {
+          otherElements[lane] = 1
+        } else {
+          let otherID = map[lane]
+          otherElements[lane] = atoms.atomicNumbers[Int(otherID)]
+        }
+      }
+      
+      let halogenMask =
+      (otherElements .== 1) .|
+      (otherElements .== 9) .|
+      (otherElements .== 17) .|
+      (otherElements .== 35) .|
+      (otherElements .== 53)
+      
+      if all(halogenMask) {
+        let address = createAddress(atomID)
+        let neighbors = createAddresses(map)
+        throw MM4Error.unsupportedCenterType(address, neighbors)
+      }
+      
+      // In MM4, fluorine is treated like carbon when determining carbon types.
+      // Allinger notes this may be a weakness of the forcefield. This idea has
+      // been extended to encapsulate all non-hydrogen atoms.
+      var matchMask: SIMD4<UInt8> = .zero
+      matchMask.replace(with: .one, where: otherElements .!= 1)
+      
+      var carbonType: MM4CenterType
+      switch matchMask.wrappedSum() {
+      case 4:
+        carbonType = .quaternary
+      case 3:
+        carbonType = .tertiary
+      case 2:
+        carbonType = .secondary
+      case 1:
+        carbonType = .primary
+      default:
+        fatalError("This should never happen.")
+      }
+      atoms.centerTypes.append(carbonType)
+      
+      
+    }
+  }
 }
-

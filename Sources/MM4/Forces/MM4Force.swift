@@ -56,12 +56,10 @@ class MM4Forces {
   // var rigidBodyNonbonded: MM4NonbondedForce
   
   init(system: MM4System) {
-    // Force Group 0
-    self.external = .init(system: system)
-    
     // Force Group 1
     self.electrostatic = .init(system: system)
     self.electrostaticException = .init(system: system)
+    self.external = .init(system: system)
     self.nonbonded = .init(system: system)
     self.nonbondedException = .init(system: system)
     self.torsion = .init(system: system)
@@ -72,6 +70,11 @@ class MM4Forces {
     self.bendBend = .init(system: system)
     self.bendExtended = .init(system: system)
     self.stretch = .init(system: system)
+    
+    // TODO: Deactivate forces with zero particles, decreasing sequential
+    // overhead. For diamond-only simulations, deactivate the electrostatic
+    // force as well. This decreases the amount of testing required to get
+    // the minimum viable product working.
   }
   
   // Make this act explicit instead of performing it in the initializer. This

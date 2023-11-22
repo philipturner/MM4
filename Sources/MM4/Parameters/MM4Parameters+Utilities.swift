@@ -14,6 +14,21 @@ extension MM4Parameters {
     return (bond[0] == atomID) ? bond[1] : bond[0]
   }
   
+  func createAddress<T: FixedWidthInteger>(_ atomID: T) -> MM4Address {
+    MM4Address(
+      rigidBodyIndex: 0,
+      atomIndex: UInt32(atomID),
+      atomicNumber: atoms.atomicNumbers[Int(atomID)])
+  }
+  
+  func createAddresses(_ map: SIMD4<Int32>) -> [MM4Address] {
+    var output: [MM4Address] = []
+    for lane in 0..<4 where map[lane] != -1 {
+      output.append(createAddress(map[lane]))
+    }
+    return output
+  }
+  
   /// Overloads the function `createAtomCodes()`, but is a more elegant API,
   /// that follows the de facto naming convention established for MM4 and
   /// related projects.
@@ -116,3 +131,4 @@ extension MM4Parameters {
     }
   }
 }
+
