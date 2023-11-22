@@ -42,7 +42,7 @@ public struct MM4RigidBody {
   ///   anchors, constrain angular momentum to the shared axis.
   /// - anchors form plane: conserve linear momentum around average of anchors,
   ///   force angular momentum to zero.
-  public var anchors: [UInt32] = []
+  public var anchors: Set<UInt32> = []
   
   /// The number of protons in each atom's nucleus.
   ///
@@ -75,6 +75,9 @@ public struct MM4RigidBody {
   
   /// A convenient method for accessing the atom vector count.
   var atomVectorCount: Int
+  
+  /// A convenient method for addressing the end of the list.
+  var atomVectorMask: SIMDMask<MM4UInt32Vector.MaskStorage>
   
   /// The high-performance storage format for atom positions.
   var _positions: [MM4FloatVector]
@@ -128,7 +131,19 @@ public struct MM4RigidBody {
     self.atomCount = atomicNumbers.count
     self.atomVectorCount = atomicNumbers.count + MM4VectorWidth - 1
     self.atomVectorCount /= MM4VectorWidth
-    self._positions = Array(repeating: .zero, count: 3 * atomCount)
+    
+    let lastVectorStart = UInt32((atomVectorCount - 1) * MM4VectorWidth)
+    var lastVector: MM4UInt32Vector = .init(repeating: lastVectorStart)
+    for lane in 0..<MM4VectorWidth {
+      lastVector[lane] &+= UInt32(lane)
+    }
+    self.atomVectorMask = lastVector .>= UInt32(atomCount)
+    
+    self.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
+    self._positions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
+      $0.initialize(repeating: .zero)
+      $1 = 3 * descriptorAtomicNumbers.count
+    }
     
     createMasses()
     positions.withUnsafeBufferPointer {

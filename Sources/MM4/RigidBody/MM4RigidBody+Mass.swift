@@ -7,6 +7,17 @@
 
 extension MM4RigidBody {
   mutating func createMasses() {
+    let capacity = atomVectorCount * MM4VectorWidth
+    self.masses = Array(unsafeUninitializedCapacity: capacity) {
+      for i in 0..<atomCount {
+        let atomicNumber = atomicNumbers[i]
+        let mass = MM4MassParameters.global.mass(atomicNumber: atomicNumber)
+        $0.baseAddress.unsafelyUnwrapped[i] = mass
+      }
+      $1 = atomCount
+    }
+    
+    self.masses.reserveCapacity(atomVectorCount * MM4VectorWidth)
     self.masses = atomicNumbers.map { atomicNumber in
       MM4MassParameters.global.mass(atomicNumber: atomicNumber)
     }
