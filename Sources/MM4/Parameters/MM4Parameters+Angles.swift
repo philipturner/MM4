@@ -63,15 +63,22 @@ public struct MM4AngleExtendedParameters {
 }
 
 extension MM4Parameters {
-  func createAngleParameters() {
+  /// - throws: `.missingParameter`
+  func createAngleParameters() throws {
     for angleID in angles.indices.indices {
       let angle = angles.indices[angleID]
       let ringType = angles.ringTypes[angleID]
       let codes = with5RingsRemoved {
         createAtomCodes(group: angle, zero: SIMD3<UInt8>.zero)
       }
+      
+      func createAngleError() -> MM4Error {
+        let map = SIMD3<Int32>(truncatingIfNeeded: angle)
+        let addresses = createAddresses(SIMD4(map, -1))
+        return MM4Error.missingParameter(addresses)
+      }
       if containsTwoNonCarbons(codes) {
-        fatalError("Angles may not contain two non-carbon atoms.")
+        throw createAngleError()
       }
       var sortedCodes = sortAngle(codes)
       
@@ -372,7 +379,7 @@ extension MM4Parameters {
       }
       guard let bendingStiffnesses,
             let equilibriumAngles else {
-        fatalError("Unrecognized angle: \(sortedCodes)")
+        throw createAngleError()
       }
       
       // Factors in both the center type and the other atoms in the angle.
@@ -385,7 +392,8 @@ extension MM4Parameters {
         let numHydrogens = Int(matchMask[0] &+ matchMask[1] &+ matchMask[2])
         
         guard let centerType = atoms.centerTypes[Int(angle[1])] else {
-          fatalError("Angle did not occur at tetravalent atom.")
+          // Angle did not occur at tetravalent atom.
+          throw createAngleError()
         }
         switch centerType {
         case .quaternary:
@@ -445,12 +453,13 @@ extension MM4Parameters {
             stretchBendStiffness = -0.12
           }
         default:
-          fatalError("Unrecognized oxygen angle: \(sortedCodes)")
+          throw createAngleError()
         }
       } else if any(sortedCodes .== 11) {
         // Fluorine
-        precondition(
-          sortedCodes[2] == 11, "Unrecognized fluorine angle: \(sortedCodes)")
+        guard sortedCodes[2] == 11 else {
+          throw createAngleError()
+        }
         switch sortedCodes[0] {
         case 1:
           bendBendStiffness = -0.10
@@ -468,7 +477,7 @@ extension MM4Parameters {
           stretchBendStiffness2 = 0.275
           stretchStretchStiffness = 1.00
         default:
-          fatalError("Unrecognized fluorine angle: \(sortedCodes)")
+          throw createAngleError()
         }
       } else {
         switch sortedCodes[1] {
@@ -514,7 +523,7 @@ extension MM4Parameters {
             // Still, the presence of the 5-ring restriction is very ambiguous.
             stretchBendStiffness = (ringType == 5) ? 0.04 : 0.04
           } else {
-            fatalError("Unrecognized nitrogen angle: \(sortedCodes)")
+            throw createAngleError()
           }
           
           // Silicon
@@ -549,7 +558,7 @@ extension MM4Parameters {
           if all(sortedCodes .== SIMD3(1, 15, 1)) {
             stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
           } else {
-            fatalError("Unrecognized sulfur angle: \(sortedCodes)")
+            throw createAngleError()
           }
           
           // Germanium
@@ -564,15 +573,15 @@ extension MM4Parameters {
             stretchBendStiffness = 0.450
           }
           
-          
         default:
-          fatalError("Unrecognized angle: \(sortedCodes)")
+          throw createAngleError()
         }
       }
       
       guard !bendingStiffnesses[angleType - 1].isNaN,
             !equilibriumAngles[angleType - 1].isNaN else {
-        fatalError("Angle parameter was NaN for angle: \(sortedCodes)")
+        // Angle parameter was NaN.
+        throw createAngleError()
       }
       angles.parameters.append(
         MM4AngleParameters(

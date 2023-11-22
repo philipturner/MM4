@@ -137,15 +137,22 @@ public struct MM4TorsionExtendedParameters {
 }
 
 extension MM4Parameters {
-  func createTorsionParameters() {
+  /// - throws: `.missingParameter`
+  func createTorsionParameters() throws {
     for torsionID in torsions.indices.indices {
       let torsion = torsions.indices[torsionID]
       let ringType = torsions.ringTypes[torsionID]
       let codes = with5RingsRemoved {
         createAtomCodes(group: torsion, zero: SIMD4<UInt8>.zero)
       }
+      
+      func createTorsionError() -> MM4Error {
+        let map = SIMD4<Int32>(truncatingIfNeeded: torsion)
+        let addresses = createAddresses(map)
+        return MM4Error.missingParameter(addresses)
+      }
       if containsTwoNonCarbons(codes) {
-        fatalError("Torsions may not contain two non-carbon atoms.")
+        throw createTorsionError()
       }
       
       /// "Note that unless they are explicitly in the table, parameters
@@ -159,7 +166,7 @@ extension MM4Parameters {
       /// - Returns: Whether the sorted codes are different from the original
       ///   ones.
       @discardableResult
-      func with5RingAttempt(_ closure: (SIMD4<UInt8>) -> Bool) -> Bool {
+      func with5RingAttempt(_ closure: (SIMD4<UInt8>) -> Bool) throws -> Bool {
         var sortedCodes = sortTorsion(codes)
         if closure(sortedCodes) {
           return any(sortedCodes .!= codes)
@@ -170,7 +177,7 @@ extension MM4Parameters {
         if closure(sortedCodes) {
           return any(sortedCodes .!= newCodes)
         } else {
-          fatalError("Unrecognized torsion: \(sortedCodes)")
+          throw createTorsionError()
         }
       }
       
@@ -185,7 +192,7 @@ extension MM4Parameters {
       var V6: Float?
       var Kbtb: Float?
       
-      with5RingAttempt { codes in
+      try with5RingAttempt { codes in
         switch (codes[0], codes[1], codes[2], codes[3]) {
           // Carbon
         case (1, 1, 1, 1):   (V1, Vn, V3) = (0.239, 0.024, 0.637)
@@ -369,7 +376,7 @@ extension MM4Parameters {
       var Ktb_l: SIMD3<Float>?
       var Ktb_r: SIMD3<Float>?
       
-      let swappedCodesForTorsionBend = with5RingAttempt { codes in
+      let swappedCodesForTorsionBend = try with5RingAttempt { codes in
         switch (codes[0], codes[1], codes[2], codes[3]) {
           // Carbon
         case (1, 1, 1, 1): fallthrough
@@ -543,8 +550,13 @@ extension MM4Parameters {
       // below. However, I will leave the previous (incorrect) reasoning there
       // for reference. "-k" could have been "0.5". The "-" key on the keyboard
       // is close to "0". lowercase "k" is also sort-of close to "." and also
-      // not activated by "shift". A plausible mistake while typing, which the
-      // writer wouldn't notice when looking over a 2nd time.
+      // not activated by "shift".
+      //
+      // Furthermore, those two keys are both offset by ~1 key from the correct
+      // one. The third key could have simply been tapped out-of-bounds of the
+      // keyboard. Another extrapolation: it activated a distracting Fn key that
+      // interrupted the author. This suggests a very plausible environment that
+      // would facilitate the hypothesized mistake.
       //
       // (Kts/2) * Δl * (1 + cos(3ω))
       
@@ -552,7 +564,7 @@ extension MM4Parameters {
       var Kts_c: SIMD3<Float>?
       var Kts_r: SIMD3<Float>?
       
-      let swappedCodesForTorsionStretch = with5RingAttempt { codes in
+      let swappedCodesForTorsionStretch = try with5RingAttempt { codes in
         let middle = SIMD2(codes[1], codes[2])
         var middle6Ring = middle.replacing(with: .one, where: middle .== 123)
         middle6Ring = sortBond(middle6Ring)
@@ -713,7 +725,8 @@ extension MM4Parameters {
         swap(&Kts_l, &Kts_r)
       }
       guard let Kts_c else {
-        fatalError("Central torsion-stretch parameter was missing.")
+        // The central torsion-stretch parameter was missing.
+        throw createTorsionError()
       }
       
       // If all parameters besides Kts_c[2] are zero, send this to the cheaper

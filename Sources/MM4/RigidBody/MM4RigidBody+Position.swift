@@ -5,6 +5,16 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
+// TODO: Don't materialize the reordered atom data in memory. Just
+// reorder in-place before costly operations (velocity decomposition, cross
+// product for angular properties) that would benefit from vectorization. This
+// still retains a need for thinking in a SIMD context.
+//
+// Cache the center of mass, but invalidate and recompute on-the-spot when the
+// user modifies a small segment of the position array. For velocities, don't
+// provide a user-accessible property to read them. Require the user to fetch
+// raw MD simulation data.
+
 /// Wrapper class to bypass the issue of mutating a `struct`. A mutation would
 /// occur when lazily recomputing the center of mass.
 class MM4CenterOfMass {

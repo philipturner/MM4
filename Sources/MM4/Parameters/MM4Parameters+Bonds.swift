@@ -53,7 +53,8 @@ public struct MM4BondExtendedParameters {
 }
 
 extension MM4Parameters {
-  func createBondParameters() {
+  /// - throws: `.missingParameter`
+  func createBondParameters() throws {
     for bondID in bonds.indices.indices {
       let bond = bonds.indices[bondID]
       let ringType = bonds.ringTypes[bondID]
@@ -90,7 +91,7 @@ extension MM4Parameters {
         case .primary:
           stretchingStiffness = 4.7400
         default:
-          fatalError("Unrecognized carbon type.")
+          fatalError("This should never happen.")
         }
       case (5, 123):
         potentialWellDepth = 0.854
@@ -103,7 +104,7 @@ extension MM4Parameters {
         case .secondary:
           stretchingStiffness = 4.6400
         default:
-          fatalError("Unrecognized carbon type.")
+          fatalError("This should never happen.")
         }
       case (1, 123):
         potentialWellDepth = 1.130
@@ -209,7 +210,11 @@ extension MM4Parameters {
         equilibriumLength = 2.404
         
       default:
-        fatalError("Unrecognized bond: \(sortedCodes)")
+        var addresses: [MM4Address] = []
+        for lane in 0..<2 {
+          addresses.append(createAddress(bond[lane]))
+        }
+        throw MM4Error.missingParameter(addresses)
       }
       
       bonds.parameters.append(
@@ -223,21 +228,6 @@ extension MM4Parameters {
           MM4BondExtendedParameters(dipoleMoment: dipoleMoment))
       } else {
         bonds.extendedParameters.append(nil)
-      }
-    }
-  }
-  
-  func createPartialCharges() {
-    for (bondID, parameters) in bonds.extendedParameters.enumerated() {
-      guard let parameters else { continue }
-      let atomCharges = projectDipole(
-        parameters.dipoleMoment, bondID: UInt32(truncatingIfNeeded: bondID))
-      
-      let atomsMap = bondsToAtomsMap[bondID]
-      for lane in 0..<2 {
-        let atomID = atomsMap[lane]
-        let partialCharge = atomCharges[lane]
-        atoms.parameters[Int(atomID)].charge += partialCharge
       }
     }
   }
@@ -298,8 +288,10 @@ extension MM4Parameters {
           }
         }
         if nonCarbonElementCount > 1 {
-          fatalError(
-            "No parameters for electronegativity correction between two non-carbon elements.")
+          // No parameters for electronegativity correction between two
+          // non-carbon elements. This should never happen because torsions are
+          // assigned before electronegativity corrections.
+          fatalError("Encountered two non-carbon elements while computing electrostatic effect.")
         }
         
         switch (bondCodes.0, bondCodes.1, codeEnd, codeActing) {
@@ -435,7 +427,8 @@ extension MM4Parameters {
     }
   }
   
-  func addElectrostaticCorrections() {
+  func createPartialCharges() {
+    // Add electronegativity corrections to bond length.
     let electronegativeCorrections = electrostaticEffect(sign: -1)
     let electropositiveCorrections = electrostaticEffect(sign: +1)
     for i in bonds.indices.indices {
@@ -454,6 +447,20 @@ extension MM4Parameters {
       correction += electronegativeCorrections[i]
       correction += electropositiveCorrections[i]
       bonds.parameters[i].equilibriumLength += correction
+    }
+    
+    // Compute partial charges.
+    for (bondID, parameters) in bonds.extendedParameters.enumerated() {
+      guard let parameters else { continue }
+      let atomCharges = projectDipole(
+        parameters.dipoleMoment, bondID: UInt32(truncatingIfNeeded: bondID))
+      
+      let atomsMap = bondsToAtomsMap[bondID]
+      for lane in 0..<2 {
+        let atomID = atomsMap[lane]
+        let partialCharge = atomCharges[lane]
+        atoms.parameters[Int(atomID)].charge += partialCharge
+      }
     }
   }
 }

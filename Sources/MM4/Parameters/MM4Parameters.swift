@@ -39,10 +39,9 @@ public struct MM4ParametersDescriptor {
   }
 }
 
-// TODO: 1. Throw "missing parameter" errors when a parameter is missing
-// TODO: 2. Make `MM4Parameters` a struct instead of a class
+// TODO: 1. Make `MM4Parameters` a struct instead of a class
 // - Can the atoms-to-atoms map be deleted when exiting the initializer?
-// TODO: 3. Make an `MM4Parameters` mutating function that appends parameters
+// TODO: 2. Make an `MM4Parameters` mutating function that appends parameters
 // from another instance.
 
 /// A set of force field parameters.
@@ -111,7 +110,7 @@ public class MM4Parameters {
     try createTopology()
     try createCenterTypes()
     
-    // Per-Atom Parameters
+    // Atom Parameters
     let descriptorHMR = descriptor.hydrogenMassRepartitioning
     try createAtomCodes()
     createMasses(hydrogenMassRepartitioning: descriptorHMR)
@@ -119,14 +118,11 @@ public class MM4Parameters {
     createNonbondedParameters(hydrogenMassRepartitioning: descriptorHMR)
     createNonbondedExceptions()
     
-    // Per-Bond Parameters
-    createBondParameters()
-    addElectrostaticCorrections()
+    // Bond Parameters
+    try createBondParameters()
+    try createAngleParameters()
+    try createTorsionParameters()
     createPartialCharges()
-    
-    // Other Parameters
-    createAngleParameters()
-    createTorsionParameters()
   }
   
   deinit {
