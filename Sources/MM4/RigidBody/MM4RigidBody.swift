@@ -50,34 +50,8 @@ public struct MM4RigidBody {
   ///   force angular momentum to zero.
   public var anchors: Set<UInt32> = []
   
-  /// The number of protons in each atom's nucleus.
-  ///
-  /// Due to some implementation details, this cannot be changed. To modify an
-  /// atom's atomic number, create a different rigid body with a bonding
-  /// topology reflecting the new valence.
-  public internal(set) var atomicNumbers: [UInt8]
-  
-  /// Pairs of atom indices representing sigma bonds.
-  ///
-  /// This property is immutable because a future implementation may cache some
-  /// force field parameters.
-  public internal(set) var bonds: [SIMD2<UInt32>]
-  
-  /// The amount of mass (in amu) to redistribute from a substituent atom to
-  /// each covalently bonded hydrogen.
-  ///
-  /// This property is immutable because a future implementation may cache some
-  /// force field parameters.
-  public internal(set) var hydrogenMassRepartitioning: Float
-  
-  /// The object's total mass (in amu).
-  public internal(set) var mass: Double = 0
-  
-  /// The mass (in amu) of each atom after hydrogen mass repartitioning.
-  ///
-  /// This property is immutable because a future implementation may cache some
-  /// force field parameters.
-  public internal(set) var masses: [Float]
+  /// The force field parameters cached for this rigid body.
+  public internal(set) var parameters: MM4Parameters
   
   // MARK: - Properties hidden from the public API
   
@@ -91,10 +65,10 @@ public struct MM4RigidBody {
   var atomVectorMask: SIMDMask<MM4UInt32Vector.MaskStorage>
   
   /// The high-performance storage format for center of mass.
-  var _centerOfMass: MM4CenterOfMass = .init()
+  var centerOfMass: MM4CenterOfMass = .init()
   
   /// The high-performance storage format for atom positions.
-  var _positions: [MM4FloatVector]
+  var vPositions: [MM4FloatVector]
   
   // MARK: - Properties summarizing velocity
   
@@ -132,18 +106,22 @@ public struct MM4RigidBody {
     // Ensure the required descriptor properties were set.
     guard let descriptorAtomicNumbers = descriptor.atomicNumbers,
           let descriptorBonds = descriptor.bonds,
-          let positions = descriptor.positions else {
+          let descriptorPositions = descriptor.positions else {
       fatalError("Descriptor did not have the required properties.")
     }
     
     let descriptorHMR = descriptor.hydrogenMassRepartitioning
-    self.atomicNumbers = descriptorAtomicNumbers
-    self.bonds = descriptorBonds
-    self.hydrogenMassRepartitioning = descriptorHMR ?? 1.0
-    self.masses = []
+    var desc = MM4ParametersDescriptor()
+    desc.atomicNumbers = descriptorAtomicNumbers
+    desc.bonds = descriptorBonds
+    desc.hydrogenMassRepartitioning = [descriptorHMR ?? 1.0]
+    self.parameters = try MM4Parameters(descriptor: desc)
+    self.centerOfMass.mass = parameters.atoms.masses.reduce(Double(0)) {
+      $0 + Double($1)
+    }
     
-    self.atomCount = atomicNumbers.count
-    self.atomVectorCount = atomicNumbers.count + MM4VectorWidth - 1
+    self.atomCount = descriptorAtomicNumbers.count
+    self.atomVectorCount = atomCount + MM4VectorWidth - 1
     self.atomVectorCount /= MM4VectorWidth
     
     let lastVectorStart = UInt32((atomVectorCount - 1) * MM4VectorWidth)
@@ -153,14 +131,14 @@ public struct MM4RigidBody {
     }
     self.atomVectorMask = lastVector .>= UInt32(atomCount)
     
-    self.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
-    self._positions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
+    // TODO: Zero-pad the masses internally.
+    parameters.atoms.atomicNumbers
+      .reserveCapacity(atomVectorCount * MM4VectorWidth)
+    self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
       $1 = 3 * descriptorAtomicNumbers.count
     }
-    
-    createMasses()
-    positions.withUnsafeBufferPointer {
+    descriptorPositions.withUnsafeBufferPointer {
       setPositions($0)
     }
   }

@@ -5,6 +5,13 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
+/// Wrapper class to bypass the issue of mutating a `struct`. A mutation would
+/// occur when lazily recomputing the center of mass.
+class MM4CenterOfMass {
+  var mass: Double = .zero
+  var value: SIMD3<Double>? = nil
+}
+
 extension MM4RigidBody {
   public var positions: [SIMD3<Float>] {
     // We may want a similar API to that in MM4ForceField, which lazily caches
@@ -54,9 +61,9 @@ extension MM4RigidBody {
             z[lane] = Float(position.z)
           }
         }
-        _positions[vID * 3 + 0] = x
-        _positions[vID * 3 + 1] = y
-        _positions[vID * 3 + 2] = z
+        vPositions[vID * 3 + 0] = x
+        vPositions[vID * 3 + 1] = y
+        vPositions[vID * 3 + 2] = z
         
         let vMass = vMasses[vID]
         vCenterX += x * vMass
@@ -71,7 +78,7 @@ extension MM4RigidBody {
       center.y += Double(vCenterY[lane])
       center.z += Double(vCenterZ[lane])
     }
-    _centerOfMass.value = center / mass
+    centerOfMass.value = center / mass
   }
   
   @_specialize(where T == Double)
@@ -86,3 +93,19 @@ extension MM4RigidBody {
     fatalError("Not implemented.")
   }
 }
+
+extension MM4RigidBody {
+  func ensureCenterOfMassCached() {
+    guard centerOfMass.value == nil else {
+      return
+    }
+    fatalError("Not implemented.")
+  }
+  
+  // implementation of center of mass
+  
+  // public API that shifts all the positions by the offset, and changes the
+  // center of mass accordingly (accepting slight inaccuracy from floating-point
+  // roundoff error, positions drifting away from cached center of mass)
+}
+

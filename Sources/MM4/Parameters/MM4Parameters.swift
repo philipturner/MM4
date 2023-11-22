@@ -27,10 +27,19 @@ public struct MM4ParametersDescriptor {
   /// rigid body.
   public var hydrogenMassRepartitioning: [Float]?
   
+  // TODO: Force the user to specify the different rigid bodies, providing
+  // flexibility to covalently connect two different "rigid bodies". Or, a
+  // better API for nano-parts that are partially elastic.
+  //
+  // Either way, the existing functionality for auto-detecting rigid bodies
+  // needs to be erased.
+  
   public init() {
     
   }
 }
+
+// TODO: Make `MM4Parameters` a struct instead of a class?
 
 /// A set of force field parameters.
 public class MM4Parameters {
