@@ -90,11 +90,15 @@ public struct MM4RigidBody {
   /// When importing velocities, all anchors must have the same velocity.
   public var velocity: SIMD3<Float> = .zero
   
+  // .energy.kinetic.free
+  
   /// Kinetic energy contribution from organized mechanical energy (linear
   /// velocity, angular velocity). Contributions from anchors are omitted.
   public var freeKineticEnergy: Double {
     fatalError("Not implemented.")
   }
+  
+  // .energy.kinetic.thermal
   
   /// Kinetic energy contribution from disorganized thermal energy.
   /// Contributions from anchors are omitted.

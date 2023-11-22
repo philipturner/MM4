@@ -62,6 +62,7 @@ v1.0.0
 Future versions:
 - External torques
   - Recognizing angular velocity of objects with multiple collinear anchors
+- High-precision energy measurements
 - Rigid body dynamics
   - Hybrid approach for deformable bodies
 - Support for non-carbon elements

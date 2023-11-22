@@ -49,7 +49,7 @@ class MM4ExternalForce: MM4Force {
   }
   
   /// This must be called every time the forces change.
-  func updateParametersInConext(_ context: MM4Context) {
+  func updateParametersInContext(_ context: MM4Context) {
     let forceObject = self.forces[0] as! OpenMM_CustomExternalForce
     forceObject.updateParametersInContext(context.context)
   }

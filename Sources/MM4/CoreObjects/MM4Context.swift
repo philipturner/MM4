@@ -23,6 +23,7 @@ class MM4Context {
         descriptor.end = end
         
         let integrator = MM4Integrator(descriptor: descriptor)
+        integrator.integrator.transfer()
         let index = compoundIntegrator.addIntegrator(integrator.integrator)
         integrators[descriptor] = index
       }

@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
-// MARK: - Functions for assigning per-torsion parameters.
-
 /// Parameters for a group of 4 atoms.
 public struct MM4Torsions {
   /// Each value corresponds to the torsion at the same array index.
@@ -23,6 +21,28 @@ public struct MM4Torsions {
   
   /// The smallest ring this is involved in.
   public var ringTypes: [UInt8] = []
+  
+  mutating func append(contentsOf other: Self, atomOffset: UInt32) {
+    let torsionOffset = UInt32(self.indices.count)
+    self.extendedParameters += other.extendedParameters
+    self.indices += other.indices.map {
+      $0 &+ atomOffset
+    }
+    for key in other.map.keys {
+      let value = other.map[key].unsafelyUnwrapped
+      self.map[key &+ atomOffset] = value &+ torsionOffset
+    }
+    self.parameters += other.parameters
+    self.ringTypes += other.ringTypes
+  }
+  
+  mutating func reserveCapacity(_ minimumCapacity: Int) {
+    extendedParameters.reserveCapacity(minimumCapacity)
+    indices.reserveCapacity(minimumCapacity)
+    map.reserveCapacity(minimumCapacity)
+    parameters.reserveCapacity(minimumCapacity)
+    ringTypes.reserveCapacity(minimumCapacity)
+  }
 }
 
 /// Parameters for a torsion among hydrogen, carbon, and silicon atoms.

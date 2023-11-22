@@ -32,12 +32,18 @@ extension MM4ForceField {
     }
   }
   
+  // TODO: An energy object to reduce the amount of properties in the main
+  // class. No need for the Combine framework; a different type will exist for
+  // MM4ForceField and MM4RigidBody. The former will be tied to the class
+  // reference and forward information from the class.
+  
   /// The system's total kinetic energy, in zeptojoules.
   ///
   /// To make the default behavior have high performance, energy is reported in
   /// low precision. To request a high-precision estimate, fetch it using an
   /// `MM4State`.
   public var kineticEnergy: Double {
+    // .energy.kinetic
     get {
       ensureForcesAndEnergyCached()
       return cachedState.kineticEnergy!
@@ -64,16 +70,19 @@ extension MM4ForceField {
   /// low precision. To request a high-precision estimate, fetch it using an
   /// `MM4State`.
   public var potentialEnergy: Double {
+    // .energy.potential
     get {
       ensureForcesAndEnergyCached()
       return cachedState.potentialEnergy!
     }
   }
   
-  /// The threshold for energy explosion is 1 million zJ @ 10,000 atoms. This
-  /// implementation detail is not exposed to the public API yet. That fact may
-  /// change if a significant need arises.
+  /// The threshold at which energy is considered to have exploded.
+  ///
+  /// The default is 1 million zJ per 10,000 atoms.
   var thresholdEnergy: Double {
+    // TODO: Make this mutable after creating an energy object.
+    // .energy.explosionThreshold
     1e6 * (Double(system.parameters.atoms.count) / 1e4)
   }
   
@@ -140,7 +149,7 @@ extension MM4ForceField {
   /// may overlap the same atom. If the array of rigid bodies is unspecified, it
   /// defaults to a range encompassing the entire system. This ensures the
   /// closed system's net momentum stays conserved.
-  public var rigidBodies: [Range<UInt32>] {
+  public var rigidBodyRanges: [Range<UInt32>] {
     _read {
       fatalError("TODO: New IR that stores rigid bodies in MM4ForceField")
     }

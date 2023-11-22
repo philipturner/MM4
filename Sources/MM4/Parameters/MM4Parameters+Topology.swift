@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
-// MARK: - Functions for generating the topology and assigning ring types.
-
 /// Parameters for a group of 3 to 5 atoms.
 public struct MM4Rings {
   /// Groups of atom indices that form a ring.
@@ -19,6 +17,24 @@ public struct MM4Rings {
   
   /// The number of atoms in the ring.
   public var ringTypes: [UInt8] = []
+  
+  mutating func append(contentsOf other: Self, atomOffset: UInt32) {
+    let ringOffset = UInt32(self.indices.count)
+    self.indices += other.indices.map {
+      $0 &+ atomOffset
+    }
+    for key in other.map.keys {
+      let value = other.map[key].unsafelyUnwrapped
+      self.map[key &+ atomOffset] = value &+ ringOffset
+    }
+    self.ringTypes += other.ringTypes
+  }
+  
+  mutating func reserveCapacity(_ minimumCapacity: Int) {
+    indices.reserveCapacity(minimumCapacity)
+    map.reserveCapacity(minimumCapacity)
+    ringTypes.reserveCapacity(minimumCapacity)
+  }
 }
 
 extension MM4Parameters {
@@ -318,4 +334,5 @@ extension MM4Parameters {
     }
   }
 }
+
 

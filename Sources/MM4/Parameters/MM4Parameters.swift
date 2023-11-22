@@ -27,20 +27,10 @@ public struct MM4ParametersDescriptor {
   /// rigid body.
   public var hydrogenMassRepartitioning: Float = 1.0
   
-  // TODO: Force the user to specify the different rigid bodies, providing
-  // flexibility to covalently connect two different "rigid bodies". Or, a
-  // better API for nano-parts that are partially elastic.
-  //
-  // Either way, the existing functionality for auto-detecting rigid bodies
-  // needs to be erased.
-  
   public init() {
     
   }
 }
-
-// TODO: Make an `MM4Parameters` mutating function that appends parameters
-// from another instance.
 
 /// A set of force field parameters.
 public struct MM4Parameters {
@@ -116,4 +106,28 @@ public struct MM4Parameters {
     try createTorsionParameters()
     createPartialCharges()
   }
+  
+  public mutating func append(contentsOf other: Self) {
+    let atomOffset = UInt32(atoms.count)
+    let bondOffset = UInt32(bonds.indices.count)
+    atoms.append(contentsOf: other.atoms, atomOffset: atomOffset)
+    bonds.append(contentsOf: other.bonds, atomOffset: atomOffset)
+    angles.append(contentsOf: other.angles, atomOffset: atomOffset)
+    torsions.append(contentsOf: other.torsions, atomOffset: atomOffset)
+    rings.append(contentsOf: other.rings, atomOffset: atomOffset)
+    
+    nonbondedExceptions13 += other.nonbondedExceptions13.map {
+      $0 &+ atomOffset
+    }
+    nonbondedExceptions14 += other.nonbondedExceptions14.map {
+      $0 &+ atomOffset
+    }
+    atomsToBondsMap += other.atomsToBondsMap.map {
+      $0 &+ Int32(truncatingIfNeeded: bondOffset)
+    }
+    atomsToAtomsMap += other.atomsToAtomsMap.map {
+      $0 &+ Int32(truncatingIfNeeded: atomOffset)
+    }
+  }
 }
+

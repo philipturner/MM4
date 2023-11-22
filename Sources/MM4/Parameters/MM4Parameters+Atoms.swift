@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
-// MARK: - Functions for assigning per-atom parameters.
-
 /// Parameters for one atom.
 public struct MM4Atoms {
   /// The number of protons in each atom's nucleus.
@@ -32,6 +30,25 @@ public struct MM4Atoms {
   
   /// The smallest ring this is involved in.
   public var ringTypes: [UInt8] = []
+  
+  mutating func append(contentsOf other: Self, atomOffset: UInt32) {
+    self.atomicNumbers += other.atomicNumbers
+    self.centerTypes += other.centerTypes
+    self.count += other.count
+    self.indices = 0..<self.count
+    self.masses += other.masses
+    self.parameters += other.parameters
+    self.ringTypes += other.ringTypes
+  }
+  
+  mutating func reserveCapacity(_ minimumCapacity: Int) {
+    atomicNumbers.reserveCapacity(minimumCapacity)
+    centerTypes.reserveCapacity(minimumCapacity)
+    codes.reserveCapacity(minimumCapacity)
+    masses.reserveCapacity(minimumCapacity)
+    parameters.reserveCapacity(minimumCapacity)
+    ringTypes.reserveCapacity(minimumCapacity)
+  }
 }
 
 /// MM4 codes for an element or an atom in a specific functional group.

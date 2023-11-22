@@ -26,9 +26,6 @@ public enum MM4Error: Error {
   /// Includes the amount of energy drift during the time interval that failed.
   case energyDrift(Double)
   
-  // TODO: MM4ForceField should intercept parameter errors, changing the rigid
-  // body ID to the correct value.
-  
   /// The force field did not have a parameter for a group of atoms.
   ///
   /// Includes the addresses of the atoms.

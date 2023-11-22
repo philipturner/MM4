@@ -106,7 +106,7 @@ extension MM4ForceField {
       
       let force = system.forces.external
       force.updateForces(_externalForces, system: system)
-      force.updateParametersInConext(context)
+      force.updateParametersInContext(context)
     }
     
     updateRecord.erase()
