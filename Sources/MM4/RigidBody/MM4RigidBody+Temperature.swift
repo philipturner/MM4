@@ -6,7 +6,7 @@
 //
 
 extension MM4RigidBody {
-  /// Estimate of the true heat capacity in kT.
+  /// Estimate of the heat capacity in kT.
   ///
   /// This may not be the most appropriate number for characterizing thermal
   /// properties. Molecular dynamics does not simulate certain quantum effects,
@@ -36,7 +36,7 @@ extension MM4RigidBody {
       let vBaseAddress = UnsafeRawPointer(rawBaseAddress)!
         .assumingMemoryBound(to: MM4UInt8Vector.self)
       
-      for vID in 0..<atomVectorCount {
+      for vID in 0..<atoms.vectorCount {
         let atomicNumber = MM4UInt32Vector(
           truncatingIfNeeded: vBaseAddress[vID])
         
@@ -57,9 +57,9 @@ extension MM4RigidBody {
         (atomicNumber .<= 32) .&
         (.!isHalogen)
         
-        if vID == atomVectorCount - 1 {
-          isCarbon = isCarbon .& atomVectorMask
-          isSilicon = isSilicon .& atomVectorMask
+        if vID == atoms.vectorCount - 1 {
+          isCarbon = isCarbon .& atoms.vectorMask
+          isSilicon = isSilicon .& atoms.vectorMask
         }
         vNumCarbons.replace(with: vNumCarbons &+ 1, where: isCarbon)
         vNumSilicons.replace(with: vNumSilicons &+ 1, where: isSilicon)
@@ -143,9 +143,8 @@ extension MM4RigidBody {
     //
     // E = C N kT
     let kT = MM4BoltzInZJPerK * temperature
-    thermalKineticEnergy = heatCapacity * Double(atomCount) * kT
+    energy.kinetic.thermal = heatCapacity * Double(atoms.count) * kT
   }
-  
 }
 
 // MARK: - Utilities

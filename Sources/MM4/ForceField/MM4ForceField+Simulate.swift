@@ -39,8 +39,8 @@ extension MM4ForceField {
     }
     
     func createEnergy() -> Double {
-      if trackingEnergy {
-        return kineticEnergy + potentialEnergy
+      if energy.tracked {
+        return energy.kinetic + energy.potential
       } else {
         return 0
       }
@@ -108,7 +108,7 @@ extension MM4ForceField {
     }
     
     let endEnergy = createEnergy()
-    if abs(endEnergy - startEnergy) > thresholdEnergy {
+    if abs(endEnergy - startEnergy) > energy.explosionThreshold {
       throw MM4Error.energyDrift(endEnergy - startEnergy)
     }
   }

@@ -6,13 +6,10 @@
 //
 
 extension MM4RigidBody {
-  // Handle decomposition of accepted velocities
-  // Delegate the rotational velocity part to MM4RigidBody+Rotation
-  // Delegate the thermal energy part to MM4RigidBody+Temperature
-  
+  /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
   public var velocities: [SIMD3<Float>] {
-    get { fatalError() }
-    set { fatalError() }
+    _read { fatalError("Not implemented.") }
+    _modify { fatalError("Not implemented.") }
   }
   
   @_specialize(where T == Double)
@@ -20,7 +17,7 @@ extension MM4RigidBody {
   func setVelocities<T: BinaryFloatingPoint>(
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
-    guard buffer.count == atomCount else {
+    guard buffer.count == atoms.count else {
       fatalError("Velocity buffer was not the correct size.")
     }
   }
@@ -30,7 +27,7 @@ extension MM4RigidBody {
   func getVelocities<T: BinaryFloatingPoint>(
     _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
   ) {
-    guard buffer.count == atomCount else {
+    guard buffer.count == atoms.count else {
       fatalError("Position buffer was not the correct size.")
     }
   }

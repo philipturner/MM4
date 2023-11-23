@@ -5,31 +5,11 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
-// TODO: Don't materialize the reordered atom data in memory. Just
-// reorder in-place before costly operations (velocity decomposition, cross
-// product for angular properties) that would benefit from vectorization. This
-// still retains a need for thinking in a SIMD context.
-//
-// Cache the center of mass, but invalidate and recompute on-the-spot when the
-// user modifies a small segment of the position array. For velocities, don't
-// provide a user-accessible property to read them. Require the user to fetch
-// raw MD simulation data.
-
-/// Wrapper class to bypass the issue of mutating a `struct`. A mutation would
-/// occur when lazily recomputing the center of mass.
-class MM4CenterOfMass {
-  var mass: Double = .zero
-  var value: SIMD3<Double>? = nil
-}
-
 extension MM4RigidBody {
+  /// The position (in nanometers) of each atom's nucleus.
   public var positions: [SIMD3<Float>] {
-    // We may want a similar API to that in MM4ForceField, which lazily caches
-    // a version of the data that has been transformed. That way, the user
-    // doesn't face O(n^2) computational complexity when treating it like an
-    // array with per-element granularity.
-    get { fatalError("Add wrapper class for lazily recomputing transformed positions.") }
-    set { fatalError("Add wrapper class for lazily recomputing transformed positions.") }
+    _read { fatalError("Not implemented.") }
+    _modify { fatalError("Not implemented.") }
   }
   
   @_specialize(where T == Double)
@@ -37,11 +17,13 @@ extension MM4RigidBody {
   mutating func setPositions<T: BinaryFloatingPoint>(
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
-    guard buffer.count == atomCount else {
+    ensureUniquelyReferenced()
+    guard buffer.count == atoms.count else {
       fatalError("Position buffer was not the correct size.")
     }
     let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     
+    #if false
     var vCenterX: MM4FloatVector = .zero
     var vCenterY: MM4FloatVector = .zero
     var vCenterZ: MM4FloatVector = .zero
@@ -89,6 +71,7 @@ extension MM4RigidBody {
       center.z += Double(vCenterZ[lane])
     }
     centerOfMass.value = center / mass
+    #endif
   }
   
   @_specialize(where T == Double)
@@ -96,26 +79,10 @@ extension MM4RigidBody {
   func getPositions<T: BinaryFloatingPoint>(
     _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
   ) {
-    guard buffer.count == atomCount else {
+    guard buffer.count == atoms.count else {
       fatalError("Position buffer was not the correct size.")
     }
     let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     fatalError("Not implemented.")
   }
 }
-
-extension MM4RigidBody {
-  func ensureCenterOfMassCached() {
-    guard centerOfMass.value == nil else {
-      return
-    }
-    fatalError("Not implemented.")
-  }
-  
-  // implementation of center of mass
-  
-  // public API that shifts all the positions by the offset, and changes the
-  // center of mass accordingly (accepting slight inaccuracy from floating-point
-  // roundoff error, positions drifting away from cached center of mass)
-}
-

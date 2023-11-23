@@ -24,6 +24,9 @@ public class MM4ForceField {
   /// Stores the anchor IDs before reordering.
   var _anchors: Set<UInt32> = []
   
+  /// Stores the system's energy.
+  var _energy: MM4ForceFieldEnergy!
+  
   /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
   
@@ -36,18 +39,6 @@ public class MM4ForceField {
   /// Stores the time step for each level of theory.
   var _timeStep: [MM4LevelOfTheory: Double] = [:]
   
-  // .energy.tracked
-  
-  /// Whether to track and debug energy explosions.
-  ///
-  /// > Warning: Enabling this feature may significantly degrade performance.
-  ///
-  /// This feature is disabled by default.
-  ///
-  /// The energy is tracked in low precision, as high precision is not needed
-  /// to detect energy explosions.
-  public var trackingEnergy: Bool = false
-  
   /// Create a simulator using the specified parameters and division into rigid
   /// bodies.
   public init(parameters: MM4Parameters, rigidBodyRanges: [Range<UInt32>]) {
@@ -56,6 +47,8 @@ public class MM4ForceField {
     context = MM4Context(system: system)
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
+    
+    _energy = MM4ForceFieldEnergy(forceField: self)
     
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)

@@ -23,30 +23,69 @@ import OpenMM
 // - Requires a new type (`MM4Torque`) that wraps a Swift `Quaternion` and an
 //   enumeration with an associated value, which specifies the type of origin.
 
+/// A data structure wrapping a system's energy.
+public struct MM4ForceFieldEnergy {
+  var forceField: MM4ForceField
+  
+  var _explosionThreshold: Double
+  
+  /// Whether to throw an error during an energy explosion.
+  ///
+  /// > Warning: Enabling this feature may significantly degrade performance.
+  ///
+  /// The default is `false`.
+  ///
+  /// Energy is tracked in low precision, as high precision is not needed
+  /// to detect energy explosions.
+  public var tracked: Bool = false
+  
+  init(forceField: MM4ForceField) {
+    let atoms = forceField.system.parameters.atoms
+    self.forceField = forceField
+    self._explosionThreshold = 1e6 * (Double(atoms.count) / 1e4)
+  }
+  
+  /// The threshold at which energy is considered to have exploded.
+  ///
+  /// The default is 1 million zJ per 10,000 atoms.
+  public var explosionThreshold: Double {
+    get { _explosionThreshold }
+    set {
+      guard newValue > 0 else {
+        fatalError("Explosion threshold must be positive and nonzero.")
+      }
+      _explosionThreshold = newValue
+    }
+  }
+  
+  /// The system's total kinetic energy, in zeptojoules.
+  public var kinetic: Double {
+    forceField.ensureForcesAndEnergyCached()
+    return forceField.cachedState.kineticEnergy!
+  }
+  
+  /// The system's total potential energy, in zeptojoules.
+  public var potential: Double {
+    forceField.ensureForcesAndEnergyCached()
+    return forceField.cachedState.potentialEnergy!
+  }
+}
+
 extension MM4ForceField {
+  /// The system's energy.
+  ///
+  /// To make the default behavior have high performance, energy is reported in
+  /// low precision. To request a high-precision estimate, fetch it using an
+  /// `MM4State`.
+  public var energy: MM4ForceFieldEnergy {
+    _energy
+  }
+  
   /// The net varying force (in piconewtons) exerted on each atom.
   public var forces: [SIMD3<Float>] {
     _read {
       ensureForcesAndEnergyCached()
       yield cachedState.forces!
-    }
-  }
-  
-  // TODO: An energy object to reduce the amount of properties in the main
-  // class. No need for the Combine framework; a different type will exist for
-  // MM4ForceField and MM4RigidBody. The former will be tied to the class
-  // reference and forward information from the class.
-  
-  /// The system's total kinetic energy, in zeptojoules.
-  ///
-  /// To make the default behavior have high performance, energy is reported in
-  /// low precision. To request a high-precision estimate, fetch it using an
-  /// `MM4State`.
-  public var kineticEnergy: Double {
-    // .energy.kinetic
-    get {
-      ensureForcesAndEnergyCached()
-      return cachedState.kineticEnergy!
     }
   }
   
@@ -62,28 +101,6 @@ extension MM4ForceField {
       updateRecord.velocities = true
       yield &cachedState.positions!
     }
-  }
-  
-  /// The system's total potential energy, in zeptojoules.
-  ///
-  /// To make the default behavior have high performance, energy is reported in
-  /// low precision. To request a high-precision estimate, fetch it using an
-  /// `MM4State`.
-  public var potentialEnergy: Double {
-    // .energy.potential
-    get {
-      ensureForcesAndEnergyCached()
-      return cachedState.potentialEnergy!
-    }
-  }
-  
-  /// The threshold at which energy is considered to have exploded.
-  ///
-  /// The default is 1 million zJ per 10,000 atoms.
-  var thresholdEnergy: Double {
-    // TODO: Make this mutable after creating an energy object.
-    // .energy.explosionThreshold
-    1e6 * (Double(system.parameters.atoms.count) / 1e4)
   }
   
   /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
@@ -108,7 +125,17 @@ extension MM4ForceField {
 }
 
 extension MM4ForceField {
-  /// Indices of atoms that should ignore forces exerted on them.
+  /// Indices of atoms that should be treated as having infinite mass in a
+  /// simulation.
+  ///
+  /// An anchor's velocity does not vary due to thermal energy. Angular
+  /// momentum is constrained according to the number of anchors present.
+  /// - 0 anchors: conserve linear and angular momentum around center of mass.
+  /// - 1 anchor: conserve linear and angular momentum around anchor.
+  /// - collinear anchors: conserve linear momentum around average of
+  ///   anchors, constrain angular momentum to the shared axis.
+  /// - anchors form plane: conserve linear momentum around average of anchors,
+  ///   force angular momentum to zero.
   public var anchors: Set<UInt32> {
     _read {
       yield _anchors
@@ -155,3 +182,4 @@ extension MM4ForceField {
     }
   }
 }
+

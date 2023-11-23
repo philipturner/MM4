@@ -34,7 +34,7 @@ extension MM4ForceField {
     integratorDescriptor.end = true
     context.currentIntegrator = integratorDescriptor
     
-    if trackingEnergy {
+    if energy.tracked {
       // Record the current state.
       var stateDescriptor = MM4StateDescriptor()
       stateDescriptor.positions = true
@@ -52,7 +52,7 @@ extension MM4ForceField {
       let startEnergy = createEnergy()
       context.step(1, timeStep: 1 * OpenMM_PsPerFs)
       let endEnergy = createEnergy()
-      if abs(endEnergy - startEnergy) > thresholdEnergy {
+      if abs(endEnergy - startEnergy) > energy.explosionThreshold {
         throw MM4Error.energyDrift(endEnergy - startEnergy)
       }
       

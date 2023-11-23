@@ -19,6 +19,8 @@ public struct MM4AngularMass {
   
   /// Add an atom to the accumulator.
   mutating func append(mass: Double, relativePosition: SIMD3<Float>) {
+    // TODO: Partially vectorize this function.
+    
     // From Wikipedia:
     // https://en.wikipedia.org/wiki/Rigid_body_dynamics#Mass_properties
     //

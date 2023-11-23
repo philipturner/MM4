@@ -1,8 +1,8 @@
 //
-//  MM4RigidBody+Utilities.swift
+//  MM4Vector.swift
+//  
 //
-//
-//  Created by Philip Turner on 11/20/23.
+//  Created by Philip Turner on 11/22/23.
 //
 
 let MM4VectorWidth: Int = 4
@@ -11,5 +11,3 @@ typealias MM4Int8Vector = SIMD4<Int8>
 typealias MM4Int32Vector = SIMD4<Int32>
 typealias MM4UInt8Vector = SIMD4<UInt8>
 typealias MM4UInt32Vector = SIMD4<UInt32>
-
-// vectorized cross product

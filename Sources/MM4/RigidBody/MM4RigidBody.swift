@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 11/19/23.
 //
 
-import Numerics
-
 public struct MM4RigidBodyDescriptor {
   /// Required. The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8]?
@@ -28,83 +26,43 @@ public struct MM4RigidBodyDescriptor {
   }
 }
 
+/// Wrapper for ergonomically vectorizing computations.
+struct MM4RigidBodyAtoms {
+  /// A convenient method for accessing the atom count.
+  var count: Int
+  
+  /// A convenient method for accessing the atom vector count.
+  var vectorCount: Int
+  
+  /// A convenient method for addressing the end of the list.
+  var vectorMask: SIMDMask<MM4UInt32Vector.MaskStorage>
+  
+  init(count: Int) {
+    self.count = count
+    self.vectorCount = count + MM4VectorWidth - 1
+    self.vectorCount /= MM4VectorWidth
+    
+    let lastVectorStart = UInt32((vectorCount - 1) * MM4VectorWidth)
+    var lastVector: MM4UInt32Vector = .init(repeating: lastVectorStart)
+    for lane in 0..<MM4VectorWidth {
+      lastVector[lane] &+= UInt32(lane)
+    }
+    self.vectorMask = lastVector .>= UInt32(count)
+  }
+}
+
 public struct MM4RigidBody {
-  // This type declaration is getting very unwieldy.
-  //
-  // TODO: Wrap all of these properties in delegate objects to de-clutter the
-  // central type declaration. This approach makes it easier to debug, so it is
-  // well worth the extra effort.
+  /// A wrapper for ergonomically vectorizing computations.
+  var atoms: MM4RigidBodyAtoms
   
-  // MARK: - Properties summarizing topology
-  
-  /// Indices of atoms that should be treated as having infinite mass in a
-  /// simulation.
-  ///
-  /// An anchor's velocity does not vary due to thermal energy. Angular
-  /// momentum is constrained according to the number of anchors present.
-  /// - 0 anchors: conserve linear and angular momentum around center of mass.
-  /// - 1 anchor: conserve linear and angular momentum around anchor.
-  /// - collinear anchors: conserve linear momentum around average of
-  ///   anchors, constrain angular momentum to the shared axis.
-  /// - anchors form plane: conserve linear momentum around average of anchors,
-  ///   force angular momentum to zero.
-  public var anchors: Set<UInt32> = []
+  /// The rigid body's energy.
+  public var energy: MM4RigidBodyEnergy
   
   /// The force field parameters cached for this rigid body.
   public let parameters: MM4Parameters
   
-  // MARK: - Properties hidden from the public API
-  
-  /// A convenient method for accessing the atom count.
-  var atomCount: Int
-  
-  /// A convenient method for accessing the atom vector count.
-  var atomVectorCount: Int
-  
-  /// A convenient method for addressing the end of the list.
-  var atomVectorMask: SIMDMask<MM4UInt32Vector.MaskStorage>
-  
-  /// The high-performance storage format for center of mass.
-  var centerOfMass: MM4CenterOfMass = .init()
-  
-  /// The high-performance storage format for atom positions.
-  var vPositions: [MM4FloatVector]
-  
-  // MARK: - Properties summarizing velocity
-  
-  /// If the angular velocity is nonzero, the number of anchors cannot exceed 1.
-  /// When importing velocities, if the number of anchors exceeds 1, the angular
-  /// velocity is set to zero.
-  public var angularVelocity: Quaternion<Float> = .zero
-  
-  /// If the number of anchors exceeds 0, external force has no effect.
-  public var externalForce: SIMD3<Float> = .zero
-  
-  /// If the number of anchors exceeds 1, external torque has no effect.
-  ///
-  /// Right now, external torque must be zero when simulating in the
-  /// `.molecularDynamics` level of theory.
-  public var externalTorque: Quaternion<Float> = .zero
-  
-  /// Every anchor's velocity is set to the rigid body's linear velocity.
-  /// When importing velocities, all anchors must have the same velocity.
-  public var velocity: SIMD3<Float> = .zero
-  
-  // .energy.kinetic.free
-  
-  /// Kinetic energy contribution from organized mechanical energy (linear
-  /// velocity, angular velocity). Contributions from anchors are omitted.
-  public var freeKineticEnergy: Double {
-    fatalError("Not implemented.")
-  }
-  
-  // .energy.kinetic.thermal
-  
-  /// Kinetic energy contribution from disorganized thermal energy.
-  /// Contributions from anchors are omitted.
-  public var thermalKineticEnergy: Double = 0.0
-  
-  // MARK: - Initializer
+  /// The backing storage object.
+  var storage: MM4RigidBodyStorage
   
   public init(descriptor: MM4RigidBodyDescriptor) throws {
     // Ensure the required descriptor properties were set.
@@ -113,33 +71,21 @@ public struct MM4RigidBody {
           let descriptorPositions = descriptor.positions else {
       fatalError("Descriptor did not have the required properties.")
     }
+    self.atoms = MM4RigidBodyAtoms(count: descriptorAtomicNumbers.count)
+    self.energy = MM4RigidBodyEnergy()
     
     var desc = MM4ParametersDescriptor()
     desc.atomicNumbers = descriptorAtomicNumbers
     desc.bonds = descriptorBonds
     desc.hydrogenMassRepartitioning = descriptor.hydrogenMassRepartitioning
     self.parameters = try MM4Parameters(descriptor: desc)
-    self.centerOfMass.mass = parameters.atoms.masses.reduce(Double(0)) {
-      $0 + Double($1)
-    }
     
-    self.atomCount = descriptorAtomicNumbers.count
-    self.atomVectorCount = atomCount + MM4VectorWidth - 1
-    self.atomVectorCount /= MM4VectorWidth
-    
-    let lastVectorStart = UInt32((atomVectorCount - 1) * MM4VectorWidth)
-    var lastVector: MM4UInt32Vector = .init(repeating: lastVectorStart)
-    for lane in 0..<MM4VectorWidth {
-      lastVector[lane] &+= UInt32(lane)
-    }
-    self.atomVectorMask = lastVector .>= UInt32(atomCount)
-    
-    self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
-      $0.initialize(repeating: .zero)
-      $1 = 3 * descriptorAtomicNumbers.count
-    }
+    self.storage = MM4RigidBodyStorage(atoms: atoms, parameters: parameters)
     descriptorPositions.withUnsafeBufferPointer {
       setPositions($0)
     }
+    
+    // Prepare computed properties for access through the public API.
+    ensureReferencesUpdated()
   }
 }
