@@ -7,31 +7,23 @@
 
 import Numerics
 
-// Sources of truth: anchors, mass, vPositions, vVelocities
-// Positions may be decomposed repeatedly during operations like rotation
-// Velocities may be decomposed repeatedly during operations like thermalization
 final class MM4RigidBodyStorage {
+  // Sources of truth.
   var anchors: Set<UInt32>
-  
-  var angularMass: MM4AngularMass?
-  
-  var angularVelocity: Quaternion<Float>?
-  
-  var centerOfMass: SIMD3<Double>?
-  
-  var thermalKineticEnergy: Double?
-  
-  var linearVelocity: SIMD3<Double>?
-  
   var mass: Double
-  
-  var positions: [SIMD3<Float>]?
-  
-  var velocities: [SIMD3<Float>]?
-  
   var vPositions: [MM4FloatVector]
-  
   var vVelocities: [MM4FloatVector]
+  
+  // Frequently cached (special handling).
+  var centerOfMass: SIMD3<Double>?
+  var positions: [SIMD3<Float>]?
+  var velocities: [SIMD3<Float>]? // anchors affect this in a wierd way
+  
+  // Rarely cached (frequently erased).
+  var angularMass: MM4AngularMass?
+  var angularVelocity: Quaternion<Float>?
+  var thermalKineticEnergy: Double?
+  var linearVelocity: SIMD3<Double>?
   
   init(atoms: MM4RigidBodyAtoms, parameters: MM4Parameters) {
     // Initialize stored properties.
@@ -55,6 +47,19 @@ final class MM4RigidBodyStorage {
     mass = other.mass
     vPositions = other.vPositions
     vVelocities = other.vVelocities
+  }
+  
+  func eraseFrequentlyCachedProperties() {
+    centerOfMass = nil
+    positions = nil
+    velocities = nil
+  }
+  
+  func eraseRarelyCachedProperties() {
+    angularMass = nil
+    angularVelocity = nil
+    thermalKineticEnergy = nil
+    linearVelocity = nil
   }
 }
 

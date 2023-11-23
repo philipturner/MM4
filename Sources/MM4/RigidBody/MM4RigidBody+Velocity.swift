@@ -8,8 +8,8 @@
 extension MM4RigidBody {
   /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
   public var velocities: [SIMD3<Float>] {
+    // _modify not yet supported b/c it requires very complex caching logic.
     _read { fatalError("Not implemented.") }
-    _modify { fatalError("Not implemented.") }
   }
   
   @_specialize(where T == Double)
