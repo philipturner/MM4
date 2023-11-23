@@ -6,8 +6,6 @@
 //
 
 /// Moment of inertia.
-///
-/// Source: [Stack Overflow](https://stackoverflow.com/a/18504573)
 public struct MM4AngularMass {
   /// Symmetric matrix specifying the rigid body's moment of inertia.
   public var columns: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
@@ -17,33 +15,8 @@ public struct MM4AngularMass {
     self.columns = (.zero, .zero, .zero)
   }
   
-  /// Add an atom to the accumulator.
-  mutating func append(mass: Double, relativePosition: SIMD3<Float>) {
-    // TODO: Partially vectorize this function.
-    
-    // From Wikipedia:
-    // https://en.wikipedia.org/wiki/Rigid_body_dynamics#Mass_properties
-    //
-    // I_R = m * (I (S^T S) - S S^T)
-    // where S is the column vector R - R_cm
-    let positionSquared = relativePosition * relativePosition
-    let STS = positionSquared[0] + positionSquared[1] + positionSquared[2]
-    var column0 = SIMD3(STS, 0, 0)
-    var column1 = SIMD3(0, STS, 0)
-    var column2 = SIMD3(0, 0, STS)
-    column0 -= relativePosition.x * relativePosition
-    column1 -= relativePosition.y * relativePosition
-    column2 -= relativePosition.z * relativePosition
-    
-    // Convert to FP64 before adding to the accumulator. The matrix is
-    // symmetric, so it doesn't matter whether you mix up the rows and columns.
-    columns.0 += mass * SIMD3<Double>(column0)
-    columns.1 += mass * SIMD3<Double>(column1)
-    columns.2 += mass * SIMD3<Double>(column2)
-  }
-  
-  /// The matrix is symmetric, but not exactly orthonormal. Inversion is not a
-  /// simple transpose operation.
+  /// The matrix is symmetric, but not exactly orthonormal. The inverse is not
+  /// the same as the transpose.
   public var inverse: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
     // Source: https://stackoverflow.com/a/18504573
     //

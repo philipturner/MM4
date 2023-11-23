@@ -74,6 +74,7 @@ extension MM4RigidBody {
 // MARK: - Affine Transforms
 
 extension MM4RigidBody {
+  /// If there is more than one anchor, the angular mass is zero.
   public var angularMass: MM4AngularMass {
     // no setter; instead use rotate()
     get { fatalError("Not implemented.") }
@@ -100,6 +101,7 @@ extension MM4RigidBody {
   }
   
   /// The number of protons in each atom's nucleus.
+  @inline(__always)
   public var atomicNumbers: [UInt8] {
     parameters.atoms.atomicNumbers
   }
@@ -110,11 +112,13 @@ extension MM4RigidBody {
   }
   
   /// The object's total mass (in amu).
+  @inline(__always)
   public var mass: Double {
     storage.mass
   }
   
   /// The mass (in amu) of each atom after hydrogen mass repartitioning.
+  @inline(__always)
   public var masses: [Float] {
     parameters.atoms.masses
   }

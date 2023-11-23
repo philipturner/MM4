@@ -81,7 +81,7 @@ extension MM4RigidBody {
   
   func ensureCenterOfMassCached() {
     if storage.centerOfMass == nil {
-      createCenterOfMass()
+      storage.centerOfMass = createCenterOfMass()
     }
   }
   
