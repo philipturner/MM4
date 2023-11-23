@@ -8,13 +8,14 @@
 extension MM4RigidBody {
   /// The position (in nanometers) of each atom's nucleus.
   public var positions: [SIMD3<Float>] {
-    // _modify not yet supported b/c it requires very complex caching logic.
+    // _modify not supported b/c it requires very complex caching logic.
+    // Workaround: use the exposed setPositions function.
     _read { fatalError("Not implemented.") }
   }
   
   @_specialize(where T == Double)
   @_specialize(where T == Float)
-  mutating func setPositions<T: BinaryFloatingPoint>(
+  public mutating func setPositions<T: BinaryFloatingPoint>(
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
     ensureUniquelyReferenced()
@@ -56,7 +57,7 @@ extension MM4RigidBody {
   
   @_specialize(where T == Double)
   @_specialize(where T == Float)
-  func getPositions<T: BinaryFloatingPoint>(
+  public func getPositions<T: BinaryFloatingPoint>(
     _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
   ) {
     guard buffer.count == atoms.count else {
@@ -92,15 +93,29 @@ extension MM4RigidBody {
 }
 
 extension MM4RigidBody {
-  func createCenterOfMass() {
-    var vAccumulatorX: MM4DoubleVector = .zero
-    var vAccumulatorY: MM4DoubleVector = .zero
-    var vAccumulatorZ: MM4DoubleVector = .zero
+  func vWithMasses(_ closure: (UnsafePointer<MM4FloatVector>) -> Void) {
     masses.withUnsafeBufferPointer {
       let rawMasses = OpaquePointer($0.baseAddress)
       let vMasses = UnsafeRawPointer(rawMasses)!
         .assumingMemoryBound(to: MM4FloatVector.self)
-      
+      closure(vMasses)
+    }
+  }
+  
+  private func createCenterOfMass_anchors() {
+    
+  }
+  
+  func createCenterOfMass() {
+    guard anchors.count == 0 else {
+      createCenterOfMass_anchors()
+      return
+    }
+    
+    var vAccumulatorX: MM4DoubleVector = .zero
+    var vAccumulatorY: MM4DoubleVector = .zero
+    var vAccumulatorZ: MM4DoubleVector = .zero
+    vWithMasses { vMasses in
       var vCenterX: MM4FloatVector = .zero
       var vCenterY: MM4FloatVector = .zero
       var vCenterZ: MM4FloatVector = .zero
@@ -108,11 +123,9 @@ extension MM4RigidBody {
         let x = storage.vPositions[vID &* 3 &+ 0]
         let y = storage.vPositions[vID &* 3 &+ 1]
         let z = storage.vPositions[vID &* 3 &+ 2]
-        
-        let vMass = vMasses[vID]
-        vCenterX += x * vMass
-        vCenterY += y * vMass
-        vCenterZ += z * vMass
+        vCenterX += x * vMasses[vID]
+        vCenterY += y * vMasses[vID]
+        vCenterZ += z * vMasses[vID]
         
         if vID % 256 == 0 {
           vAccumulatorX += MM4DoubleVector(vCenterX)
@@ -129,15 +142,22 @@ extension MM4RigidBody {
     }
     
     var center: SIMD3<Double> = .zero
+    center.x = vAccumulatorX.sum()
+    center.y = vAccumulatorY.sum()
+    center.z = vAccumulatorZ.sum()
     for lane in 0..<4 {
       center.x += Double(vAccumulatorX[lane])
       center.y += Double(vAccumulatorY[lane])
       center.z += Double(vAccumulatorZ[lane])
     }
-    storage.centerOfMass = center / mass
+    storage.centerOfMass = SIMD3<Float>(center / mass)
   }
   
   func createAngularMass() {
-    
+    var angularMass = MM4AngularMass()
+    ensureCenterOfMassCached()
+    vWithMasses { vMasses in
+      
+    }
   }
 }

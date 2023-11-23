@@ -71,13 +71,32 @@ extension MM4RigidBody {
   }
 }
 
+// MARK: - Affine Transforms
+
+extension MM4RigidBody {
+  public var angularMass: MM4AngularMass {
+    // no setter; instead use rotate()
+    get { fatalError("Not implemented.") }
+  }
+  
+  public var centerOfMass: SIMD3<Float> {
+    _read { fatalError("Not implemented.") }
+    _modify { fatalError("Not implemented.") }
+  }
+  
+  public mutating func rotate(_ angle: Quaternion<Float>) {
+    fatalError("Not implemented.")
+  }
+}
+
 // MARK: - Other Properties
 
 extension MM4RigidBody {
   /// Indices of atoms that should be treated as having infinite mass.
   public var anchors: Set<UInt32> {
+    // _modify not supported b/c it requires very complex caching logic.
+    // Workaround: import a new rigid body initialized with different anchors.
     _read { fatalError("Not implemented.") }
-    _modify { fatalError("Not implemented.") }
   }
   
   /// The number of protons in each atom's nucleus.
@@ -92,7 +111,7 @@ extension MM4RigidBody {
   
   /// The object's total mass (in amu).
   public var mass: Double {
-    fatalError("Not implemented.")
+    storage.mass
   }
   
   /// The mass (in amu) of each atom after hydrogen mass repartitioning.

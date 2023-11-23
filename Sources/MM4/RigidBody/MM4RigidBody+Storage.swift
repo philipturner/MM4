@@ -15,7 +15,7 @@ final class MM4RigidBodyStorage {
   var vVelocities: [MM4FloatVector]
   
   // Frequently cached (special handling).
-  var centerOfMass: SIMD3<Double>?
+  var centerOfMass: SIMD3<Float>?
   var positions: [SIMD3<Float>]?
   var velocities: [SIMD3<Float>]? // anchors affect this in a wierd way
   
@@ -23,7 +23,7 @@ final class MM4RigidBodyStorage {
   var angularMass: MM4AngularMass?
   var angularVelocity: Quaternion<Float>?
   var thermalKineticEnergy: Double?
-  var linearVelocity: SIMD3<Double>?
+  var linearVelocity: SIMD3<Float>?
   
   init(atoms: MM4RigidBodyAtoms, parameters: MM4Parameters) {
     // Initialize stored properties.
@@ -76,6 +76,18 @@ extension MM4RigidBody {
     if !isKnownUniquelyReferenced(&storage) {
       storage = MM4RigidBodyStorage(copying: storage)
       ensureReferencesUpdated()
+    }
+  }
+  
+  func ensureCenterOfMassCached() {
+    if storage.centerOfMass == nil {
+      createCenterOfMass()
+    }
+  }
+  
+  func ensureAngularMassCached() {
+    if storage.angularMass == nil {
+      createAngularMass()
     }
   }
 }

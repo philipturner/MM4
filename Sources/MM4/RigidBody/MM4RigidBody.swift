@@ -6,6 +6,9 @@
 //
 
 public struct MM4RigidBodyDescriptor {
+  /// Optional. Indices of atoms that should be treated as having infinite mass.
+  public var anchors: Set<UInt32>?
+  
   /// Required. The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8]?
   

@@ -137,13 +137,15 @@ extension MM4ForceField {
   /// - anchors form plane: conserve linear momentum around average of anchors,
   ///   force angular momentum to zero.
   public var anchors: Set<UInt32> {
+    // _modify not supported b/c it requires very complex caching logic.
+    // Workaround: import a new rigid body initialized with different anchors.
     _read {
       yield _anchors
     }
-    _modify {
-      updateRecord.anchors = true
-      yield &_anchors
-    }
+//    _modify {
+//      updateRecord.anchors = true
+//      yield &_anchors
+//    }
   }
   
   /// The constant force (in piconewtons) exerted on each atom.
