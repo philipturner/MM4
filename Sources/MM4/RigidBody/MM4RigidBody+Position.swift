@@ -93,24 +93,6 @@ extension MM4RigidBody {
 }
 
 extension MM4RigidBody {
-  func withMasses<T>(_ closure: (UnsafePointer<MM4FloatVector>) -> T) -> T {
-    self.masses.withUnsafeBufferPointer {
-      let rawMasses = OpaquePointer($0.baseAddress)
-      let vMasses = UnsafeRawPointer(rawMasses)!
-        .assumingMemoryBound(to: MM4FloatVector.self)
-      return closure(vMasses)
-    }
-  }
-  
-  func withSegmentedLoop(chunk: Int, _ closure: (Range<Int>) -> Void) {
-    var loopEnd = 0
-    while loopEnd < atoms.vectorCount {
-      let loopStart = loopEnd
-      loopEnd = min(loopEnd &+ chunk, atoms.vectorCount)
-      closure(loopStart..<loopEnd)
-    }
-  }
-  
   func createCenter(
     _ vMasses: UnsafePointer<MM4FloatVector>
   ) -> SIMD3<Double> {
@@ -199,3 +181,5 @@ extension MM4RigidBody {
     return angularMass
   }
 }
+
+

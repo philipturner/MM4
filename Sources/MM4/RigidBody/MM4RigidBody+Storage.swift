@@ -23,6 +23,9 @@ final class MM4RigidBodyStorage {
   var angularMass: MM4AngularMass?
   var angularVelocity: Quaternion<Float>?
   var thermalKineticEnergy: Double?
+  
+  // When computing this: throw a fatal error when the anchors don't all have
+  // the same velocity.
   var linearVelocity: SIMD3<Float>?
   
   init(atoms: MM4RigidBodyAtoms, parameters: MM4Parameters) {
@@ -87,7 +90,7 @@ extension MM4RigidBody {
   
   func ensureAngularMassCached() {
     if storage.angularMass == nil {
-      createAngularMass()
+      storage.angularMass = createAngularMass()
     }
   }
 }

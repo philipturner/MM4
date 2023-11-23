@@ -71,25 +71,6 @@ extension MM4RigidBody {
   }
 }
 
-// MARK: - Affine Transforms
-
-extension MM4RigidBody {
-  /// If there is more than one anchor, the angular mass is zero.
-  public var angularMass: MM4AngularMass {
-    // no setter; instead use rotate()
-    get { fatalError("Not implemented.") }
-  }
-  
-  public var centerOfMass: SIMD3<Float> {
-    _read { fatalError("Not implemented.") }
-    _modify { fatalError("Not implemented.") }
-  }
-  
-  public mutating func rotate(_ angle: Quaternion<Float>) {
-    fatalError("Not implemented.")
-  }
-}
-
 // MARK: - Other Properties
 
 extension MM4RigidBody {

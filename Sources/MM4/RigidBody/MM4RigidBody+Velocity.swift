@@ -21,12 +21,20 @@ extension MM4RigidBody {
   public mutating func setVelocities<T: BinaryFloatingPoint>(
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
+    ensureUniquelyReferenced()
+    storage.velocities = nil
+    
     guard buffer.count == atoms.count else {
       fatalError("Velocity buffer was not the correct size.")
     }
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     
-    // Might have to overwrite some velocities here with the anchors, or throw
-    // a fatal error when the simulated velocity isn't the expected value.
+    for vID in 0..<atoms.vectorCount {
+      let (x, y, z) = swizzleToVectorWidth(vID, baseAddress: baseAddress)
+      storage.vVelocities[vID &* 3 &+ 0] = x
+      storage.vVelocities[vID &* 3 &+ 1] = y
+      storage.vVelocities[vID &* 3 &+ 2] = z
+    }
   }
   
   @_specialize(where T == Double)

@@ -1,9 +1,11 @@
 //
-//  MM4AngularMass.swift
+//  MM4RigidBody+Affine.swift
 //
 //
-//  Created by Philip Turner on 11/20/23.
+//  Created by Philip Turner on 11/23/23.
 //
+
+import Numerics
 
 /// Moment of inertia.
 public struct MM4AngularMass {
@@ -54,5 +56,22 @@ public struct MM4AngularMass {
     let column1 = SIMD3(result01, result11, result21)
     let column2 = SIMD3(result02, result12, result22)
     return (column0, column1, column2)
+  }
+}
+
+extension MM4RigidBody {
+  /// If there is more than one anchor, the angular mass is zero.
+  public var angularMass: MM4AngularMass {
+    // no setter; instead use rotate()
+    get { fatalError("Not implemented.") }
+  }
+  
+  public var centerOfMass: SIMD3<Float> {
+    _read { fatalError("Not implemented.") }
+    _modify { fatalError("Not implemented.") }
+  }
+  
+  public mutating func rotate(_ angle: Quaternion<Float>) {
+    fatalError("Not implemented.")
   }
 }
