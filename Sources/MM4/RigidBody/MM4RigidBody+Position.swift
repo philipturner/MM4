@@ -81,9 +81,12 @@ extension MM4RigidBody {
   }
   
   func createCenterOfMass() -> SIMD3<Float> {
+    guard atoms.count > 0 else {
+      return .zero
+    }
     if anchors.count == 0 {
       let center = withMasses(createCenter)
-      return SIMD3<Float>(center / storage.mass)
+      return SIMD3<Float>(center / storage.totalMass)
     } else {
       let vMasses: UnsafeMutablePointer<MM4FloatVector> =
         .allocate(capacity: atoms.vectorCount)
@@ -91,20 +94,18 @@ extension MM4RigidBody {
       defer { vMasses.deallocate() }
       
       let masses: UnsafeMutablePointer<Float> = .init(OpaquePointer(vMasses))
-      var mass: Double = .zero
       for anchor in self.anchors {
         let value = self.masses[Int(anchor)]
         masses[Int(anchor)] = value
-        mass += Double(value)
       }
       let center = createCenter(vMasses)
-      return SIMD3<Float>(center / mass)
+      return SIMD3<Float>(center / storage.anchorsMass)
     }
   }
   
   func createAngularMass() -> MM4AngularMass {
     var angularMass = MM4AngularMass()
-    guard anchors.count <= 1 else {
+    guard anchors.count <= 1, atoms.count > 0 else {
       return angularMass
     }
     
@@ -145,4 +146,5 @@ extension MM4RigidBody {
     return angularMass
   }
 }
+
 

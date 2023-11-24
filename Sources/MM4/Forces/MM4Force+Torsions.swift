@@ -36,6 +36,7 @@ class MM4TorsionForce: MM4Force {
     force.addPerBondParameter(name: "n")
     force.addPerBondParameter(name: "Kts3")
     force.addPerBondParameter(name: "equilibriumLength")
+    var forceActive = false
     
     let particles = OpenMM_IntArray(size: 4)
     let array = OpenMM_DoubleArray(size: 6)
@@ -87,8 +88,9 @@ class MM4TorsionForce: MM4Force {
         particles[lane] = reorderedTorsion[lane]
       }
       force.addBond(particles: particles, parameters: array)
+      forceActive = true
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
 }
 
@@ -147,6 +149,7 @@ class MM4TorsionExtendedForce: MM4Force {
     force.addPerBondParameter(name: "V3")
     force.addPerBondParameter(name: "V4")
     force.addPerBondParameter(name: "V6")
+    var forceActive = false
     
     for position in ["Left", "Center", "Right"] {
       // Use the same technique to make code for appending the tuples for Kts/b
@@ -285,7 +288,8 @@ class MM4TorsionExtendedForce: MM4Force {
         particles[lane] = reorderedTorsion[lane]
       }
       force.addBond(particles: particles, parameters: array)
+      forceActive = true
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
 }

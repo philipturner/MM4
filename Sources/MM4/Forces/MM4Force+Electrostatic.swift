@@ -83,6 +83,7 @@ class MM4ElectrostaticForce: MM4Force {
     force.addPerParticleParameter(name: "charge")
     force.nonbondedMethod = .cutoffNonPeriodic
     force.cutoffDistance = MM4NonbondedForce.cutoff
+    var forceActive = false
     
     let array = OpenMM_DoubleArray(size: 1)
     let atoms = system.parameters.atoms
@@ -92,10 +93,13 @@ class MM4ElectrostaticForce: MM4Force {
       // Units: elementary charge
       array[0] = Double(parameters.charge)
       force.addParticle(parameters: array)
+      if parameters.charge != 0 {
+        forceActive = true
+      }
     }
     
     system.createExceptions(force: force)
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
 }
 
@@ -250,6 +254,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     #endif
     force.addPerBondParameter(name: "dipoleDipoleProduct")
     force.addPerBondParameter(name: "chargeChargeProduct")
+    var forceActive = false
     
     // Collect all the torsions that exist between a 1,4 pair.
     var pairsToTorsionsMap: [SIMD2<UInt32>: SIMD8<Int32>] = [:]
@@ -345,6 +350,9 @@ class MM4ElectrostaticExceptionForce: MM4Force {
           
           let dipoleDipoleProduct = dipoleLeft * dipoleRight
           let chargeChargeProduct = chargesLeft[1] * chargesRight[1]
+          guard dipoleDipoleProduct > 0 || chargeChargeProduct > 0 else {
+            continue
+          }
           array[0] = Double(dipoleDipoleProduct)
           array[1] = Double(chargeChargeProduct)
           
@@ -361,11 +369,12 @@ class MM4ElectrostaticExceptionForce: MM4Force {
             particles[lane] = reordered[lane]
           }
           force.addBond(particles: particles, parameters: array)
-          fatalError("Account for virtual sites.")
+          forceActive = true
         }
       }
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
 }
+
 

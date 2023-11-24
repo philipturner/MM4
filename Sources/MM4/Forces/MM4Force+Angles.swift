@@ -59,6 +59,7 @@ class MM4BendForce: MM4Force {
     let quinticTerm = 7.0e-7 * pow(correction, 3)
     let sexticTerm = 2.2e-8 * pow(correction, 4)
     
+    var forceActive = false
     let force = OpenMM_CustomCompoundBondForce(numParticles: 3, energy: """
       bend + stretchBend;
       bend = bendingStiffness * deltaTheta^2 * (
@@ -133,8 +134,9 @@ class MM4BendForce: MM4Force {
       array[3] = createLength(bondLeft)
       array[4] = createLength(bondRight)
       force.addBond(particles: particles, parameters: array)
+      forceActive = true
     }
-    super.init(forces: [force], forceGroup: 2)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 2)
   }
 }
 
@@ -194,6 +196,7 @@ class MM4BendBendForce: MM4Force {
     let trivalentForce = makeForce(valenceCount: 3, angleCount: 3)
     let tetravalentForce = makeForce(valenceCount: 4, angleCount: 6)
     let forces = [trivalentForce, tetravalentForce]
+    var forcesActive = [false, false]
     
     let particleArrays = [
       OpenMM_IntArray(size: 1 + 3),
@@ -259,8 +262,9 @@ class MM4BendBendForce: MM4Force {
         array[2 * i + 1] = equilibriumAngle
       }
       forces[arrayIndex].addBond(particles: particles, parameters: array)
+      forcesActive[arrayIndex] = true
     }
-    super.init(forces: forces, forceGroup: 2)
+    super.init(forces: forces, forcesActive: forcesActive, forceGroup: 2)
   }
 }
 
@@ -291,6 +295,7 @@ class MM4BendExtendedForce: MM4Force {
     force.addPerBondParameter(name: "equilibriumLength3")
     force.addPerBondParameter(name: "equilibriumLength4")
     force.addPerBondParameter(name: "equilibriumLength5")
+    var forceActive = false
     
     // Iterate by angles instead of by atoms this time.
     let particles = OpenMM_IntArray(size: 5)
@@ -353,7 +358,8 @@ class MM4BendExtendedForce: MM4Force {
         array[2 + i] = equilibriumLength * OpenMM_NmPerAngstrom
       }
       force.addBond(particles: particles, parameters: array)
+      forceActive = true
     }
-    super.init(forces: [force], forceGroup: 2)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 2)
   }
 }

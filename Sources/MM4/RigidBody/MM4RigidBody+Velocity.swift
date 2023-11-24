@@ -96,6 +96,9 @@ extension MM4RigidBody {
       let velocity = extractScalar(Int(anchor), array: storage.vVelocities)
       return velocity
     }
+    guard atoms.count > 0 else {
+      return .zero
+    }
     
     var momentum: SIMD3<Double> = .zero
     withMasses { vMasses in
@@ -104,9 +107,9 @@ extension MM4RigidBody {
         var vMomentumY: MM4FloatVector = .zero
         var vMomentumZ: MM4FloatVector = .zero
         for vID in $0 {
-          let x = storage.vPositions[vID &* 3 &+ 0]
-          let y = storage.vPositions[vID &* 3 &+ 1]
-          let z = storage.vPositions[vID &* 3 &+ 2]
+          let x = storage.vVelocities[vID &* 3 &+ 0]
+          let y = storage.vVelocities[vID &* 3 &+ 1]
+          let z = storage.vVelocities[vID &* 3 &+ 2]
           let mass = vMasses[vID]
           vMomentumX.addProduct(mass, x)
           vMomentumY.addProduct(mass, y)
@@ -117,13 +120,13 @@ extension MM4RigidBody {
         momentum.z += MM4DoubleVector(vMomentumZ).sum()
       }
     }
-    return SIMD3<Float>(momentum / storage.mass)
+    return SIMD3<Float>(momentum / storage.totalMass)
   }
   
   func createAngularVelocity() -> Quaternion<Float> {
     ensureAnchorVelocitiesValid()
     ensureAngularMassCached()
-    guard anchors.count <= 1 else {
+    guard anchors.count <= 1, atoms.count > 0 else {
       return .zero
     }
     
@@ -174,3 +177,64 @@ extension MM4RigidBody {
     }
   }
 }
+
+extension MM4RigidBody {
+  func _createTotalKineticEnergy(
+    _ vMasses: UnsafePointer<MM4FloatVector>
+  ) -> Double {
+    // Mask out the anchors while calculating this.
+    var kinetic: Double = .zero
+    withSegmentedLoop(chunk: 256) {
+      var vKineticX: MM4FloatVector = .zero
+      var vKineticY: MM4FloatVector = .zero
+      var vKineticZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = storage.vVelocities[vID &* 3 &+ 0]
+        let y = storage.vVelocities[vID &* 3 &+ 1]
+        let z = storage.vVelocities[vID &* 3 &+ 2]
+        let mass = vMasses[vID]
+        vKineticX.addProduct(mass, x * x)
+        vKineticY.addProduct(mass, y * y)
+        vKineticZ.addProduct(mass, z * z)
+      }
+      kinetic += MM4DoubleVector(vKineticX).sum()
+      kinetic += MM4DoubleVector(vKineticY).sum()
+      kinetic += MM4DoubleVector(vKineticZ).sum()
+    }
+    return kinetic / 2
+  }
+  
+  func createTotalKineticEnergy() -> Double {
+    guard atoms.count > 0 else {
+      return 0
+    }
+    
+    if anchors.count == 0 {
+      return withMasses(_createTotalKineticEnergy)
+    } else {
+      let vMasses: UnsafeMutablePointer<MM4FloatVector> =
+        .allocate(capacity: atoms.vectorCount)
+      withMasses {
+        vMasses.initialize(from: $0, count: atoms.count)
+      }
+      defer { vMasses.deallocate() }
+      
+      let masses: UnsafeMutablePointer<Float> = .init(OpaquePointer(vMasses))
+      for anchor in self.anchors {
+        masses[Int(anchor)] = 0
+      }
+      return _createTotalKineticEnergy(vMasses)
+    }
+  }
+  
+  // What is the return value?
+  // Does this modify the state in-place?
+  //
+  // Likely does not handle linear and angular velocities. For example, it may
+  // be used to analyze new thermal velocities in isolation during
+  // thermalization.
+  func createThermalVelocities() {
+    
+  }
+}
+

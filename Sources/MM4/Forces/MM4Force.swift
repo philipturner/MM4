@@ -11,14 +11,18 @@ class MM4Force {
   /// The OpenMM object containing the force.
   var forces: [OpenMM_Force]
   
+  /// Whether each force contains any particles.
+  var forcesActive: [Bool]
+  
   /// How many times to evaluate this force per timestep.
   var forceGroup: Int
   
-  init(forces: [OpenMM_Force], forceGroup: Int) {
+  init(forces: [OpenMM_Force], forcesActive: [Bool], forceGroup: Int) {
     for force in forces {
       force.forceGroup = forceGroup
     }
     self.forces = forces
+    self.forcesActive = forcesActive
     self.forceGroup = forceGroup
   }
   
@@ -27,7 +31,7 @@ class MM4Force {
   }
   
   func addForces(to system: OpenMM_System) {
-    for force in forces {
+    for (force, forceActive) in zip(forces, forcesActive) where forceActive {
       system.addForce(force)
     }
   }
@@ -70,11 +74,6 @@ class MM4Forces {
     self.bendBend = .init(system: system)
     self.bendExtended = .init(system: system)
     self.stretch = .init(system: system)
-    
-    // TODO: Deactivate forces with zero particles, decreasing sequential
-    // overhead. For diamond-only simulations, deactivate the electrostatic
-    // force as well. This decreases the amount of testing required to get
-    // the minimum viable product working.
   }
   
   // Make this act explicit instead of performing it in the initializer. This

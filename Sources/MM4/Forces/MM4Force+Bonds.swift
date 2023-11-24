@@ -22,6 +22,7 @@ class MM4StretchForce: MM4Force {
     force.addPerBondParameter(name: "potentialWellDepth")
     force.addPerBondParameter(name: "beta")
     force.addPerBondParameter(name: "equilibriumLength")
+    var forceActive = false
     
     let array = OpenMM_DoubleArray(size: 3)
     let bonds = system.parameters.bonds
@@ -52,7 +53,8 @@ class MM4StretchForce: MM4Force {
       array[1] = beta
       array[2] = equilibriumLength
       force.addBond(particles: particles, parameters: array)
+      forceActive = true
     }
-    super.init(forces: [force], forceGroup: 2)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 2)
   }
 }

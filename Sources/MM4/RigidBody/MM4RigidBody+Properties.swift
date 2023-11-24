@@ -95,7 +95,7 @@ extension MM4RigidBody {
   /// The object's total mass (in amu).
   @inline(__always)
   public var mass: Double {
-    storage.mass
+    storage.totalMass
   }
   
   /// The mass (in amu) of each atom after hydrogen mass repartitioning.

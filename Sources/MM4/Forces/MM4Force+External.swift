@@ -15,6 +15,7 @@ class MM4ExternalForce: MM4Force {
     force.addPerParticleParameter(name: "fx")
     force.addPerParticleParameter(name: "fy")
     force.addPerParticleParameter(name: "fz")
+    var forceActive = false
     
     let array = OpenMM_DoubleArray(size: 3)
     array[0] = 0
@@ -23,8 +24,9 @@ class MM4ExternalForce: MM4Force {
     
     for reorderedID in system.reorderedIndices {
       force.addParticle(Int(reorderedID), parameters: array)
+      forceActive = true
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
   
   /// Do not reorder the forces before entering into this function.

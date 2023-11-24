@@ -57,6 +57,7 @@ class MM4NonbondedForce: MM4Force {
     force.useSwitchingFunction = true
     force.cutoffDistance = MM4NonbondedForce.cutoff
     force.switchingDistance = MM4NonbondedForce.cutoff * pow(1.0 / 3, 1.0 / 6)
+    var forceActive = false
     
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
@@ -73,10 +74,11 @@ class MM4NonbondedForce: MM4Force {
       array[2] = Double(radius) * OpenMM_NmPerAngstrom
       array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
       force.addParticle(parameters: array)
+      forceActive = true
     }
     
     system.createExceptions(force: force)
-    super.init(forces: [force], forceGroup: 1)
+    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
 }
 
@@ -99,6 +101,7 @@ class MM4NonbondedExceptionForce: MM4Force {
       """)
     force.addPerBondParameter(name: "epsilon")
     force.addPerBondParameter(name: "radius")
+    var forceActive = false
     
     // Separate force for (Si, Ge) to (H, C, Si, Ge) interactions.
     let legacyForce = OpenMM_CustomBondForce(energy: """
@@ -114,6 +117,7 @@ class MM4NonbondedExceptionForce: MM4Force {
     legacyForce.addPerBondParameter(name: "radius")
     legacyForce.addPerBondParameter(name: "legacyEpsilon")
     legacyForce.addPerBondParameter(name: "legacyRadius")
+    var legacyForceActive = false
     
     // TODO: Test how different choices affect the accuracy of molecular
     // structures, similar to the testing of electrostatic exceptions:
@@ -185,11 +189,16 @@ class MM4NonbondedExceptionForce: MM4Force {
         array[2] = Double(legacyEpsilon) * OpenMM_KJPerKcal
         array[3] = Double(legacyRadius) * OpenMM_NmPerAngstrom
         selectedForce = legacyForce
+        legacyForceActive = true
+      } else {
+        forceActive = true
       }
       
       let particles = system.virtualSiteReorder(exception)
       selectedForce.addBond(particles: particles, parameters: array)
     }
-    super.init(forces: [force], forceGroup: 1)
+    super.init(
+      forces: [force, legacyForce],
+      forcesActive: [forceActive, legacyForceActive], forceGroup: 1)
   }
 }

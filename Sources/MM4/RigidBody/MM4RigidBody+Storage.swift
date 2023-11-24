@@ -10,7 +10,8 @@ import Numerics
 final class MM4RigidBodyStorage {
   // Sources of truth.
   var anchors: Set<UInt32>
-  var mass: Double
+  var anchorsMass: Double
+  var totalMass: Double
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
   
@@ -29,9 +30,15 @@ final class MM4RigidBodyStorage {
   init(atoms: MM4RigidBodyAtoms, parameters: MM4Parameters) {
     // Initialize stored properties.
     anchors = []
-    mass = parameters.atoms.masses.reduce(Double(0)) {
+    totalMass = parameters.atoms.masses.reduce(Double(0)) {
       $0 + Double($1)
     }
+    anchorsMass = .zero
+    for anchor in anchors {
+      let mass = parameters.atoms.masses[Int(anchor)]
+      anchorsMass += Double(mass)
+    }
+    
     vPositions = Array(unsafeUninitializedCapacity: 3 * atoms.vectorCount) {
       $0.initialize(repeating: .zero)
       $1 = 3 * atoms.count
@@ -45,7 +52,8 @@ final class MM4RigidBodyStorage {
   init(copying other: MM4RigidBodyStorage) {
     // Initialize stored properties, without copying cached ones.
     anchors = other.anchors
-    mass = other.mass
+    anchorsMass = other.anchorsMass
+    totalMass = other.totalMass
     vPositions = other.vPositions
     vVelocities = other.vVelocities
   }

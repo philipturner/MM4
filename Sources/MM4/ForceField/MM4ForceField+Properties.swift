@@ -134,8 +134,9 @@ extension MM4ForceField {
   /// - 1 anchor: conserve linear and angular momentum around anchor.
   /// - collinear anchors: conserve linear momentum around average of
   ///   anchors, constrain angular momentum to the shared axis.
-  /// - anchors form plane: conserve linear momentum around average of anchors,
-  ///   force angular momentum to zero.
+  // - anchors form plane: conserve linear momentum around average of anchors,
+  ///   force angular momentum to zero. In the average, each anchor's weight is
+  ///   proportional to its atomic mass.
   public var anchors: Set<UInt32> {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: import a new rigid body initialized with different anchors.
