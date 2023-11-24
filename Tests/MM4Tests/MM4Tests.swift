@@ -37,11 +37,4 @@ final class MM4ParametersTests: XCTestCase {
   // use dipoles because that's the most likely algorithm used.
   
   // TODO: Use cyclosilane ab initio structures as a test case.
-  
-  // TODO: Test that the torsion-stretch parameter actually increases system
-  // energy by the expected amount. We can't rule out an error in unit
-  // conversions with the custom formula.
-  
-  // TODO: Look the most unusual edge cases in the parameters, ensure they show
-  // up correctly.
 }

@@ -130,4 +130,3 @@ public struct MM4Parameters {
     }
   }
 }
-

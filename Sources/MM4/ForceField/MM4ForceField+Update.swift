@@ -123,4 +123,3 @@ extension MM4ForceField {
     cachedState.potentialEnergy = nil
   }
 }
-

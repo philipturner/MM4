@@ -376,5 +376,3 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
   }
 }
-
-

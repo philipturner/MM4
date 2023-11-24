@@ -143,10 +143,6 @@ extension MM4ForceField {
     _read {
       yield _anchors
     }
-//    _modify {
-//      updateRecord.anchors = true
-//      yield &_anchors
-//    }
   }
   
   /// The constant force (in piconewtons) exerted on each atom.
@@ -185,4 +181,3 @@ extension MM4ForceField {
     }
   }
 }
-

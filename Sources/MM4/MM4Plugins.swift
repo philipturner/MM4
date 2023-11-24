@@ -26,4 +26,3 @@ class MM4Plugins {
     loaded = true
   }
 }
-

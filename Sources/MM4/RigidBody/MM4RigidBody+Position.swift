@@ -146,5 +146,3 @@ extension MM4RigidBody {
     return angularMass
   }
 }
-
-

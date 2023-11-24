@@ -388,5 +388,3 @@ extension MM4Parameters {
     nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
   }
 }
-
-
