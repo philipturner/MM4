@@ -5,8 +5,11 @@
 //  Created by Philip Turner on 11/19/23.
 //
 
+/// A descriptor for a rigid body.
 public struct MM4RigidBodyDescriptor {
   /// Optional. Indices of atoms that should be treated as having infinite mass.
+  ///
+  /// > WARNING: This API may be removed in the future.
   public var anchors: Set<UInt32>?
   
   /// Required. The number of protons in each atom's nucleus.
@@ -54,6 +57,7 @@ struct MM4RigidBodyAtoms {
   }
 }
 
+/// An enclosed group of covalently bonded atoms.
 public struct MM4RigidBody {
   /// A wrapper for ergonomically vectorizing computations.
   var atoms: MM4RigidBodyAtoms
@@ -67,6 +71,9 @@ public struct MM4RigidBody {
   /// The backing storage object.
   var storage: MM4RigidBodyStorage
   
+  /// Create a rigid body using the specified configuration.
+  ///
+  /// - throws: An error if there wasn't a parameter for a certain atom pair.
   public init(descriptor: MM4RigidBodyDescriptor) throws {
     // Ensure the required descriptor properties were set.
     guard let descriptorAtomicNumbers = descriptor.atomicNumbers,

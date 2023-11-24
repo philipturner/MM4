@@ -29,26 +29,7 @@ extension MM4RigidBody {
     let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     
     for vID in 0..<atoms.vectorCount {
-      var x: MM4FloatVector = .zero
-      var y: MM4FloatVector = .zero
-      var z: MM4FloatVector = .zero
-      
-      if vID == atoms.vectorCount &- 1 {
-        let remaining = atoms.count &- vID &* MM4VectorWidth
-        for lane in 0..<remaining {
-          let position = baseAddress[vID &* MM4VectorWidth &+ lane]
-          x[lane] = Float(position.x)
-          y[lane] = Float(position.y)
-          z[lane] = Float(position.z)
-        }
-      } else {
-        for lane in 0..<MM4VectorWidth {
-          let position = baseAddress[vID &* MM4VectorWidth &+ lane]
-          x[lane] = Float(position.x)
-          y[lane] = Float(position.y)
-          z[lane] = Float(position.z)
-        }
-      }
+      let (x, y, z) = swizzleToVectorWidth(vID, baseAddress: baseAddress)
       storage.vPositions[vID &* 3 &+ 0] = x
       storage.vPositions[vID &* 3 &+ 1] = y
       storage.vPositions[vID &* 3 &+ 2] = z
@@ -69,25 +50,7 @@ extension MM4RigidBody {
       let x = storage.vPositions[vID &* 3 &+ 0]
       let y = storage.vPositions[vID &* 3 &+ 1]
       let z = storage.vPositions[vID &* 3 &+ 2]
-      
-      if vID == atoms.vectorCount &- 1 {
-        let remaining = atoms.count &- vID &* MM4VectorWidth
-        for lane in 0..<remaining {
-          var position: SIMD3<T> = .zero
-          position.x = T(x[lane])
-          position.y = T(y[lane])
-          position.z = T(z[lane])
-          baseAddress[vID &* MM4VectorWidth &+ lane] = position
-        }
-      } else {
-        for lane in 0..<MM4VectorWidth {
-          var position: SIMD3<T> = .zero
-          position.x = T(x[lane])
-          position.y = T(y[lane])
-          position.z = T(z[lane])
-          baseAddress[vID &* MM4VectorWidth &+ lane] = position
-        }
-      }
+      swizzleFromVectorWidth((x, y, z), vID, baseAddress: baseAddress)
     }
   }
 }
@@ -105,9 +68,10 @@ extension MM4RigidBody {
         let x = storage.vPositions[vID &* 3 &+ 0]
         let y = storage.vPositions[vID &* 3 &+ 1]
         let z = storage.vPositions[vID &* 3 &+ 2]
-        vCenterX += x * vMasses[vID]
-        vCenterY += y * vMasses[vID]
-        vCenterZ += z * vMasses[vID]
+        let mass = vMasses[vID]
+        vCenterX.addProduct(mass, x)
+        vCenterY.addProduct(mass, y)
+        vCenterZ.addProduct(mass, z)
       }
       center.x += MM4DoubleVector(vCenterX).sum()
       center.y += MM4DoubleVector(vCenterY).sum()
@@ -181,5 +145,4 @@ extension MM4RigidBody {
     return angularMass
   }
 }
-
 

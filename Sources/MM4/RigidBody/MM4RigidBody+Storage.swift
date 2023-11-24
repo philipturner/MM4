@@ -17,15 +17,13 @@ final class MM4RigidBodyStorage {
   // Frequently cached (special handling).
   var centerOfMass: SIMD3<Float>?
   var positions: [SIMD3<Float>]?
-  var velocities: [SIMD3<Float>]? // anchors affect this in a wierd way
+  var velocities: [SIMD3<Float>]?
   
   // Rarely cached (frequently erased).
+  var anchorVelocitiesValid: Bool?
   var angularMass: MM4AngularMass?
   var angularVelocity: Quaternion<Float>?
   var thermalKineticEnergy: Double?
-  
-  // When computing this: throw a fatal error when the anchors don't all have
-  // the same velocity.
   var linearVelocity: SIMD3<Float>?
   
   init(atoms: MM4RigidBodyAtoms, parameters: MM4Parameters) {
@@ -53,6 +51,7 @@ final class MM4RigidBodyStorage {
   }
   
   func eraseFrequentlyCachedProperties() {
+    anchorVelocitiesValid = nil
     centerOfMass = nil
     positions = nil
     velocities = nil
@@ -91,6 +90,18 @@ extension MM4RigidBody {
   func ensureAngularMassCached() {
     if storage.angularMass == nil {
       storage.angularMass = createAngularMass()
+    }
+  }
+  
+  func ensureLinearVelocityCached() {
+    if storage.linearVelocity == nil {
+      storage.linearVelocity = createLinearVelocity()
+    }
+  }
+  
+  func ensureAngularVelocityCached() {
+    if storage.angularVelocity == nil {
+      storage.angularVelocity = createAngularVelocity()
     }
   }
 }

@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
+import Numerics
+
 extension MM4RigidBody {
   /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
   ///
@@ -22,6 +24,7 @@ extension MM4RigidBody {
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
     ensureUniquelyReferenced()
+    storage.anchorVelocitiesValid = nil
     storage.velocities = nil
     
     guard buffer.count == atoms.count else {
@@ -43,7 +46,131 @@ extension MM4RigidBody {
     _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
   ) {
     guard buffer.count == atoms.count else {
-      fatalError("Position buffer was not the correct size.")
+      fatalError("Velocity buffer was not the correct size.")
+    }
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+    
+    for vID in 0..<atoms.vectorCount {
+      let x = storage.vVelocities[vID &* 3 &+ 0]
+      let y = storage.vVelocities[vID &* 3 &+ 1]
+      let z = storage.vVelocities[vID &* 3 &+ 2]
+      swizzleFromVectorWidth((x, y, z), vID, baseAddress: baseAddress)
+    }
+  }
+}
+
+extension MM4RigidBody {
+  func ensureAnchorVelocitiesValid() {
+    guard storage.anchorVelocitiesValid == nil else {
+      return
+    }
+    
+    let epsilon: Float = 1e-4
+    var firstVelocity: SIMD3<Float>?
+    var valid = true
+    
+    for anchor in storage.anchors {
+      let velocity = extractScalar(Int(anchor), array: storage.vVelocities)
+      if let firstVelocity {
+        var deviation = velocity - firstVelocity
+        var accepted = epsilon * firstVelocity
+        deviation.replace(with: -deviation, where: deviation .< 0)
+        accepted.replace(with: -accepted, where: accepted .< 0)
+        if any(deviation .> accepted) {
+          valid = false
+        }
+      } else {
+        firstVelocity = velocity
+      }
+    }
+    guard valid else {
+      fatalError("Anchor velocities are invalid.")
+    }
+    storage.anchorVelocitiesValid = valid
+  }
+  
+  func createLinearVelocity() -> SIMD3<Float> {
+    ensureAnchorVelocitiesValid()
+    guard anchors.count == 0 else {
+      let anchor = storage.anchors.first!
+      let velocity = extractScalar(Int(anchor), array: storage.vVelocities)
+      return velocity
+    }
+    
+    var momentum: SIMD3<Double> = .zero
+    withMasses { vMasses in
+      withSegmentedLoop(chunk: 256) {
+        var vMomentumX: MM4FloatVector = .zero
+        var vMomentumY: MM4FloatVector = .zero
+        var vMomentumZ: MM4FloatVector = .zero
+        for vID in $0 {
+          let x = storage.vPositions[vID &* 3 &+ 0]
+          let y = storage.vPositions[vID &* 3 &+ 1]
+          let z = storage.vPositions[vID &* 3 &+ 2]
+          let mass = vMasses[vID]
+          vMomentumX.addProduct(mass, x)
+          vMomentumY.addProduct(mass, y)
+          vMomentumZ.addProduct(mass, z)
+        }
+        momentum.x += MM4DoubleVector(vMomentumX).sum()
+        momentum.y += MM4DoubleVector(vMomentumY).sum()
+        momentum.z += MM4DoubleVector(vMomentumZ).sum()
+      }
+    }
+    return SIMD3<Float>(momentum / storage.mass)
+  }
+  
+  func createAngularVelocity() -> Quaternion<Float> {
+    ensureAnchorVelocitiesValid()
+    ensureAngularMassCached()
+    guard anchors.count <= 1 else {
+      return .zero
+    }
+    
+    var momentum: SIMD3<Double> = .zero
+    ensureCenterOfMassCached()
+    withMasses { vMasses in
+      let centerOfMass = storage.centerOfMass!
+      withSegmentedLoop(chunk: 256) {
+        var vMomentumX: MM4FloatVector = .zero
+        var vMomentumY: MM4FloatVector = .zero
+        var vMomentumZ: MM4FloatVector = .zero
+        for vID in $0 {
+          let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
+          let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
+          let rZ = storage.vPositions[vID &* 3 &+ 2] - centerOfMass.z
+          let vX = storage.vVelocities[vID &* 3 &+ 0]
+          let vY = storage.vVelocities[vID &* 3 &+ 1]
+          let vZ = storage.vVelocities[vID &* 3 &+ 2]
+          let mass = vMasses[vID]
+          vMomentumX.addProduct(mass, rY * vZ - rZ * vY)
+          vMomentumY.addProduct(mass, rZ * vX - rX * vZ)
+          vMomentumZ.addProduct(mass, rX * vY - rY * vX)
+        }
+        momentum.x += MM4DoubleVector(vMomentumX).sum()
+        momentum.y += MM4DoubleVector(vMomentumY).sum()
+        momentum.z += MM4DoubleVector(vMomentumZ).sum()
+      }
+    }
+    
+    let inverse = storage.angularMass!.inverse
+    let velocityX = inverse.0 * momentum.x
+    let velocityY = inverse.1 * momentum.y
+    let velocityZ = inverse.2 * momentum.z
+    let velocity = velocityX + velocityY + velocityZ
+    
+    if all(velocity .< .leastNormalMagnitude .&
+           velocity .> -.leastNormalMagnitude) {
+      return .zero
+    } else {
+      let lengthSquared = (velocity * velocity).sum()
+      if abs(lengthSquared) < .leastNormalMagnitude {
+        return .zero
+      }
+      
+      let axis = SIMD3<Float>(velocity / lengthSquared.squareRoot())
+      let angle = Float(lengthSquared.squareRoot())
+      return Quaternion<Float>(angle: angle, axis: axis)
     }
   }
 }

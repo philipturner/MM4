@@ -60,6 +60,7 @@ extension MM4ForceField {
   public func `import`(from rigidBody: MM4RigidBody, index: Int) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     // Check whether the anchors have changed.
+    // Ensure the anchor velocities are valid.
     fatalError("Not implemented.")
   }
 }

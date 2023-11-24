@@ -21,36 +21,24 @@ public struct MM4AngularMass {
   /// the same as the transpose.
   public var inverse: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
     // Source: https://stackoverflow.com/a/18504573
-    //
-    // double det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
-    //              m(0, 1) * (m(1, 0) * m(2, 2) - m(1, 2) * m(2, 0)) +
-    //              m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
+    let col = columns
     let determinant =
-    columns.0[0]*(columns.1[1]*columns.2[2]-columns.2[1]*columns.1[2]) -
-    columns.0[1]*(columns.1[0]*columns.2[2]-columns.1[2]*columns.2[0]) +
-    columns.0[2]*(columns.1[0]*columns.2[1]-columns.1[1]*columns.2[0])
+    col.0[0] * (col.1[1] * col.2[2] - col.2[1] * col.1[2]) -
+    col.0[1] * (col.1[0] * col.2[2] - col.1[2] * col.2[0]) +
+    col.0[2] * (col.1[0] * col.2[1] - col.1[1] * col.2[0])
     let invdet = 1 / determinant
     
-    // minv(0, 0) = (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) * invdet;
-    // minv(0, 1) = (m(0, 2) * m(2, 1) - m(0, 1) * m(2, 2)) * invdet;
-    // minv(0, 2) = (m(0, 1) * m(1, 2) - m(0, 2) * m(1, 1)) * invdet;
-    let result00 = (columns.1[1]*columns.2[2]-columns.2[1]*columns.1[2])*invdet
-    let result01 = (columns.0[2]*columns.2[1]-columns.0[1]*columns.2[2])*invdet
-    let result02 = (columns.0[1]*columns.1[2]-columns.0[2]*columns.1[1])*invdet
+    let result00 = (col.1[1] * col.2[2] - col.2[1] * col.1[2]) * invdet
+    let result01 = (col.0[2] * col.2[1] - col.0[1] * col.2[2]) * invdet
+    let result02 = (col.0[1] * col.1[2] - col.0[2] * col.1[1]) * invdet
     
-    // minv(1, 0) = (m(1, 2) * m(2, 0) - m(1, 0) * m(2, 2)) * invdet;
-    // minv(1, 1) = (m(0, 0) * m(2, 2) - m(0, 2) * m(2, 0)) * invdet;
-    // minv(1, 2) = (m(1, 0) * m(0, 2) - m(0, 0) * m(1, 2)) * invdet;
-    let result10 = (columns.1[2]*columns.2[0]-columns.1[0]*columns.2[2])*invdet
-    let result11 = (columns.0[0]*columns.2[2]-columns.0[2]*columns.2[0])*invdet
-    let result12 = (columns.1[0]*columns.0[2]-columns.0[0]*columns.1[2])*invdet
+    let result10 = (col.1[2] * col.2[0] - col.1[0] * col.2[2]) * invdet
+    let result11 = (col.0[0] * col.2[2] - col.0[2] * col.2[0]) * invdet
+    let result12 = (col.1[0] * col.0[2] - col.0[0] * col.1[2]) * invdet
     
-    // minv(2, 0) = (m(1, 0) * m(2, 1) - m(2, 0) * m(1, 1)) * invdet;
-    // minv(2, 1) = (m(2, 0) * m(0, 1) - m(0, 0) * m(2, 1)) * invdet;
-    // minv(2, 2) = (m(0, 0) * m(1, 1) - m(1, 0) * m(0, 1)) * invdet;
-    let result20 = (columns.1[0]*columns.2[1]-columns.2[0]*columns.1[1])*invdet
-    let result21 = (columns.2[0]*columns.0[1]-columns.0[0]*columns.2[1])*invdet
-    let result22 = (columns.0[0]*columns.1[1]-columns.1[0]*columns.0[1])*invdet
+    let result20 = (col.1[0] * col.2[1] - col.2[0] * col.1[1]) * invdet
+    let result21 = (col.2[0] * col.0[1] - col.0[0] * col.2[1]) * invdet
+    let result22 = (col.0[0] * col.1[1] - col.1[0] * col.0[1]) * invdet
     
     let column0 = SIMD3(result00, result10, result20)
     let column1 = SIMD3(result01, result11, result21)
