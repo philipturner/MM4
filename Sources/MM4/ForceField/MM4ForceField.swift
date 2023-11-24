@@ -7,7 +7,9 @@
 
 /// A force field simulator.
 ///
-/// See the [overview](``MM4``) for more information.
+/// See the
+/// [overview](https://philipturner.github.io/MM4/documentation/mm4#Overview)
+/// for more information.
 public class MM4ForceField {
   /// Delegate object wrapping the parameters and OpenMM system.
   var system: MM4System

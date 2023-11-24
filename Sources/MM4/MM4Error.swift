@@ -10,13 +10,13 @@ import OpenMM
 /// Identifying information for an atom.
 public struct MM4Address {
   /// The rigid body ID.
-  var rigidBodyIndex: Int
+  public var rigidBodyIndex: Int
   
   /// The position within the rigid body.
-  var atomIndex: UInt32
+  public var atomIndex: UInt32
   
   /// The atom's element.
-  var atomicNumber: UInt8
+  public var atomicNumber: UInt8
 }
 
 /// An error thrown by the MM4 library.
