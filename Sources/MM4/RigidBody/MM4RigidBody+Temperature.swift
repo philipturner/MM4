@@ -1,6 +1,6 @@
 //
 //  MM4RigidBody+Temperature.swift
-//  
+//
 //
 //  Created by Philip Turner on 11/20/23.
 //
@@ -36,7 +36,7 @@ extension MM4RigidBody {
       let vBaseAddress = UnsafeRawPointer(rawBaseAddress)!
         .assumingMemoryBound(to: MM4UInt8Vector.self)
       
-      for vID in 0..<atoms.vectorCount {
+      for vID in 0..<storage.atoms.vectorCount {
         let atomicNumber = MM4UInt32Vector(
           truncatingIfNeeded: vBaseAddress[vID])
         
@@ -57,9 +57,9 @@ extension MM4RigidBody {
         (atomicNumber .<= 32) .&
         (.!isHalogen)
         
-        if vID == atoms.vectorCount - 1 {
-          isCarbon = isCarbon .& atoms.vectorMask
-          isSilicon = isSilicon .& atoms.vectorMask
+        if vID == storage.atoms.vectorCount - 1 {
+          isCarbon = isCarbon .& storage.atoms.vectorMask
+          isSilicon = isSilicon .& storage.atoms.vectorMask
         }
         vNumCarbons.replace(with: vNumCarbons &+ 1, where: isCarbon)
         vNumSilicons.replace(with: vNumSilicons &+ 1, where: isSilicon)
@@ -142,8 +142,9 @@ extension MM4RigidBody {
     // T = temperature
     //
     // E = C N kT
+    let N = Double(storage.atoms.count)
     let kT = MM4BoltzInZJPerK * temperature
-    energy.kinetic.thermal = heatCapacity * Double(atoms.count) * kT
+    energy.kinetic.thermal = heatCapacity * N * kT
   }
 }
 
@@ -633,3 +634,4 @@ fileprivate let siliconLookupCapacities: [Double] = [
   3.448881405,
   3.479672841,
 ]
+

@@ -25,6 +25,9 @@ public struct MM4RigidBodyKineticEnergy {
   
   /// Kinetic energy contribution from organized mechanical energy (linear
   /// velocity, angular velocity). Contributions from anchors are omitted.
+  ///
+  /// If there is more than one anchor, the free kinetic energy from the linear
+  /// velocity is zero.
   public var free: Double {
     fatalError("Not implemented.")
   }
@@ -40,6 +43,8 @@ public struct MM4RigidBodyKineticEnergy {
 // MARK: - Velocity
 
 extension MM4RigidBody {
+  // TODO: Add a one-line summary to each property's documentation.
+  
   /// If the angular velocity is nonzero, the number of anchors cannot exceed 1.
   /// When importing velocities, if the number of anchors exceeds 1, the angular
   /// velocity is set to zero.
@@ -65,7 +70,7 @@ extension MM4RigidBody {
   
   /// Every anchor's velocity is set to the rigid body's linear velocity.
   /// When importing velocities, all anchors must have the same velocity.
-  public var velocity: SIMD3<Float> {
+  public var linearVelocity: SIMD3<Float> {
     get { fatalError("Not implemented.") }
     set { fatalError("Not implemented.") }
   }
@@ -82,7 +87,6 @@ extension MM4RigidBody {
   }
   
   /// The number of protons in each atom's nucleus.
-  @inline(__always)
   public var atomicNumbers: [UInt8] {
     parameters.atoms.atomicNumbers
   }
@@ -92,15 +96,16 @@ extension MM4RigidBody {
     parameters.bonds.indices
   }
   
-  /// The object's total mass (in amu).
-  @inline(__always)
+  /// The total mass (in amu) of all atoms, excluding anchors.
   public var mass: Double {
-    storage.totalMass
+    storage.nonAnchorMass
   }
   
-  /// The mass (in amu) of each atom after hydrogen mass repartitioning.
-  @inline(__always)
+  /// The mass (in amu) of each atom.
+  ///
+  /// This is different than the masses in `MM4Parameters`. `MM4RigidBody`
+  /// zeroes out the mass for each anchor, while `MM4Parameters` does not.
   public var masses: [Float] {
-    parameters.atoms.masses
+    storage.nonAnchorMasses
   }
 }

@@ -8,18 +8,22 @@
 import Numerics
 
 /// Moment of inertia.
-public struct MM4AngularMass {
+///
+/// This is hidden from the public API. One reason is that columns are stored in
+/// double precision, while the public API should express most quantities in
+/// single precision.
+struct MM4MomentOfInertia {
   /// Symmetric matrix specifying the rigid body's moment of inertia.
-  public var columns: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+  var columns: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
   
   /// Initialize a moment of inertia with zero mass.
-  public init() {
+  init() {
     self.columns = (.zero, .zero, .zero)
   }
   
   /// The matrix is symmetric, but not exactly orthonormal. The inverse is not
   /// the same as the transpose.
-  public var inverse: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
+  var inverse: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
     // Source: https://stackoverflow.com/a/18504573
     let col = columns
     let determinant =
@@ -48,17 +52,22 @@ public struct MM4AngularMass {
 }
 
 extension MM4RigidBody {
-  /// If there is more than one anchor, the angular mass is zero.
-  public var angularMass: MM4AngularMass {
+  /// Symmetric matrix specifying the rigid body's moment of inertia.
+  ///
+  /// If there is more than one anchor, this is zero.
+  public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
     // no setter; instead use rotate()
     get { fatalError("Not implemented.") }
   }
   
+  /// Center of mass, treating anchors as astronomically larger than
+  /// non-anchors.
   public var centerOfMass: SIMD3<Float> {
     _read { fatalError("Not implemented.") }
     _modify { fatalError("Not implemented.") }
   }
   
+  /// Change the object's orientation by the specified 3D angle.
   public mutating func rotate(_ angle: Quaternion<Float>) {
     fatalError("Not implemented.")
   }
