@@ -56,7 +56,7 @@ public class MM4ForceField {
       repeating: .zero, count: system.parameters.atoms.count)
     
     _levelOfTheory = Array(
-      repeating: .molecularDynamics, count: rigidBodyRanges.count)
+      repeating: parameters.levelOfTheory, count: rigidBodyRanges.count)
     
     _rigidBodyRanges = rigidBodyRanges
     

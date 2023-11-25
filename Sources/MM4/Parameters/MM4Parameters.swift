@@ -27,6 +27,11 @@ public struct MM4ParametersDescriptor {
   /// rigid body.
   public var hydrogenMassRepartitioning: Float = 1.0
   
+  /// Required. The level of theory used for simulation.
+  ///
+  /// The default is `.molecularMechanics`.
+  public var levelOfTheory: MM4LevelOfTheory = .molecularMechanics
+  
   public init() {
     
   }
@@ -48,6 +53,9 @@ public struct MM4Parameters {
   
   /// Parameters for a group of 5 atoms.
   public var rings: MM4Rings = MM4Rings()
+  
+  /// The level of theory used for simulation.
+  public var levelOfTheory: MM4LevelOfTheory
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   var nonbondedExceptions13: [SIMD2<UInt32>] = []
@@ -76,6 +84,10 @@ public struct MM4Parameters {
           let descriptorBonds = descriptor.bonds else {
       fatalError("Descriptor did not have the required properties.")
     }
+    guard case .molecularMechanics = descriptor.levelOfTheory else {
+      fatalError("Unsupported level of theory.")
+    }
+    self.levelOfTheory = descriptor.levelOfTheory
     
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.

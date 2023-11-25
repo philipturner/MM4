@@ -8,24 +8,19 @@
 /// A descriptor for a rigid body.
 public struct MM4RigidBodyDescriptor {
   /// Optional. Indices of atoms that should be treated as having infinite mass.
-  ///
-  /// > WARNING: This API may be removed in the future.
   public var anchors: Set<UInt32>?
   
-  /// Required. The number of protons in each atom's nucleus.
-  public var atomicNumbers: [UInt8]?
-  
-  /// Required. Pairs of atom indices representing sigma bonds.
-  public var bonds: [SIMD2<UInt32>]?
-  
-  /// Required. The amount of mass (in amu) to redistribute from a substituent
-  /// atom to each covalently bonded hydrogen.
-  ///
-  /// The default is 1 amu.
-  public var hydrogenMassRepartitioning: Float = 1.0
+  /// Required. The parameters for the rigid body.
+  public var parameters: MM4Parameters?
   
   /// Required. The position (in nanometers) of each atom's nucleus.
   public var positions: [SIMD3<Float>]?
+  
+  ///. Optional. The velocity (in nanometers per picosecond) of each atom.
+  ///
+  /// Velocities attributed to anchors are ignored. They are replaced with a
+  /// value determined by the bulk velocities.
+  public var velocities: [SIMD3<Float>]?
   
   public init() {
     
@@ -72,27 +67,23 @@ public struct MM4RigidBody {
   var storage: MM4RigidBodyStorage
   
   /// Create a rigid body using the specified configuration.
-  ///
-  /// - throws: An error if there wasn't a parameter for a certain atom pair.
-  public init(descriptor: MM4RigidBodyDescriptor) throws {
+  public init(descriptor: MM4RigidBodyDescriptor) {
     // Ensure the required descriptor properties were set.
-    guard let descriptorAtomicNumbers = descriptor.atomicNumbers,
-          let descriptorBonds = descriptor.bonds,
+    guard let descriptorParameters = descriptor.parameters,
           let descriptorPositions = descriptor.positions else {
       fatalError("Descriptor did not have the required properties.")
     }
-    self.atoms = MM4RigidBodyAtoms(count: descriptorAtomicNumbers.count)
+    self.atoms = MM4RigidBodyAtoms(count: descriptorParameters.atoms.count)
     self.energy = MM4RigidBodyEnergy()
-    
-    var desc = MM4ParametersDescriptor()
-    desc.atomicNumbers = descriptorAtomicNumbers
-    desc.bonds = descriptorBonds
-    desc.hydrogenMassRepartitioning = descriptor.hydrogenMassRepartitioning
-    self.parameters = try MM4Parameters(descriptor: desc)
+    self.parameters = descriptorParameters
     
     self.storage = MM4RigidBodyStorage(atoms: atoms, parameters: parameters)
     descriptorPositions.withUnsafeBufferPointer {
       setPositions($0)
+    }
+    
+    if descriptor.velocities != nil {
+      fatalError("Velocity input is not accepted yet.")
     }
     
     // Prepare computed properties for access through the public API.

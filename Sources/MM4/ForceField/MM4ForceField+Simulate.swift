@@ -7,21 +7,23 @@
 
 import OpenMM
 
-/// A level of theory for the simulator.
-public enum MM4LevelOfTheory: CaseIterable {
-  /// The default time step is 4.348 femtoseconds.
-  case molecularDynamics
-  
-  /// The default time step has yet to be determined.
-  case rigidBodyDynamics
-  
-  /// The default time step in picoseconds.
-  public var defaultTimeStep: Double {
-    switch self {
-    case .molecularDynamics:
-      return 100 / 23 * OpenMM_PsPerFs
-    case .rigidBodyDynamics:
-      return 100 / 23 * OpenMM_PsPerFs
+extension MM4ForceField {
+  /// The largest time step that may be taken during simulation, in picoseconds.
+  /// Some steps may have a smaller duration.
+  ///
+  /// If not specified, the time step defaults to the value of
+  /// [`defaultTimeStep`](<doc:MM4LevelOfTheory/defaultTimeStep>).
+  public var timeStep: [MM4LevelOfTheory: Double] {
+    _read {
+      yield _timeStep
+    }
+    _modify {
+      yield &_timeStep
+      for level in MM4LevelOfTheory.allCases {
+        guard _timeStep[level] != nil else {
+          fatalError("Cannot set time step to 'nil'.")
+        }
+      }
     }
   }
 }
@@ -49,15 +51,12 @@ extension MM4ForceField {
     invalidatePositionsAndVelocities()
     invalidateForcesAndEnergy()
     
-    guard _levelOfTheory.allSatisfy({ $0 == .molecularDynamics }) else {
-      fatalError("Rigid body dynamics not implemented yet.")
-    }
     if time == 0 {
       return
     }
     
     // Check whether the arguments are valid.
-    let timeStep = self._timeStep[.molecularDynamics]!
+    let timeStep = self._timeStep[.molecularMechanics]!
     guard time > 0, timeStep > 0 else {
       fatalError("Time or time step was invalid.")
     }
@@ -111,28 +110,5 @@ extension MM4ForceField {
     if abs(endEnergy - startEnergy) > energy.explosionThreshold {
       throw MM4Error.energyDrift(endEnergy - startEnergy)
     }
-  }
-}
-
-extension MM4ForceField {
-  /// The level of theory used to simulate each rigid body.
-  ///
-  /// The default value is `.molecularDynamics` for each rigid body. All rigid
-  /// bodies must have the same level of theory, until hybrid simulation is
-  /// supported.
-  public func setLevelOfTheory(_ level: MM4LevelOfTheory, rigidBodyIndex: Int) {
-    guard rigidBodyIndex >= 0, rigidBodyIndex < _levelOfTheory.count else {
-      fatalError("Rigid body index out of bounds.")
-    }
-    _levelOfTheory[rigidBodyIndex] = level
-  }
-  
-  /// The largest time step that may be taken during simulation, in picoseconds.
-  /// Some steps may have a smaller duration.
-  ///
-  /// If not specified, the time step defaults to the value of
-  /// [`defaultTimeStep`](<doc:MM4LevelOfTheory/defaultTimeStep>).
-  public func setTimeStep(_ timeStep: Double, levelOfTheory: MM4LevelOfTheory) {
-    _timeStep[levelOfTheory] = timeStep
   }
 }

@@ -7,11 +7,13 @@ Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 ### Simulation
 
 Levels of theory:
-- Molecular dynamics
-- Rigid body dynamics
-- Hybrid approach for deformable bodies
+- Quantum mechanics
+- Molecular mechanics
+- Rigid body mechanics
 
 ### Supported Atoms
+
+Quantum mechanics supports any element or bonding topology. The following restrictions apply to molecular and rigid body mechanics.
 
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
@@ -27,9 +29,7 @@ Levels of theory:
 
 ### Supported Bonds
 
-Key:
-- X = nonpolar sigma bond
-- O = polar sigma bond
+Quantum mechanics supports any element or bonding topology. The following restrictions apply to molecular and rigid body mechanics.
 
 | Element | H | C | N | O | F | Si | P | S | Ge |
 | ------- | - | - | - | - | - | - | - | - | - |
@@ -43,27 +43,32 @@ Key:
 | S       |   | O |   |   |   |   |   |   |   |
 | Ge      | X | O |   |   |   |   |   |   | X |
 
+Key:
+- X = nonpolar sigma bond
+- O = polar sigma bond
+
 ### Forced Motions
 
-|         | Force           | Velocity             |
-| ------- | --------------- | -------------------- |
-| Linear  | external force  | anchor with velocity |
-| Angular | external torque | flywheel             |
+|         | Velocity             | Force           |
+| ------- | -------------------- | --------------- |
+| Linear  | anchor with velocity | external force  |
+| Angular | flywheel             | external torque |
 
 ### Releases
 
 Current version: not released yet
 
 v1.0.0
-- Accurate simulation of 5-ring carbons
 - Anchors
 - External forces
+- Molecular mechanics
+  - Accurate simulation of 5-ring carbons
 
 Future versions:
 - External torques
   - Recognizing angular velocity of objects with multiple collinear anchors
 - High-precision energy measurements
-- Rigid body dynamics
-  - Hybrid approach for deformable bodies
+- Quantum mechanics
+- Rigid body mechanics
 - Support for non-carbon elements
   - Priority: silicon for moissanite

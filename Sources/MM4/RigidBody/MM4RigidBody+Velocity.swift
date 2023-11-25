@@ -8,10 +8,7 @@
 import Numerics
 
 extension MM4RigidBody {
-  /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
-  ///
-  /// Velocities attributed to anchors are ignored. They are replaced with a
-  /// value determined by the bulk velocities.
+  /// The velocity (in nanometers per picosecond) of each atom.
   public var velocities: [SIMD3<Float>] {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: use the exposed setVelocities function.
