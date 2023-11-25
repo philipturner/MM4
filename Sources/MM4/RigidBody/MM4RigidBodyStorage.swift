@@ -124,13 +124,36 @@ final class MM4RigidBodyStorage {
   
   func ensureLinearVelocityCached() {
     if self.linearVelocity == nil {
-      self.linearVelocity = createLinearVelocity()
+      self.linearVelocity = createLinearVelocity(vVelocities)
     }
   }
   
   func ensureAngularVelocityCached() {
     if self.angularVelocity == nil {
-      self.angularVelocity = createAngularVelocity()
+      self.angularVelocity = createAngularVelocity(vVelocities)
+    }
+  }
+  
+  func ensureKineticEnergyCached() {
+    if self.freeKineticEnergy == nil,
+       self.thermalKineticEnergy == nil {
+      let total = createTotalKineticEnergy()
+      let free = createFreeKineticEnergy()
+      let thermal = total - free
+      self.freeKineticEnergy = free
+      self.thermalKineticEnergy = thermal
+      
+      let epsilon: Double = 1e-4
+      if thermal < epsilon * Double(atoms.count) {
+        fatalError("Thermal kinetic energy was too negative.")
+      }
+    } else if self.freeKineticEnergy != nil,
+              self.thermalKineticEnergy != nil {
+      guard self.freeKineticEnergy != nil,
+            self.thermalKineticEnergy != nil else {
+        fatalError(
+          "Either both or neither of the kinetic energies must be cached.")
+      }
     }
   }
 }

@@ -42,3 +42,6 @@ public let MM4BoltzInKJPerMolPerK: Double = 8.314462618 / 1000
 
 /// 0.013806
 public let MM4BoltzInZJPerK: Double = 8.314462618 / 1000 * MM4ZJPerKJPerMol
+
+/// 1.
+public let MM4YGPerAmu: Double = 1e-3 / 6.02214076e23 / 1e-24

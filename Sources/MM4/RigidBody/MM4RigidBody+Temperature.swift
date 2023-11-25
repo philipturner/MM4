@@ -145,6 +145,13 @@ extension MM4RigidBody {
     let N = Double(storage.atoms.count)
     let kT = MM4BoltzInZJPerK * temperature
     energy.kinetic.thermal = heatCapacity * N * kT
+    
+    // Erase the cached properties that need to be erased, and/or reinitialize
+    // the thermal velocities within this function call. Set up the non-nil
+    // kinetic energies to facilitate the passing of different checks when
+    // creating thermal velocities. This is a bit unusual because vVelocities,
+    // a source of truth, has actually been "un-cached".
+    fatalError("")
   }
 }
 

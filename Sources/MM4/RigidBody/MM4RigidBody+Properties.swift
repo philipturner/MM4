@@ -26,8 +26,9 @@ public struct MM4RigidBodyKineticEnergy {
   /// Kinetic energy contribution from organized mechanical energy (linear
   /// velocity, angular velocity). Contributions from anchors are omitted.
   ///
-  /// If there is more than one anchor, the free kinetic energy from the linear
-  /// velocity is zero.
+  /// If there is one or more anchor, the free kinetic energy from the linear
+  /// velocity is treated differently. It equals the total mass of non-anchor
+  /// atoms, combined with the anchors' linear velocity.
   public var free: Double {
     fatalError("Not implemented.")
   }

@@ -38,3 +38,7 @@ final class MM4ParametersTests: XCTestCase {
   
   // TODO: Use cyclosilane ab initio structures as a test case.
 }
+
+// TODO: In another file testing basic functionality, see what happens when
+// 'MM4RigidBody' and/or 'MM4ForceField' has zero atoms. There should be no
+// crashes or errors.

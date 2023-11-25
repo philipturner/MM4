@@ -86,7 +86,10 @@ extension MM4RigidBodyStorage {
     anchorVelocitiesValid = valid
   }
   
-  func createLinearVelocity() -> SIMD3<Float> {
+  // This accepts vVelocities as an argument, so it can be used during
+  // thermalization. Remember to zero out the anchors' thermal velocities
+  // before entering into this function.
+  func createLinearVelocity(_ vVelocities: [MM4FloatVector]) -> SIMD3<Float> {
     ensureAnchorVelocitiesValid()
     guard anchors.count == 0 else {
       let anchor = anchors.first!
@@ -120,7 +123,8 @@ extension MM4RigidBodyStorage {
     return SIMD3<Float>(momentum / nonAnchorMass)
   }
   
-  func createAngularVelocity() -> Quaternion<Float> {
+  // See the note on the linear velocity function.
+  func createAngularVelocity(_ vVelocities: [MM4FloatVector]) -> Quaternion<Float> {
     ensureAnchorVelocitiesValid()
     guard anchors.count <= 1, atoms.count > 0 else {
       return .zero
@@ -181,6 +185,41 @@ extension MM4RigidBodyStorage {
 }
 
 extension MM4RigidBodyStorage {
+  func createFreeKineticEnergy() -> Double {
+    var linear: Double = .zero
+    var angular: Double = .zero
+    do {
+      ensureLinearVelocityCached()
+      guard let linearVelocity else {
+        fatalError("This should never happen.")
+      }
+      
+      let v = SIMD3<Double>(linearVelocity)
+      linear += 0.5 * nonAnchorMass * (v * v).sum()
+    }
+    if anchors.count <= 1 {
+      ensureMomentOfInertiaCached()
+      ensureAngularVelocityCached()
+      guard let momentOfInertia,
+            let angularVelocity else {
+        fatalError("This should never happen.")
+      }
+      
+      let I = momentOfInertia
+      let w = SIMD3<Double>(angularVelocity.angle * angularVelocity.axis)
+      let velocityX = I.columns.0 * w.x
+      let velocityY = I.columns.1 * w.y
+      let velocityZ = I.columns.2 * w.z
+      let Iw = velocityX + velocityY + velocityZ
+      angular += 0.5 * (w * Iw).sum()
+    }
+    
+    // yoctograms per amu = zJ per kJ/mol
+    return MM4ZJPerKJPerMol * (linear + angular)
+  }
+  
+  // This function should return the same value as separating the bulk and
+  // thermal velocities, computing the energies separately, then summing.
   func createTotalKineticEnergy() -> Double {
     guard atoms.count > 0 else {
       return 0
@@ -210,7 +249,9 @@ extension MM4RigidBodyStorage {
         kinetic += MM4DoubleVector(vKineticZ).sum()
       }
     }
-    return kinetic / 2
+    
+    // yoctograms per amu = zJ per kJ/mol
+    return MM4ZJPerKJPerMol * kinetic / 2
   }
   
   // What is the return value?
