@@ -9,27 +9,32 @@ import Numerics
 
 // MARK: - Energy
 
-/// A data structure wrapping a rigid body's energy.
+/// The energy of a rigid body.
 public struct MM4RigidBodyEnergy {
-  /// The rigid body's kinetic energy.
+  /// The kinetic energy of the rigid body's non-anchor atoms.
   public var kinetic: MM4RigidBodyKineticEnergy = .init()
   
   init() { }
 }
 
-/// A data structure wrapping a rigid body's kinetic energy.
+/// The kinetic energy of a rigid body's non-anchor atoms.
 public struct MM4RigidBodyKineticEnergy {
   weak var storage: MM4RigidBodyStorage!
   
   init() { }
   
-  /// Kinetic energy contribution from organized mechanical energy (linear
-  /// velocity, angular velocity). Contributions from anchors are omitted.
-  ///
-  /// If there is one or more anchor, the free kinetic energy from the linear
-  /// velocity is treated differently. It equals the total mass of non-anchor
+  /// If there are more than one anchors, the free kinetic energy from
+  /// angular momentum should ideally be zero. However, the system can
+  /// experience angular displacements from the orientation strictly enforced by
+  /// anchors.
+  public var angular: Double {
+    fatalError("Not implemented.")
+  }
+  
+  /// If there are any anchors, the free kinetic energy from the linear
+  /// velocity is treated specially. It equals the total mass of non-anchor
   /// atoms, combined with the anchors' linear velocity.
-  public var free: Double {
+  public var linear: Double {
     fatalError("Not implemented.")
   }
   

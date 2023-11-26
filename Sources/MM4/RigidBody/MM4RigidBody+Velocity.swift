@@ -170,45 +170,47 @@ extension MM4RigidBodyStorage {
 }
 
 extension MM4RigidBodyStorage {
-  func createFreeKineticEnergy() -> Double {
-    var linear: Double = .zero
-    var angular: Double = .zero
-    do {
-      ensureLinearVelocityCached()
-      guard let linearVelocity else {
-        fatalError("This should never happen.")
-      }
-      
-      let v = SIMD3<Double>(linearVelocity)
-      linear += 0.5 * nonAnchorMass * (v * v).sum()
-    }
-    if anchors.count <= 1 {
-      ensureMomentOfInertiaCached()
-      ensureAngularVelocityCached()
-      guard let momentOfInertia,
-            let angularVelocity else {
-        fatalError("This should never happen.")
-      }
-      
-      let I = momentOfInertia
-      let w = SIMD3<Double>(angularVelocity.angle * angularVelocity.axis)
-      let velocityX = I.columns.0 * w.x
-      let velocityY = I.columns.1 * w.y
-      let velocityZ = I.columns.2 * w.z
-      let Iw = velocityX + velocityY + velocityZ
-      angular += 0.5 * (w * Iw).sum()
+  // Linear kinetic energy from non-anchor atoms.
+  func createLinearKineticEnergy() -> Double {
+    ensureLinearVelocityCached()
+    guard let linearVelocity else {
+      fatalError("This should never happen.")
     }
     
+    var linear: Double = .zero
+    let v = SIMD3<Double>(linearVelocity)
+    linear += 0.5 * nonAnchorMass * (v * v).sum()
+    
     // yoctograms per amu = zJ per kJ/mol
-    return MM4ZJPerKJPerMol * (linear + angular)
+    return MM4ZJPerKJPerMol * linear
   }
   
-  // This function should return the same value as separating the bulk and
-  // thermal velocities, computing the energies separately, then summing.
-  func createTotalKineticEnergy() -> Double {
-    guard atoms.count > 0 else {
-      return 0
+  // Angular kinetic energy about an angular mass defined by non-anchor atoms.
+  func createAngularKineticEnergy() -> Double {
+    ensureMomentOfInertiaCached()
+    ensureAngularVelocityCached()
+    guard let momentOfInertia,
+          let angularVelocity else {
+      fatalError("This should never happen.")
     }
+    
+    var angular: Double = .zero
+    let I = momentOfInertia
+    let w = SIMD3<Double>(angularVelocity.angle * angularVelocity.axis)
+    let velocityX = I.columns.0 * w.x
+    let velocityY = I.columns.1 * w.y
+    let velocityZ = I.columns.2 * w.z
+    let Iw = velocityX + velocityY + velocityZ
+    angular += 0.5 * (w * Iw).sum()
+    
+    // yoctograms per amu = zJ per kJ/mol
+    return MM4ZJPerKJPerMol * angular
+  }
+  
+  // Total translational kinetic energy from non-anchor atoms.
+  func createTotalKineticEnergy() -> Double {
+    // This function should return the same value as separating the bulk and
+    // thermal velocities, computing the energies separately, then summing.
     
     // Anchors should never be included in kinetic energy, either free or
     // thermal. For thermal, the kinetic energy from anchor velocities will
@@ -239,27 +241,16 @@ extension MM4RigidBodyStorage {
     return MM4ZJPerKJPerMol * kinetic / 2
   }
   
-  // What is the return value?
-  // Does this modify the state in-place?
-  //
-  // Likely does not handle linear and angular velocities. For example, it may
-  // be used to analyze new thermal velocities in isolation during
-  // thermalization. The function MUST NOT be called when simply adjusting the
-  // bulk velocity; we don't want to destroy the thermal velocities yet.
   func createThermalVelocities() {
     ensureCenterOfMassCached()
-    ensureMomentOfInertiaCached()
     ensureLinearVelocityCached()
     ensureAngularVelocityCached()
-    ensureKineticEnergyCached()
     
     // Express that every bulk quantity, except thermal kinetic energy, is the
     // same as before thermalization.
     guard let centerOfMass,
-          let momentOfInertia,
           let constantLinearVelocity = linearVelocity,
           let constantAngularVelocity = angularVelocity,
-          let constantFreeKineticEnergy = freeKineticEnergy,
           let newThermalKineticEnergy = thermalKineticEnergy else {
       fatalError("This should never happen.")
     }
@@ -327,7 +318,7 @@ extension MM4RigidBodyStorage {
       .allocate(capacity: scalarsCapacity)
     defer { scalarsPointer.deallocate() }
     
-    // Keep compacting the list, removing randoms that failed.
+    // Repeatedly compact the list, removing pairs that failed.
     var scalarsFinished = 0
     var generator = SystemRandomNumberGenerator()
     while scalarsFinished < scalarsRequired {
@@ -430,9 +421,91 @@ extension MM4RigidBodyStorage {
     // Query the bulk linear and angular momentum.
     let linearDrift = createLinearVelocity()
     let angularDrift = createAngularVelocity()
+    let wDrift = angularDrift.angle * angularDrift.axis
     
     // Set momentum to zero and calculate the modified thermal energy.
+    var correctedThermalKineticEnergy: Double = .zero
+    withMasses(nonAnchorMasses) { vMasses in
+      withSegmentedLoop(chunk: 256) {
+        var vKineticX: MM4FloatVector = .zero
+        var vKineticY: MM4FloatVector = .zero
+        var vKineticZ: MM4FloatVector = .zero
+        for vID in $0 {
+          let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+          let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+          let rZ = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+          var vX = vVelocities[vID &* 3 &+ 0]
+          var vY = vVelocities[vID &* 3 &+ 1]
+          var vZ = vVelocities[vID &* 3 &+ 2]
+          
+          // Apply the correction to linear velocity.
+          vX -= linearDrift.x
+          vY -= linearDrift.y
+          vZ -= linearDrift.z
+          
+          // Apply the correction to angular velocity.
+          let w = wDrift
+          vX -= w.y * rZ - w.z * rY
+          vY -= w.z * rX - w.x * rZ
+          vZ -= w.x * rY - w.y * rX
+          
+          // Mask out the changes to anchor velocities.
+          let mass = vMasses[vID]
+          vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vKineticX.addProduct(mass, vX * vX)
+          vKineticY.addProduct(mass, vY * vY)
+          vKineticZ.addProduct(mass, vZ * vZ)
+          vVelocities[vID &* 3 &+ 0] = vX
+          vVelocities[vID &* 3 &+ 1] = vY
+          vVelocities[vID &* 3 &+ 2] = vZ
+        }
+        correctedThermalKineticEnergy += MM4DoubleVector(vKineticX).sum()
+        correctedThermalKineticEnergy += MM4DoubleVector(vKineticY).sum()
+        correctedThermalKineticEnergy += MM4DoubleVector(vKineticZ).sum()
+      }
+    }
     
-    // Rescale thermal velocities and superimpose with bulk velocities.
+    // Rescale thermal velocities and superimpose over bulk velocities.
+    let velocityScale = Float((
+      newThermalKineticEnergy / correctedThermalKineticEnergy).squareRoot())
+    let w = constantAngularVelocity.angle * constantAngularVelocity.axis
+    
+    withMasses(nonAnchorMasses) { vMasses in
+      for vID in 0..<atoms.vectorCount {
+        let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+        let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+        let rZ = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        var vX = vVelocities[vID &* 3 &+ 0]
+        var vY = vVelocities[vID &* 3 &+ 1]
+        var vZ = vVelocities[vID &* 3 &+ 2]
+        
+        // Apply the correction to thermal velocity.
+        vX *= velocityScale
+        vY *= velocityScale
+        vZ *= velocityScale
+        
+        // Apply the bulk angular velocity.
+        vX += w.y * rZ - w.z * rY
+        vY += w.z * rX - w.x * rZ
+        vZ += w.x * rY - w.y * rX
+        
+        // Mask out the changes to angular velocity for anchors.
+        let mass = vMasses[vID]
+        vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        
+        // Apply the bulk linear velocity.
+        vX += constantLinearVelocity.x
+        vY += constantLinearVelocity.y
+        vZ += constantLinearVelocity.z
+        
+        vVelocities[vID &* 3 &+ 0] = vX
+        vVelocities[vID &* 3 &+ 1] = vY
+        vVelocities[vID &* 3 &+ 2] = vZ
+      }
+    }
   }
 }

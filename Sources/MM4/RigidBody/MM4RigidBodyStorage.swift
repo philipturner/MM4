@@ -28,11 +28,12 @@ final class MM4RigidBodyStorage {
   var velocities: [SIMD3<Float>]?
   
   // Rarely cached (frequently erased).
+  var angularKineticEnergy: Double?
   var angularVelocity: Quaternion<Float>?
-  var freeKineticEnergy: Double?
-  var thermalKineticEnergy: Double?
+  var linearKineticEnergy: Double?
   var linearVelocity: SIMD3<Float>?
   var momentOfInertia: MM4MomentOfInertia?
+  var thermalKineticEnergy: Double?
   
   init(
     anchors: Set<UInt32>,
@@ -108,11 +109,12 @@ final class MM4RigidBodyStorage {
   
   func eraseRarelyCachedProperties() {
     // WARNING: Always ensure this reflects recently added properties.
+    angularKineticEnergy = nil
     angularVelocity = nil
-    freeKineticEnergy = nil
-    thermalKineticEnergy = nil
+    linearKineticEnergy = nil
     linearVelocity = nil
     momentOfInertia = nil
+    thermalKineticEnergy = nil
   }
   
   func ensureCenterOfMassCached() {
@@ -154,25 +156,32 @@ final class MM4RigidBodyStorage {
   }
   
   func ensureKineticEnergyCached() {
-    if self.freeKineticEnergy == nil,
+    if self.angularKineticEnergy == nil,
+       self.linearKineticEnergy == nil,
        self.thermalKineticEnergy == nil {
+      let angular = createAngularKineticEnergy()
+      let linear = createLinearKineticEnergy()
       let total = createTotalKineticEnergy()
-      let free = createFreeKineticEnergy()
-      let thermal = total - free
-      self.freeKineticEnergy = free
+      let thermal = total - angular - linear
+      self.angularKineticEnergy = angular
+      self.linearKineticEnergy = linear
       self.thermalKineticEnergy = thermal
       
       let epsilon: Double = 1e-4
+      if angular < epsilon * Double(atoms.count) {
+        fatalError("Angular kinetic energy was too negative.")
+      }
+      if linear < epsilon * Double(atoms.count) {
+        fatalError("Linear kinetic energy was too negative.")
+      }
       if thermal < epsilon * Double(atoms.count) {
         fatalError("Thermal kinetic energy was too negative.")
       }
-    } else if self.freeKineticEnergy != nil,
-              self.thermalKineticEnergy != nil {
-      guard self.freeKineticEnergy != nil,
-            self.thermalKineticEnergy != nil else {
-        fatalError(
-          "Either both or neither of the kinetic energies must be cached.")
-      }
+    } else if self.angularVelocity == nil ||
+                self.linearKineticEnergy == nil ||
+                self.thermalKineticEnergy == nil {
+      fatalError(
+        "Either all or none of the kinetic energies must be cached.")
     }
   }
 }
