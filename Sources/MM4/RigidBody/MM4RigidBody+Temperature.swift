@@ -36,6 +36,7 @@ extension MM4RigidBody {
       let vBaseAddress = UnsafeRawPointer(rawBaseAddress)!
         .assumingMemoryBound(to: MM4UInt8Vector.self)
       
+      // Atomic numbers at the end of the list are padded with zero.
       for vID in 0..<storage.atoms.vectorCount {
         let atomicNumber = MM4UInt32Vector(
           truncatingIfNeeded: vBaseAddress[vID])
@@ -47,20 +48,16 @@ extension MM4RigidBody {
         (atomicNumber .== 35) .|
         (atomicNumber .== 53)
         
-        var isCarbon =
+        let isCarbon =
         (atomicNumber .>= 6) .&
         (atomicNumber .<= 8) .&
         (.!isHalogen)
         
-        var isSilicon =
+        let isSilicon =
         (atomicNumber .>= 14) .&
         (atomicNumber .<= 32) .&
         (.!isHalogen)
         
-        if vID == storage.atoms.vectorCount - 1 {
-          isCarbon = isCarbon .& storage.atoms.vectorMask
-          isSilicon = isSilicon .& storage.atoms.vectorMask
-        }
         vNumCarbons.replace(with: vNumCarbons &+ 1, where: isCarbon)
         vNumSilicons.replace(with: vNumSilicons &+ 1, where: isSilicon)
       }

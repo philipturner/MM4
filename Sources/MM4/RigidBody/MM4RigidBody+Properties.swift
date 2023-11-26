@@ -54,7 +54,11 @@ extension MM4RigidBody {
     set { fatalError("Not implemented.") }
   }
   
+  /// The force is distributed evenly among all atoms in the rigid body.
   /// If the number of anchors exceeds 0, external force has no effect.
+  ///
+  /// In the future, there may be a means to control which atoms are affected by
+  /// the external force.
   public var externalForce: SIMD3<Float> {
     get { fatalError("Not implemented.") }
     set { fatalError("Not implemented.") }

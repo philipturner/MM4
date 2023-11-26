@@ -325,9 +325,9 @@ extension MM4RigidBodyStorage {
       x: MM4FloatVector, y: MM4FloatVector, r2: MM4FloatVector
     ) {
       let seedPair = unsafeBitCast(seed, to: MM4UInt16VectorPair.self)
-      let floatPair = SIMD8<Float>(seedPair) / Float(UInt16.max)
-      let x = 2 * floatPair.lowHalf - 1
-      let y = 2 * floatPair.highHalf - 1
+      let floatPair = MM4FloatVectorPair(seedPair) / Float(UInt16.max)
+      let x = 2 * floatPair.evenHalf - 1
+      let y = 2 * floatPair.oddHalf - 1
       let r2 = x * x + y * y
       return (x, y, r2)
     }
@@ -386,11 +386,61 @@ extension MM4RigidBodyStorage {
     // mass = anchor ? INF : mass
     // v_rms = sqrt(2/3 * E_particle / mass)
     // v = (gaussian(0, 1), gaussian(0, 1), gaussian(0, 1)) * v_rms
-    let pairsPointer: UnsafeMutablePointer<MM4UInt32Vector> = .init(
+    let xyPointer: UnsafePointer<MM4UInt32Vector> = .init(
       OpaquePointer(scalarsPointer))
+    let zPointer: UnsafePointer<MM4UInt16Vector> = .init(
+      OpaquePointer(scalarsPointer + 2 * MM4VectorWidth * atoms.vectorCount))
     let particleCount = Double(atoms.count - anchors.count)
     let particleEnergy = newThermalKineticEnergy / particleCount
     
+    // Units: zJ -> kJ/mol
+    let particleEnergyTerm = Float(
+      Double(2.0 / 3) * MM4KJPerMolPerZJ * particleEnergy)
+    
+    withMasses(nonAnchorMasses) { vMasses in
+      for vID in 0..<atoms.vectorCount {
+        var xGaussian: MM4FloatVector
+        var yGaussian: MM4FloatVector
+        var zGaussian: MM4FloatVector
+        do {
+          let z = MM4FloatVector(zPointer[vID]) / Float(UInt16.max)
+          let zLow = 2 * z.evenHalf - 1
+          let zHigh = 2 * z.oddHalf - 1
+          let zR2 = zLow * zLow + zHigh * zHigh
+          let (x, y, xyR2) = gaussian(xyPointer[vID])
+          var (xyLog, zLog) = (xyR2, zR2)
+          
+          // There is no simple way to access vectorized transcendentals on
+          // non-Apple platforms. Ideally, one would copy code from Sleef. We can
+          // only keep our fingers crossed that the compiler will
+          // "auto-vectorize" this transcendental function, which may have
+          // control flow operations that prevent it from actually vectorizing.
+          for lane in 0..<MM4VectorWidth {
+            xyLog[lane] = Float.log(xyLog[lane])
+          }
+          for lane in 0..<MM4VectorWidth / 2 {
+            zLog[lane] = Float.log(zLog[lane])
+          }
+          
+          let xyMultiplier = (-2 * xyLog / xyR2).squareRoot()
+          let zMultiplier = (-2 * zLog / zR2).squareRoot()
+          xGaussian = x * xyMultiplier
+          yGaussian = y * xyMultiplier
+          
+          var zBroadcasted: MM4FloatVector = .zero
+          zBroadcasted.evenHalf = zMultiplier
+          zBroadcasted.oddHalf = zMultiplier
+          zGaussian = z * zBroadcasted
+        }
+        
+        var mass = vMasses[vID]
+        mass.replace(with: .greatestFiniteMagnitude, where: mass .== 0)
+        let velocityScale = (particleEnergyTerm / mass).squareRoot()
+        vVelocities[vID &* 3 &+ 0] = xGaussian * velocityScale
+        vVelocities[vID &* 3 &+ 1] = yGaussian * velocityScale
+        vVelocities[vID &* 3 &+ 2] = zGaussian * velocityScale
+      }
+    }
     
     // Query the bulk linear and angular momentum.
     

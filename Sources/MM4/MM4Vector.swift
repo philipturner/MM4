@@ -16,4 +16,5 @@ typealias MM4UInt16Vector = SIMD4<UInt16>
 typealias MM4UInt32Vector = SIMD4<UInt32>
 
 let MM4VectorPairWidth: Int = 8
+typealias MM4FloatVectorPair = SIMD8<Float>
 typealias MM4UInt16VectorPair = SIMD8<UInt16>

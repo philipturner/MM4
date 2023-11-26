@@ -10,7 +10,7 @@ import Numerics
 final class MM4RigidBodyStorage {
   // Sources of truth.
   var anchors: Set<UInt32>
-  var atoms: MM4RigidBodyAtoms
+  var atoms: (count: Int, vectorCount: Int)
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
   
@@ -38,16 +38,17 @@ final class MM4RigidBodyStorage {
     parameters: MM4Parameters
   ) {
     // Initialize stored properties.
-    let atoms = MM4RigidBodyAtoms(count: parameters.atoms.count)
+    let atomCount = parameters.atoms.count
+    let atomVectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     self.anchors = anchors
-    self.atoms = atoms
-    vPositions = Array(unsafeUninitializedCapacity: 3 * atoms.vectorCount) {
+    self.atoms = (atomCount, atomVectorCount)
+    self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
-      $1 = 3 * atoms.count
+      $1 = 3 * atomCount
     }
-    vVelocities = Array(unsafeUninitializedCapacity: 3 * atoms.vectorCount) {
+    self.vVelocities = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
-      $1 = 3 * atoms.count
+      $1 = 3 * atomCount
     }
     
     self.anchorMass = .zero
@@ -55,10 +56,10 @@ final class MM4RigidBodyStorage {
     self.nonAnchorMasses = parameters.atoms.masses
     if anchors.count > .zero {
       func generateArray() -> [Float] {
-        let arraySize = atoms.vectorCount * MM4VectorWidth
+        let arraySize = atomVectorCount * MM4VectorWidth
         return Array(unsafeUninitializedCapacity: arraySize) {
           $0.initialize(repeating: .zero)
-          $1 = atoms.count
+          $1 = atomCount
         }
       }
       anchorMasses = generateArray()
@@ -174,4 +175,5 @@ extension MM4RigidBody {
     }
   }
 }
+
 
