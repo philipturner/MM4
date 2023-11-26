@@ -52,23 +52,19 @@ Key:
 |         | Velocity             | Force           |
 | ------- | -------------------- | --------------- |
 | Linear  | anchor with velocity | external force  |
-| Angular | flywheel             | external torque |
+| Angular | flywheel             | linear to rotary converter |
 
 ### Releases
 
 Current version: not released yet
 
 v1.0.0
+- Accurate simulation of 5-ring carbons
 - Anchors
 - External forces
-- Molecular mechanics
-  - Accurate simulation of 5-ring carbons
 
 Future versions:
-- External torques
-  - Recognizing angular velocity of objects with multiple collinear anchors
 - High-precision energy measurements
 - Quantum mechanics
 - Rigid body mechanics
 - Support for non-carbon elements
-  - Priority: silicon for moissanite

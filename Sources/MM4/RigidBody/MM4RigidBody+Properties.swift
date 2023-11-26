@@ -41,45 +41,7 @@ public struct MM4RigidBodyKineticEnergy {
   }
 }
 
-// MARK: - Velocity
 
-extension MM4RigidBody {
-  // TODO: Add a one-line summary to each property's documentation.
-  
-  /// If the angular velocity is nonzero, the number of anchors cannot exceed 1.
-  /// When importing velocities, if the number of anchors exceeds 1, the angular
-  /// velocity is set to zero.
-  public var angularVelocity: Quaternion<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
-  }
-  
-  /// The force is distributed evenly among all atoms in the rigid body.
-  /// If the number of anchors exceeds 0, external force has no effect.
-  ///
-  /// In the future, there may be a means to control which atoms are affected by
-  /// the external force.
-  public var externalForce: SIMD3<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
-  }
-  
-  /// If the number of anchors exceeds 1, external torque has no effect.
-  ///
-  /// Right now, external torque must be zero when simulating in the
-  /// `.molecularDynamics` level of theory.
-  public var externalTorque: Quaternion<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
-  }
-  
-  /// Every anchor's velocity is set to the rigid body's linear velocity.
-  /// When importing velocities, all anchors must have the same velocity.
-  public var linearVelocity: SIMD3<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
-  }
-}
 
 // MARK: - Other Properties
 
@@ -94,6 +56,13 @@ extension MM4RigidBody {
   /// The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8] {
     parameters.atoms.atomicNumbers
+  }
+  
+  /// Optional. Indices of atoms where external force is applied.
+  public var handles: Set<UInt32> {
+    // _modify not supported b/c it requires very complex caching logic.
+    // Workaround: import a new rigid body initialized with different targets.
+    _read { fatalError("Not implemented.") }
   }
   
   /// Pairs of atom indices representing sigma bonds.

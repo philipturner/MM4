@@ -11,6 +11,7 @@ final class MM4RigidBodyStorage {
   // Sources of truth.
   var anchors: Set<UInt32>
   var atoms: (count: Int, vectorCount: Int)
+  var handles: Set<UInt32>
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
   
@@ -35,6 +36,7 @@ final class MM4RigidBodyStorage {
   
   init(
     anchors: Set<UInt32>,
+    handles: Set<UInt32>,
     parameters: MM4Parameters
   ) {
     // Initialize stored properties.
@@ -42,6 +44,7 @@ final class MM4RigidBodyStorage {
     let atomVectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     self.anchors = anchors
     self.atoms = (atomCount, atomVectorCount)
+    self.handles = handles
     self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
       $1 = 3 * atomCount
@@ -88,6 +91,7 @@ final class MM4RigidBodyStorage {
     anchors = other.anchors
     anchorMass = other.anchorMass
     anchorMasses = other.anchorMasses
+    handles = other.handles
     nonAnchorMass = other.nonAnchorMass
     nonAnchorMasses = other.nonAnchorMasses
     vPositions = other.vPositions
@@ -124,14 +128,28 @@ final class MM4RigidBodyStorage {
   }
   
   func ensureLinearVelocityCached() {
-    if self.linearVelocity == nil {
-      self.linearVelocity = createLinearVelocity(vVelocities)
+    if linearVelocity == nil {
+      ensureAnchorVelocitiesValid()
+      if anchors.count > 0 {
+        let anchor = anchors.first!
+        let velocity = extractScalar(Int(anchor), vVelocities)
+        linearVelocity = velocity
+      } else if atoms.count > 0 {
+        linearVelocity = createLinearVelocity()
+      } else {
+        linearVelocity = .zero
+      }
     }
   }
   
   func ensureAngularVelocityCached() {
-    if self.angularVelocity == nil {
-      self.angularVelocity = createAngularVelocity(vVelocities)
+    if angularVelocity == nil {
+      ensureAnchorVelocitiesValid()
+      if anchors.count <= 1, atoms.count > 0 {
+        angularVelocity = createAngularVelocity()
+      } else {
+        angularVelocity = .zero
+      }
     }
   }
   

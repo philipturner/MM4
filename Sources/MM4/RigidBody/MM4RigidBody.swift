@@ -10,6 +10,11 @@ public struct MM4RigidBodyDescriptor {
   /// Optional. Indices of atoms that should be treated as having infinite mass.
   public var anchors: Set<UInt32>?
   
+  /// Optional. Indices of atoms where external force is applied.
+  ///
+  /// If not specified, external force is distributed over the entire object.
+  public var handles: Set<UInt32>?
+  
   /// Required. The parameters for the rigid body.
   public var parameters: MM4Parameters?
   
@@ -48,8 +53,22 @@ public struct MM4RigidBody {
     self.energy = MM4RigidBodyEnergy()
     self.parameters = descriptorParameters
     
+    let anchors = descriptor.anchors ?? []
+    var handles: Set<UInt32>
+    if let descriptorHandles = descriptor.handles {
+      handles = descriptorHandles
+      for anchor in anchors where handles.contains(anchor) {
+        fatalError("Atom \(anchor) was both an anchor and a handle.")
+      }
+    } else {
+      handles = []
+      for atomID in 0..<descriptorParameters.atoms.count {
+        handles.insert(UInt32(truncatingIfNeeded: atomID))
+      }
+    }
+    
     self.storage = MM4RigidBodyStorage(
-      anchors: descriptor.anchors ?? [], parameters: parameters)
+      anchors: anchors, handles: handles, parameters: parameters)
     descriptorPositions.withUnsafeBufferPointer {
       setPositions($0)
     }

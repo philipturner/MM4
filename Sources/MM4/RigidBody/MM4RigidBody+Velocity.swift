@@ -86,20 +86,9 @@ extension MM4RigidBodyStorage {
     anchorVelocitiesValid = valid
   }
   
-  // This accepts vVelocities as an argument, so it can be used during
-  // thermalization. Remember to zero out the anchors' thermal velocities
-  // before entering into this function.
-  func createLinearVelocity(_ vVelocities: [MM4FloatVector]) -> SIMD3<Float> {
-    ensureAnchorVelocitiesValid()
-    guard anchors.count == 0 else {
-      let anchor = anchors.first!
-      let velocity = extractScalar(Int(anchor), vVelocities)
-      return velocity
-    }
-    guard atoms.count > 0 else {
-      return .zero
-    }
-    
+  // WARNING: When there are anchors, this returns something besides the bulk
+  // velocity. It is the linear velocity of non-anchors.
+  func createLinearVelocity() -> SIMD3<Float> {
     var momentum: SIMD3<Double> = .zero
     withMasses(nonAnchorMasses) { vMasses in
       withSegmentedLoop(chunk: 256) {
@@ -123,13 +112,9 @@ extension MM4RigidBodyStorage {
     return SIMD3<Float>(momentum / nonAnchorMass)
   }
   
-  // See the note on the linear velocity function.
-  func createAngularVelocity(_ vVelocities: [MM4FloatVector]) -> Quaternion<Float> {
-    ensureAnchorVelocitiesValid()
-    guard anchors.count <= 1, atoms.count > 0 else {
-      return .zero
-    }
-    
+  // WARNING: This returns a nonzero angular velocity, even when we should store
+  // zero (anchors > 1). It is the angular velocity of non-anchors.
+  func createAngularVelocity() -> Quaternion<Float> {
     var momentum: SIMD3<Double> = .zero
     ensureCenterOfMassCached()
     guard let centerOfMass else {
@@ -411,8 +396,8 @@ extension MM4RigidBodyStorage {
           var (xyLog, zLog) = (xyR2, zR2)
           
           // There is no simple way to access vectorized transcendentals on
-          // non-Apple platforms. Ideally, one would copy code from Sleef. We can
-          // only keep our fingers crossed that the compiler will
+          // non-Apple platforms. Ideally, one would copy code from Sleef. We
+          // can only keep our fingers crossed that the compiler will
           // "auto-vectorize" this transcendental function, which may have
           // control flow operations that prevent it from actually vectorizing.
           for lane in 0..<MM4VectorWidth {
@@ -443,6 +428,8 @@ extension MM4RigidBodyStorage {
     }
     
     // Query the bulk linear and angular momentum.
+    let linearDrift = createLinearVelocity()
+    let angularDrift = createAngularVelocity()
     
     // Set momentum to zero and calculate the modified thermal energy.
     

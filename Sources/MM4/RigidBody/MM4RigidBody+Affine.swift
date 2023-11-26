@@ -51,10 +51,13 @@ struct MM4MomentOfInertia {
   }
 }
 
+// MARK: - Position
+
 extension MM4RigidBody {
   /// Symmetric matrix specifying the rigid body's moment of inertia.
   ///
-  /// If there is more than one anchor, this is zero.
+  /// If there is more than one anchor, this is the inertia of non-anchor atoms
+  /// around the center of mass defined by anchors.
   public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
     // no setter; instead use rotate()
     get { fatalError("Not implemented.") }
@@ -62,6 +65,9 @@ extension MM4RigidBody {
   
   /// Center of mass, treating anchors as astronomically larger than
   /// non-anchors.
+  ///
+  /// If there are any anchors, this is the mass-weighted average of the
+  /// anchors.
   public var centerOfMass: SIMD3<Float> {
     _read { fatalError("Not implemented.") }
     _modify { fatalError("Not implemented.") }
@@ -70,5 +76,36 @@ extension MM4RigidBody {
   /// Change the object's orientation by the specified 3D angle.
   public mutating func rotate(_ angle: Quaternion<Float>) {
     fatalError("Not implemented.")
+  }
+}
+
+// MARK: - Velocity
+
+// The setters for velocity have similar functionality to setters for position.
+
+extension MM4RigidBody {
+  // TODO: Add a one-line summary to each property's documentation.
+  
+  /// If the angular velocity is nonzero, the number of anchors cannot exceed 1.
+  /// When importing velocities, if the number of anchors exceeds 1, the angular
+  /// velocity is set to zero.
+  public var angularVelocity: Quaternion<Float> {
+    get { fatalError("Not implemented.") }
+    set { fatalError("Not implemented.") }
+  }
+  
+  /// The force is distributed evenly among all non-anchor atoms in the rigid
+  /// body. If an anchor is explicitly selected as an external force target,
+  /// there will be an error.
+  public var externalForce: SIMD3<Float> {
+    get { fatalError("Not implemented.") }
+    set { fatalError("Not implemented.") }
+  }
+  
+  /// Every anchor's velocity is set to the rigid body's linear velocity.
+  /// When importing velocities, all anchors must have the same velocity.
+  public var linearVelocity: SIMD3<Float> {
+    get { fatalError("Not implemented.") }
+    set { fatalError("Not implemented.") }
   }
 }

@@ -94,15 +94,15 @@ extension MM4RigidBodyStorage {
   }
   
   func createMomentOfInertia() -> MM4MomentOfInertia {
-    var momentOfInertia = MM4MomentOfInertia()
-    guard anchors.count <= 1, atoms.count > 0 else {
-      return momentOfInertia
-    }
-    
     ensureCenterOfMassCached()
     guard let centerOfMass else {
       fatalError("This should never happen.")
     }
+    guard atoms.count > 0 else {
+      return MM4MomentOfInertia()
+    }
+    
+    var momentOfInertia = MM4MomentOfInertia()
     withMasses(nonAnchorMasses) { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vXX: MM4FloatVector = .zero
