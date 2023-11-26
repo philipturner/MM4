@@ -11,13 +11,8 @@ import OpenMM
 ///
 /// > WARNING: Currently, only `.molecularMechanics` is supported.
 ///
-/// Once an `MM4ForceField` is created, the level of theory can changed. A
-/// change occurs when the imported or exported rigid body has a different level
-/// of theory. The following changes are allowed:
-/// - `.extendedTightBinding` to `.forceField`
-/// - `.forceField` to `.extendedTightBinding`
-/// - `.molecularMechanics` to `.rigidBodyMechanics`
-/// - `.rigidBodyMechanics` to `.molecularMechanics`
+/// Once an `MM4ForceField` is created, the level of theory cannot be changed.
+/// The level in an imported or exported rigid body is simply ignored.
 public enum MM4LevelOfTheory: CaseIterable, Hashable {
   /// One of the algorithms from the xTB package.
   ///
