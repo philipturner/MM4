@@ -641,4 +641,3 @@ fileprivate let siliconLookupCapacities: [Double] = [
   3.448881405,
   3.479672841,
 ]
-

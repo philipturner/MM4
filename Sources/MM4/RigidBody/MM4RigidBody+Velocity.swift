@@ -259,8 +259,38 @@ extension MM4RigidBodyStorage {
   //
   // Likely does not handle linear and angular velocities. For example, it may
   // be used to analyze new thermal velocities in isolation during
-  // thermalization.
+  // thermalization. The function MUST NOT be called when simply adjusting the
+  // bulk velocity; we don't want to destroy the thermal velocities yet.
   func createThermalVelocities() {
+    ensureCenterOfMassCached()
+    ensureMomentOfInertiaCached()
+    ensureLinearVelocityCached()
+    ensureAngularVelocityCached()
+    ensureKineticEnergyCached()
+    
+    // Express that every bulk quantity, except thermal kinetic energy, is the
+    // same as before thermalization.
+    guard let centerOfMass,
+          let momentOfInertia,
+          let constantLinearVelocity = linearVelocity,
+          let constantAngularVelocity = angularVelocity,
+          let constantFreeKineticEnergy = freeKineticEnergy,
+          let newThermalKineticEnergy = thermalKineticEnergy else {
+      fatalError("This should never happen.")
+    }
+    
+    // Handle the special case where velocity rescaling would cause division by
+    // zero.
+    if anchors.count == atoms.count {
+      guard newThermalKineticEnergy == 0 else {
+        fatalError(
+          "Cannot create thermal velocities when all atoms are anchors.")
+      }
+      ensureAnchorVelocitiesValid()
+      return
+    }
+    
+    // Reference implementation from OpenMM.
     /*
      // Generate the list of Gaussian random numbers.
      OpenMM_SFMT::SFMT sfmt;
@@ -290,5 +320,82 @@ extension MM4RigidBodyStorage {
      }
      return velocities;
      */
+    @inline(__always)
+    func gaussian(_ seed: MM4UInt32Vector) -> (
+      x: MM4FloatVector, y: MM4FloatVector, r2: MM4FloatVector
+    ) {
+      let seedPair = unsafeBitCast(seed, to: MM4UInt16VectorPair.self)
+      let floatPair = SIMD8<Float>(seedPair) / Float(UInt16.max)
+      let x = 2 * floatPair.lowHalf - 1
+      let y = 2 * floatPair.highHalf - 1
+      let r2 = x * x + y * y
+      return (x, y, r2)
+    }
+    
+    // First, generate a unitless list of velocities. Pad the list to 64 more
+    // than required (21 atoms) to decrease the overhead of repeated
+    // reinitialization in the final loop iterations.
+    var scalarsRequired = 3 * atoms.vectorCount * MM4VectorWidth
+    scalarsRequired = (scalarsRequired + 4 - 1) / 4 * 4
+    let scalarsCapacity = 64 + scalarsRequired
+    let scalarsPointer: UnsafeMutablePointer<UInt16> =
+      .allocate(capacity: scalarsCapacity)
+    defer { scalarsPointer.deallocate() }
+    
+    // Keep compacting the list, removing randoms that failed.
+    var scalarsFinished = 0
+    var generator = SystemRandomNumberGenerator()
+    while scalarsFinished < scalarsRequired {
+      // Round down to UInt64 alignment.
+      scalarsFinished = scalarsFinished / 4 * 4
+      
+      // Fill up to the capacity, rather than the required amount.
+      let quadsToGenerate = (scalarsCapacity - scalarsFinished) / 4
+      let quadsPointer: UnsafeMutablePointer<UInt64> = .init( OpaquePointer(scalarsPointer + scalarsFinished / 4))
+      for i in 0..<quadsToGenerate {
+        quadsPointer[i] = generator.next()
+      }
+      
+      // The first of these pointers acts as a cursor.
+      var pairsPointer: UnsafeMutablePointer<UInt32> = .init( OpaquePointer(scalarsPointer + scalarsFinished / 4))
+      let pairsVectorPointer: UnsafeMutablePointer<MM4UInt32Vector> = .init( OpaquePointer(scalarsPointer + scalarsFinished / 4))
+      
+      for vID in 0..<quadsToGenerate * 4 / MM4VectorWidth {
+        let seed = pairsVectorPointer[vID]
+        let (_, _, r2) = gaussian(seed)
+        
+        let mask = (r2 .< 1) .& (r2 .!= 0)
+        for lane in 0..<MM4VectorWidth {
+          if mask[lane] {
+            pairsPointer.pointee = seed[lane]
+            pairsPointer += 1
+          }
+        }
+      }
+      let newScalarsPointer: UnsafeMutablePointer<UInt16> = .init(
+        OpaquePointer(pairsPointer))
+      scalarsFinished = newScalarsPointer - scalarsPointer
+    }
+    
+    // Generate velocities, zeroing out the ones from anchors.
+    //
+    // E_particle = E_system / (atoms.count - anchors.count)
+    // E_openmm = 3/2 kT
+    // kT = 2/3 * (translational kinetic energy)
+    //
+    // mass = anchor ? INF : mass
+    // v_rms = sqrt(2/3 * E_particle / mass)
+    // v = (gaussian(0, 1), gaussian(0, 1), gaussian(0, 1)) * v_rms
+    let pairsPointer: UnsafeMutablePointer<MM4UInt32Vector> = .init(
+      OpaquePointer(scalarsPointer))
+    let particleCount = Double(atoms.count - anchors.count)
+    let particleEnergy = newThermalKineticEnergy / particleCount
+    
+    
+    // Query the bulk linear and angular momentum.
+    
+    // Set momentum to zero and calculate the modified thermal energy.
+    
+    // Rescale thermal velocities and superimpose with bulk velocities.
   }
 }

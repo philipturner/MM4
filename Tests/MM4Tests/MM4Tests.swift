@@ -42,3 +42,6 @@ final class MM4ParametersTests: XCTestCase {
 // TODO: In another file testing basic functionality, see what happens when
 // 'MM4RigidBody' and/or 'MM4ForceField' has zero atoms. There should be no
 // crashes or errors.
+
+// Test whether the code enters an infinite loop while generating random
+// velocities.
