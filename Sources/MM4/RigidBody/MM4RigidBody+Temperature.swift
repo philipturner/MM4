@@ -48,15 +48,25 @@ extension MM4RigidBody {
         (atomicNumber .== 35) .|
         (atomicNumber .== 53)
         
-        let isCarbon =
+        var isCarbon =
         (atomicNumber .>= 6) .&
         (atomicNumber .<= 8) .&
         (.!isHalogen)
         
-        let isSilicon =
+        var isSilicon =
         (atomicNumber .>= 14) .&
         (atomicNumber .<= 32) .&
         (.!isHalogen)
+        
+        // We can't be 100% sure the backing array for atomic numbers will still
+        // be padded to the vector width.
+        if vID == storage.atoms.vectorCount - 1 {
+          let edge = storage.atoms.count - vID * MM4VectorWidth
+          for lane in edge..<MM4VectorWidth {
+            isCarbon[lane] = false
+            isSilicon[lane] = false
+          }
+        }
         
         vNumCarbons.replace(with: vNumCarbons &+ 1, where: isCarbon)
         vNumSilicons.replace(with: vNumSilicons &+ 1, where: isSilicon)
@@ -132,6 +142,10 @@ extension MM4RigidBody {
     temperature: Double,
     heatCapacity: Double
   ) {
+    ensureUniquelyReferenced()
+    storage.velocities = nil
+    storage.ensureKineticEnergyCached()
+    
     // E = thermal energy
     // C = heat capacity
     // N = number of atoms
@@ -141,14 +155,8 @@ extension MM4RigidBody {
     // E = C N kT
     let N = Double(storage.atoms.count)
     let kT = MM4BoltzInZJPerK * temperature
-    energy.kinetic.thermal = heatCapacity * N * kT
-    
-    // Erase the cached properties that need to be erased, and/or reinitialize
-    // the thermal velocities within this function call. Set up the non-nil
-    // kinetic energies to facilitate the passing of different checks when
-    // creating thermal velocities. This is a bit unusual because vVelocities,
-    // a source of truth, has actually been "un-cached".
-    fatalError("")
+    storage.thermalKineticEnergy = heatCapacity * N * kT
+    storage.createThermalVelocities()
   }
 }
 

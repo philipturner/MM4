@@ -35,7 +35,7 @@ public struct MM4RigidBodyDescriptor {
 /// An enclosed group of covalently bonded atoms.
 public struct MM4RigidBody {
   /// The rigid body's energy.
-  public var energy: MM4RigidBodyEnergy
+  var _energy: MM4RigidBodyEnergy
   
   /// The force field parameters cached for this rigid body.
   public let parameters: MM4Parameters
@@ -50,7 +50,7 @@ public struct MM4RigidBody {
           let descriptorPositions = descriptor.positions else {
       fatalError("Descriptor did not have the required properties.")
     }
-    self.energy = MM4RigidBodyEnergy()
+    self._energy = MM4RigidBodyEnergy()
     self.parameters = descriptorParameters
     
     let anchors = descriptor.anchors ?? []

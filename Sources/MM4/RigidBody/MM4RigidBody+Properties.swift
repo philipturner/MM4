@@ -46,7 +46,18 @@ public struct MM4RigidBodyKineticEnergy {
   }
 }
 
-
+extension MM4RigidBody {
+  /// The rigid body's energy.
+  public var energy: MM4RigidBodyEnergy {
+    _read {
+      yield _energy
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      yield &_energy
+    }
+  }
+}
 
 // MARK: - Other Properties
 

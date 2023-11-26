@@ -108,7 +108,6 @@ public struct MM4Parameters {
     let descriptorHMR = descriptor.hydrogenMassRepartitioning
     try createAtomCodes()
     createMasses(hydrogenMassRepartitioning: descriptorHMR)
-    createVectorPadding()
     createNonbondedParameters(hydrogenMassRepartitioning: descriptorHMR)
     createNonbondedExceptions()
     

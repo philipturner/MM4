@@ -234,25 +234,6 @@ extension MM4Parameters {
     }
   }
   
-  mutating func createVectorPadding() {
-    let atomVectorCount = (atoms.count + MM4VectorWidth - 1) / MM4VectorWidth
-    atoms.atomicNumbers.reserveCapacity(atomVectorCount * MM4VectorWidth)
-    atoms.atomicNumbers.withUnsafeMutableBufferPointer {
-      let baseAddress = $0.baseAddress!
-      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
-        baseAddress[i] = 0
-      }
-    }
-    
-    atoms.masses.reserveCapacity(atomVectorCount * MM4VectorWidth)
-    atoms.masses.withUnsafeMutableBufferPointer {
-      let baseAddress = $0.baseAddress!
-      for i in atoms.count..<atomVectorCount * MM4VectorWidth {
-        baseAddress[i] = 0
-      }
-    }
-  }
-  
   // Copying notes from the MM4_validator.swift script:
   //
   // The problems this script was built to solve, have been resolved through other

@@ -57,21 +57,26 @@ final class MM4RigidBodyStorage {
     
     self.anchorMass = .zero
     self.anchorMasses = []
-    self.nonAnchorMasses = parameters.atoms.masses
+    
+    func generateArray() -> [Float] {
+      let arraySize = atomVectorCount * MM4VectorWidth
+      return Array(unsafeUninitializedCapacity: arraySize) {
+        $0.initialize(repeating: .zero)
+        $1 = atomCount
+      }
+    }
+    
+    // We can't be 100% sure the backing array for masses will still
+    // be padded to the vector width. In addition, it could be modified if any
+    // anchors exist. The copy may not have the same capacity as the previous
+    // array.
+    nonAnchorMasses = generateArray()
+    for atomID in 0..<atoms.count {
+      nonAnchorMasses[atomID] = parameters.atoms.masses[atomID]
+    }
+    
     if anchors.count > .zero {
-      func generateArray() -> [Float] {
-        let arraySize = atomVectorCount * MM4VectorWidth
-        return Array(unsafeUninitializedCapacity: arraySize) {
-          $0.initialize(repeating: .zero)
-          $1 = atomCount
-        }
-      }
       anchorMasses = generateArray()
-      nonAnchorMasses = generateArray()
-      
-      for atomID in 0..<atoms.count {
-        nonAnchorMasses[atomID] = parameters.atoms.masses[atomID]
-      }
       for anchor in self.anchors {
         let mass = parameters.atoms.masses[Int(anchor)]
         anchorMass += Double(mass)
