@@ -65,8 +65,26 @@ Key:
 
 |         | Velocity             | Force           |
 | ------- | -------------------- | --------------- |
-| Linear  | anchor with velocity | external force  |
+| Linear  | anchor with velocity | external force\* |
 | Angular | flywheel             | linear to rotary converter |
+
+> \*There is currently an undocumented API restriction that prevents external forces from being set on a per-atom granularity. One can only use a per-rigid body granularity, with handles for selecting atoms that are affected. A future API change will fix this restriction.
+
+### Units
+
+The following internally consistent unit systems are used for MM4 and OpenMM. The `MM4` module defines several constants for converting between units.
+
+|        | MM4   | OpenMM    |
+| ------ | ----- | --------- |
+| Angle  | rad   | rad       |
+| Energy | zJ    | kJ/mol    |
+| Force  | pN    | kJ/mol/nm |
+| Mass   | yg\*  | amu       |
+| Length | nm    | nm        |
+| Speed  | nm/ps | nm/ps     |
+| Time   | ps    | ps        |
+
+> \*Mass is currently in amu, but should be changed to yoctograms for consistency with other units. Expect a breaking API change for all mass-related APIs like `hydrogenMassRepartitioning`.
 
 ### Releases
 
