@@ -85,7 +85,6 @@ final class MM4RigidBodyStorage {
         anchorMasses[Int(anchor)] = mass
         nonAnchorMasses[Int(anchor)] = .zero
       }
-      
     }
     self.nonAnchorMass = parameters.atoms.masses.reduce(Double(0)) {
       $0 + Double($1)

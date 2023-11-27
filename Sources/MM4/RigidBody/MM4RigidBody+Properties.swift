@@ -23,6 +23,9 @@ public struct MM4RigidBodyKineticEnergy {
   
   init() { }
   
+  /// Kinetic energy contribution from organized mechanical energy, present in
+  /// the bulk angular velocity.
+  ///
   /// If there are more than one anchors, the free kinetic energy from
   /// angular momentum should ideally be zero. However, the system can
   /// experience angular displacements from the orientation strictly enforced by
@@ -32,6 +35,9 @@ public struct MM4RigidBodyKineticEnergy {
     return storage.angularKineticEnergy!
   }
   
+  /// Kinetic energy contribution from organized mechanical energy, present in
+  /// the bulk linear velocity.
+  ///
   /// If there are any anchors, the free kinetic energy from the linear
   /// velocity is treated specially. It equals the total mass of non-anchor
   /// atoms, combined with the anchors' linear velocity.
@@ -41,6 +47,7 @@ public struct MM4RigidBodyKineticEnergy {
   }
   
   /// Kinetic energy contribution from disorganized thermal energy.
+  ///
   /// Contributions from anchors are omitted.
   public var thermal: Double {
     _read {
@@ -84,7 +91,7 @@ extension MM4RigidBody {
     parameters.atoms.atomicNumbers
   }
   
-  /// Optional. Indices of atoms where external force is applied.
+  /// Indices of atoms where external force is applied.
   public var handles: Set<UInt32> {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: import a new rigid body initialized with different targets.

@@ -32,14 +32,25 @@ public class MM4ForceField {
   /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
   
+  /// Stores the time step for each level of theory.
+  var _timeStep: [MM4LevelOfTheory: Double] = [:]
+  
+  // MARK: - Properties for Rigid Bodies
+  
   /// Stores the level of theory for each rigid body.
   var _levelOfTheory: [MM4LevelOfTheory] = []
   
+  /// Stores the anchor IDs separately for each rigid body.
+  var _rigidBodyAnchors: [Set<UInt32>] = []
+  
+  /// Stores the external forces separately for each rigid body.
+  var _rigidBodyExternalForces: [SIMD3<Float>] = []
+  
+  /// Stores the handles separately for each rigid body.
+  var _rigidBodyHandles: [Set<UInt32>] = []
+  
   /// Stores the atom range for each rigid body.
   var _rigidBodyRanges: [Range<UInt32>] = []
-  
-  /// Stores the time step for each level of theory.
-  var _timeStep: [MM4LevelOfTheory: Double] = [:]
   
   /// Create a simulator using the specified parameters and division into rigid
   /// bodies.
@@ -55,13 +66,16 @@ public class MM4ForceField {
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)
     
-    _levelOfTheory = Array(
-      repeating: parameters.levelOfTheory, count: rigidBodyRanges.count)
-    
-    _rigidBodyRanges = rigidBodyRanges
-    
     for level in MM4LevelOfTheory.allCases {
       _timeStep[level] = level.defaultTimeStep
     }
+    
+    let rigidBodyCount = rigidBodyRanges.count
+    _levelOfTheory = Array(
+      repeating: parameters.levelOfTheory, count: rigidBodyCount)
+    _rigidBodyAnchors = Array(repeating: [], count: rigidBodyCount)
+    _rigidBodyExternalForces = Array(repeating: .zero, count: rigidBodyCount)
+    _rigidBodyHandles = Array(repeating: [], count: rigidBodyCount)
+    _rigidBodyRanges = rigidBodyRanges
   }
 }

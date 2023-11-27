@@ -27,6 +27,13 @@ Quantum mechanics supports any element or bonding topology. The following restri
 | S             | 15  | 15  | not supported | not supported |
 | Ge            | 31  | 31  | not supported | not supported |
 
+The following are officially supported in the current release. Other atoms are experimental.
+
+| MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
+| - | - | - | - | - |
+| H             | 5   | n/a | n/a           | n/a           |
+| C             | 1   | 123 | not supported | not supported |
+
 ### Supported Bonds
 
 Quantum mechanics supports any element or bonding topology. The following restrictions apply to molecular and rigid body mechanics.
@@ -43,6 +50,13 @@ Quantum mechanics supports any element or bonding topology. The following restri
 | S       |   | O |   |   |   |   |   |   |   |
 | Ge      | X | O |   |   |   |   |   |   | X |
 
+The following are officially supported in the current release. Other bonds are experimental.
+
+| Element | H | C |
+| ------- | - | - |
+| H       |   | X |
+| C       | X | X |
+
 Key:
 - X = nonpolar sigma bond
 - O = polar sigma bond
@@ -56,15 +70,21 @@ Key:
 
 ### Releases
 
-Current version: not released yet
+Current version: v1.0.0-beta0
 
 v1.0.0
 - Accurate simulation of 5-ring carbons
 - Anchors
 - External forces
+- Experimental, untested support for non-carbon elements
 
 Future versions:
 - High-precision energy measurements
 - Quantum mechanics
 - Rigid body mechanics
-- Support for non-carbon elements
+- Tested support for non-carbon elements
+
+## Tips
+
+List:
+- Compile this package in Swift release mode. Vectorized code is known to be extremely slow in debug mode. However, it may not be a bottleneck for a small enough systems (under 1000 atoms).

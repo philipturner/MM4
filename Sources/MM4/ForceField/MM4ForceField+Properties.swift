@@ -116,11 +116,8 @@ extension MM4ForceField {
   /// momentum is constrained according to the number of anchors present.
   /// - 0 anchors: conserve linear and angular momentum around center of mass.
   /// - 1 anchor: conserve linear and angular momentum around anchor.
-  /// - collinear anchors: conserve linear momentum around average of
-  ///   anchors, constrain angular momentum to the shared axis.
-  // - anchors form plane: conserve linear momentum around average of anchors,
-  ///   force angular momentum to zero. In the average, each anchor's weight is
-  ///   proportional to its atomic mass.
+  /// - anchors form plane: conserve momentum around average of anchors.
+  ///   In the average, each anchor's weight is proportional to its atomic mass.
   public var anchors: Set<UInt32> {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: import a new rigid body initialized with different anchors.
@@ -133,12 +130,12 @@ extension MM4ForceField {
   ///
   /// The default value is zero for every atom.
   public var externalForces: [SIMD3<Float>] {
+    // TODO: Let the user apply forces to atoms that aren't handles in the
+    // parent rigid body. This feature is planned - the reason MM4ForceField
+    // lacks a property 'handles'. I haven't decided whether to add a 'handles'
+    // property or ironed out the implementation of force modification.
     _read {
       yield _externalForces
-    }
-    _modify {
-      updateRecord.externalForces = true
-      yield &_externalForces
     }
   }
   
@@ -161,7 +158,7 @@ extension MM4ForceField {
   /// closed system's net momentum stays conserved.
   public var rigidBodyRanges: [Range<UInt32>] {
     _read {
-      fatalError("TODO: New IR that stores rigid bodies in MM4ForceField")
+      yield _rigidBodyRanges
     }
   }
 }
