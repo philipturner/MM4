@@ -116,7 +116,7 @@ extension MM4ForceField {
   /// momentum is constrained according to the number of anchors present.
   /// - 0 anchors: conserve linear and angular momentum around center of mass.
   /// - 1 anchor: conserve linear and angular momentum around anchor.
-  /// - anchors form plane: conserve momentum around average of anchors.
+  /// - multiple anchors: conserve momentum around average of anchors.
   ///   In the average, each anchor's weight is proportional to its atomic mass.
   public var anchors: Set<UInt32> {
     // _modify not supported b/c it requires very complex caching logic.
@@ -127,8 +127,6 @@ extension MM4ForceField {
   }
   
   /// The constant force (in piconewtons) exerted on each atom.
-  ///
-  /// The default value is zero for every atom.
   public var externalForces: [SIMD3<Float>] {
     // TODO: Let the user apply forces to atoms that aren't handles in the
     // parent rigid body. This feature is planned - the reason MM4ForceField
