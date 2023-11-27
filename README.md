@@ -87,4 +87,4 @@ Future versions:
 ## Tips
 
 List:
-- Compile this package in Swift release mode. Vectorized code is known to be extremely slow in debug mode. However, it may not be a bottleneck for a small enough systems (under 1000 atoms).
+- Compile this package in Swift release mode. Vectorized code is known to be extremely slow in debug mode. However, it may not be a bottleneck for small enough systems (under 1000 atoms).
