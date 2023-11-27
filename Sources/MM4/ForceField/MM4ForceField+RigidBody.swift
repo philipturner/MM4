@@ -109,13 +109,15 @@ extension MM4ForceField {
         rigidBody.externalForce = .zero
       }
       
-      for anchor in rigidBody.anchors {
-        if previousHandles.contains(anchor) {
+      if any(_rigidBodyExternalForces[index] .!= .zero) {
+        for anchor in rigidBody.anchors {
+          if previousHandles.contains(anchor) {
+            rigidBody.externalForce = .init(repeating: .nan)
+          }
+        }
+        if rigidBody.handles != previousHandles {
           rigidBody.externalForce = .init(repeating: .nan)
         }
-      }
-      if rigidBody.handles != previousHandles {
-        rigidBody.externalForce = .init(repeating: .nan)
       }
     }
   }
