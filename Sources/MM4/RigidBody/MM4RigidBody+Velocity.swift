@@ -12,7 +12,10 @@ extension MM4RigidBody {
   public var velocities: [SIMD3<Float>] {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: use the exposed setVelocities function.
-    _read { fatalError("Not implemented.") }
+    _read {
+      storage.ensureVelocitiesCached()
+      yield storage.velocities!
+    }
   }
   
   @_specialize(where T == Double)
@@ -57,6 +60,22 @@ extension MM4RigidBody {
 }
 
 extension MM4RigidBodyStorage {
+  func createVelocities() -> [SIMD3<Float>] {
+    var output: [SIMD3<Float>] = []
+    output.reserveCapacity(atoms.vectorCount * MM4VectorWidth)
+    output.withUnsafeMutableBufferPointer { buffer in
+      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+      
+      for vID in 0..<atoms.vectorCount {
+        let x = vVelocities[vID &* 3 &+ 0]
+        let y = vVelocities[vID &* 3 &+ 1]
+        let z = vVelocities[vID &* 3 &+ 2]
+        swizzleFromVectorWidth((x, y, z), vID, baseAddress)
+      }
+    }
+    return output
+  }
+  
   func ensureAnchorVelocitiesValid() {
     guard anchorVelocitiesValid == nil else {
       return

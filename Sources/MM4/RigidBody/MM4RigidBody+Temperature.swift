@@ -143,8 +143,6 @@ extension MM4RigidBody {
     heatCapacity: Double
   ) {
     ensureUniquelyReferenced()
-    storage.velocities = nil
-    storage.ensureKineticEnergyCached()
     
     // E = thermal energy
     // C = heat capacity
@@ -155,8 +153,7 @@ extension MM4RigidBody {
     // E = C N kT
     let N = Double(storage.atoms.count)
     let kT = MM4BoltzInZJPerK * temperature
-    storage.thermalKineticEnergy = heatCapacity * N * kT
-    storage.createThermalVelocities()
+    storage.setThermalKineticEnergy(heatCapacity * N * kT)
   }
 }
 

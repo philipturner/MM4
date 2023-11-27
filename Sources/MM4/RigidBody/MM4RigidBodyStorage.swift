@@ -11,6 +11,7 @@ final class MM4RigidBodyStorage {
   // Sources of truth.
   var anchors: Set<UInt32>
   var atoms: (count: Int, vectorCount: Int)
+  var externalForce: SIMD3<Float>
   var handles: Set<UInt32>
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
@@ -45,6 +46,7 @@ final class MM4RigidBodyStorage {
     let atomVectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     self.anchors = anchors
     self.atoms = (atomCount, atomVectorCount)
+    self.externalForce = .zero
     self.handles = handles
     self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
@@ -95,13 +97,15 @@ final class MM4RigidBodyStorage {
     // Initialize stored properties, without copying cached ones.
     atoms = other.atoms
     anchors = other.anchors
-    anchorMass = other.anchorMass
-    anchorMasses = other.anchorMasses
+    externalForce = other.externalForce
     handles = other.handles
-    nonAnchorMass = other.nonAnchorMass
-    nonAnchorMasses = other.nonAnchorMasses
     vPositions = other.vPositions
     vVelocities = other.vVelocities
+    
+    anchorMass = other.anchorMass
+    anchorMasses = other.anchorMasses
+    nonAnchorMass = other.nonAnchorMass
+    nonAnchorMasses = other.nonAnchorMasses
   }
   
   func eraseFrequentlyCachedProperties() {
@@ -120,6 +124,20 @@ final class MM4RigidBodyStorage {
     linearVelocity = nil
     momentOfInertia = nil
     thermalKineticEnergy = nil
+  }
+}
+
+extension MM4RigidBodyStorage {
+  func ensurePositionsCached() {
+    if self.positions == nil {
+      self.positions = createPositions()
+    }
+  }
+  
+  func ensureVelocitiesCached() {
+    if self.velocities == nil {
+      self.velocities = createVelocities()
+    }
   }
   
   func ensureCenterOfMassCached() {
@@ -189,11 +207,24 @@ final class MM4RigidBodyStorage {
         "Either all or none of the kinetic energies must be cached.")
     }
   }
+  
+  func setThermalKineticEnergy(_ energy: Double) {
+    ensureKineticEnergyCached()
+    
+    // Don't change the velocities unless thermal kinetic energy has changed.
+    if energy != thermalKineticEnergy! {
+      velocities = nil
+      thermalKineticEnergy = energy
+      createThermalVelocities()
+    }
+  }
 }
 
 extension MM4RigidBody {
   /// Ensure all weak references point to the current storage object.
-  mutating func ensureReferencesUpdated() {
+  ///
+  /// This function is underscored to prevent it from appearing in autocomplete.
+  mutating func _ensureReferencesUpdated() {
     energy.kinetic.storage = storage
   }
   
@@ -203,7 +234,7 @@ extension MM4RigidBody {
   mutating func ensureUniquelyReferenced() {
     if !isKnownUniquelyReferenced(&storage) {
       storage = MM4RigidBodyStorage(copying: storage)
-      ensureReferencesUpdated()
+      _ensureReferencesUpdated()
     }
   }
 }

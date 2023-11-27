@@ -62,7 +62,7 @@ public enum GFNLevelOfTheory: CaseIterable, Hashable {
   /// In the xTB package, this level of theory is named "GFN2-xTB".
   case extendedTightBinding
   
-  /// An expensive force field supporting any bonding topology.
+  /// An expensive, polarizable force field supporting any bonding topology.
   ///
   /// In the xTB package, this level of theory is named "GFN-FF".
   case forceField

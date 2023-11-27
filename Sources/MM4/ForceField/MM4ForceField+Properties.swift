@@ -7,22 +7,6 @@
 
 import OpenMM
 
-// Idea for adding torques:
-// - Can't constrain "anchors" to have constant angular velocity, only constant
-//   linear velocity.
-// - A simulation can achieve near-constant angular velocity with a large
-//   flywheel (which will be provided in the hardware catalog, and documented in
-//   MM4).
-// - Torques around a computed position:
-//   - LocalCoordinatesSite - center of mass of a rigid body, exerts a
-//     counterforce on the rigid body as a whole
-//   - relative to a set of collinear anchor particles, which must all have the
-//     same velocity
-//     - check the collinearity constraint every time the user changes particle
-//       velocities or modifies the anchors
-// - Requires a new type (`MM4Torque`) that wraps a Swift `Quaternion` and an
-//   enumeration with an associated value, which specifies the type of origin.
-
 /// A data structure wrapping a system's energy.
 public struct MM4ForceFieldEnergy {
   var forceField: MM4ForceField
@@ -103,7 +87,7 @@ extension MM4ForceField {
     }
   }
   
-  /// The bulk + thermal velocity (in nanometers per picosecond) of each atom.
+  /// The linear velocity (in nanometers per picosecond) of each atom.
   ///
   /// When thermalizing, the linear and angular momentum over every rigid body
   /// is conserved. Then, the thermal velocities are reinitialized. If you want

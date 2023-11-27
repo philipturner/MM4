@@ -55,8 +55,8 @@ extension MM4ForceField {
   /// This method does not overwrite the rigid body's anchors or handles.
   ///
   /// If velocity is not the same across all anchors, there will be a fatal
-  /// error. The same is true for unequal forces across the handles, or nonzero forces
-  /// on the anchors.
+  /// error. If the handles have unequal force or the anchors have nonzero force,
+  /// the exported object's external force will be set to `.nan`.
   public func export(to rigidBody: inout MM4RigidBody, index: Int) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     // Assert that the object's anchor velocities are valid.

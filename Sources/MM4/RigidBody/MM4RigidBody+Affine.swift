@@ -60,7 +60,15 @@ extension MM4RigidBody {
   /// around the center of mass defined by anchors.
   public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
     // no setter; instead use rotate()
-    get { fatalError("Not implemented.") }
+    get {
+      storage.ensureMomentOfInertiaCached()
+      let momentOfInertia = storage.momentOfInertia!
+      return (
+        SIMD3<Float>(momentOfInertia.columns.0),
+        SIMD3<Float>(momentOfInertia.columns.1),
+        SIMD3<Float>(momentOfInertia.columns.2)
+      )
+    }
   }
   
   /// Center of mass, treating anchors as astronomically larger than
@@ -69,13 +77,52 @@ extension MM4RigidBody {
   /// If there are any anchors, this is the mass-weighted average of the
   /// anchors.
   public var centerOfMass: SIMD3<Float> {
-    _read { fatalError("Not implemented.") }
-    _modify { fatalError("Not implemented.") }
+    _read {
+      storage.ensureCenterOfMassCached()
+      yield storage.centerOfMass!
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.ensureCenterOfMassCached()
+      storage.positions = nil
+      let previous = storage.centerOfMass!
+      yield &storage.centerOfMass!
+      
+      let difference = storage.centerOfMass! - previous
+      guard any(difference .!= .zero) else {
+        return
+      }
+      for vID in 0..<storage.atoms.vectorCount {
+        storage.vPositions[vID &* 3 &+ 0] += difference.x
+        storage.vPositions[vID &* 3 &+ 1] += difference.y
+        storage.vPositions[vID &* 3 &+ 2] += difference.z
+      }
+    }
   }
   
-  /// Change the object's orientation by the specified 3D angle.
-  public mutating func rotate(_ angle: Quaternion<Float>) {
-    fatalError("Not implemented.")
+  /// Change the object's orientation by the specified quaternion.
+  public mutating func rotate(_ rotation: Quaternion<Float>) {
+    ensureUniquelyReferenced()
+    storage.ensureCenterOfMassCached()
+    storage.positions = nil
+    
+    let centerOfMass = storage.centerOfMass!
+    let w = rotation.angle * rotation.axis
+    for vID in 0..<storage.atoms.vectorCount {
+      var x = storage.vPositions[vID &* 3 &+ 0]
+      var y = storage.vPositions[vID &* 3 &+ 1]
+      var z = storage.vPositions[vID &* 3 &+ 2]
+      let rX = x - centerOfMass.x
+      let rY = y - centerOfMass.y
+      let rZ = z - centerOfMass.z
+      
+      x += w.y * rZ - w.z * rY
+      y += w.z * rX - w.x * rZ
+      z += w.x * rY - w.y * rX
+      storage.vPositions[vID &* 3 &+ 0] = x
+      storage.vPositions[vID &* 3 &+ 1] = y
+      storage.vPositions[vID &* 3 &+ 2] = z
+    }
   }
 }
 
@@ -84,28 +131,112 @@ extension MM4RigidBody {
 // The setters for velocity have similar functionality to setters for position.
 
 extension MM4RigidBody {
-  // TODO: Add a one-line summary to each property's documentation.
-  
-  /// If the angular velocity is nonzero, the number of anchors cannot exceed 1.
-  /// When importing velocities, if the number of anchors exceeds 1, the angular
-  /// velocity is set to zero.
+  /// The net angular velocity (in radians per picosecond) of the non-anchor
+  /// atoms.
   public var angularVelocity: Quaternion<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
+    _read {
+      storage.ensureAngularVelocityCached()
+      yield storage.angularVelocity!
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.ensureCenterOfMassCached()
+      storage.ensureAngularVelocityCached()
+      storage.velocities = nil
+      let previous = storage.angularVelocity!
+      yield &storage.angularVelocity!
+      
+      let next = storage.angularVelocity!
+      guard next != previous else {
+        return
+      }
+      guard let centerOfMass = storage.centerOfMass else {
+        fatalError("This should never happen.")
+      }
+      
+      let previousW = previous.angle * previous.axis
+      let nextW = next.angle * next.axis
+      storage.withMasses(storage.nonAnchorMasses) { vMasses in
+        for vID in 0..<storage.atoms.vectorCount {
+          let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
+          let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
+          let rZ = storage.vPositions[vID &* 3 &+ 2] - centerOfMass.z
+          var vX: MM4FloatVector = .zero
+          var vY: MM4FloatVector = .zero
+          var vZ: MM4FloatVector = .zero
+          
+          // Un-apply the previous bulk angular velocity.
+          do {
+            let w = previousW
+            vX -= w.y * rZ - w.z * rY
+            vY -= w.z * rX - w.x * rZ
+            vZ -= w.x * rY - w.y * rX
+          }
+          
+          // Apply the next bulk angular velocity.
+          do {
+            let w = nextW
+            vX += w.y * rZ - w.z * rY
+            vY += w.z * rX - w.x * rZ
+            vZ += w.x * rY - w.y * rX
+          }
+          
+          // Mask out the changes to velocity for anchors.
+          let mass = vMasses[vID]
+          vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          
+          // Write the new velocities as offsets relative to the existing ones.
+          storage.vVelocities[vID &* 3 &+ 0] += vX
+          storage.vVelocities[vID &* 3 &+ 1] += vY
+          storage.vVelocities[vID &* 3 &+ 2] += vZ
+        }
+      }
+    }
   }
   
+  /// The constant force (in piconewtons) exerted on the entire object.
+  ///
   /// The force is distributed evenly among all non-anchor atoms in the rigid
-  /// body. If an anchor is explicitly selected as an external force target,
-  /// there will be an error.
+  /// body. If an anchor is explicitly selected as a handle, there will be a
+  /// fatal error.
   public var externalForce: SIMD3<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
+    _read {
+      yield storage.externalForce
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      yield &storage.externalForce
+    }
   }
   
+  /// The net linear velocity (in nanometers per picosecond) of the entire
+  /// object.
+  ///
   /// Every anchor's velocity is set to the rigid body's linear velocity.
   /// When importing velocities, all anchors must have the same velocity.
   public var linearVelocity: SIMD3<Float> {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
+    _read {
+      storage.ensureLinearVelocityCached()
+      yield storage.linearVelocity!
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.ensureLinearVelocityCached()
+      storage.velocities = nil
+      let previous = storage.linearVelocity!
+      yield &storage.linearVelocity!
+      
+      let difference = storage.linearVelocity! - previous
+      guard any(difference .!= .zero) else {
+        return
+      }
+      for vID in 0..<storage.atoms.vectorCount {
+        storage.vVelocities[vID &* 3 &+ 0] += difference.x
+        storage.vVelocities[vID &* 3 &+ 1] += difference.y
+        storage.vVelocities[vID &* 3 &+ 2] += difference.z
+      }
+    }
   }
 }

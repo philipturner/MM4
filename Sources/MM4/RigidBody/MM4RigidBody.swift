@@ -53,18 +53,25 @@ public struct MM4RigidBody {
     self._energy = MM4RigidBodyEnergy()
     self.parameters = descriptorParameters
     
+    let atomCount = descriptorParameters.atoms.count
     let anchors = descriptor.anchors ?? []
     var handles: Set<UInt32>
     if let descriptorHandles = descriptor.handles {
       handles = descriptorHandles
-      for anchor in anchors where handles.contains(anchor) {
-        fatalError("Atom \(anchor) was both an anchor and a handle.")
+      for anchor in anchors {
+        if handles.contains(anchor) {
+          fatalError("Atom \(anchor) was both an anchor and a handle.")
+        }
       }
     } else {
       handles = []
-      for atomID in 0..<descriptorParameters.atoms.count {
+      for atomID in 0..<atomCount {
         handles.insert(UInt32(truncatingIfNeeded: atomID))
       }
+    }
+    guard !anchors.contains(where: { $0 >= atomCount }),
+          !handles.contains(where: { $0 >= atomCount }) else {
+      fatalError("An anchor or handle was out of bounds.")
     }
     
     self.storage = MM4RigidBodyStorage(
@@ -77,6 +84,7 @@ public struct MM4RigidBody {
     }
     
     // Prepare computed properties for access through the public API.
-    ensureReferencesUpdated()
+    _ensureReferencesUpdated()
   }
 }
+

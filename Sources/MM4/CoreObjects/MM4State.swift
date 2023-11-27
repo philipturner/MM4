@@ -61,7 +61,7 @@ public class MM4State {
   /// The system's total potential energy, in zeptojoules.
   public internal(set) var potentialEnergy: Double?
   
-  /// The bulk + thermal velocity (in nanometers per picosecond), of each atom.
+  /// The linear velocity (in nanometers per picosecond), of each atom.
   public internal(set) var velocities: [SIMD3<Float>]?
   
   internal init() {

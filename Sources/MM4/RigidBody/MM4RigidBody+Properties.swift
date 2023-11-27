@@ -28,21 +28,31 @@ public struct MM4RigidBodyKineticEnergy {
   /// experience angular displacements from the orientation strictly enforced by
   /// anchors.
   public var angular: Double {
-    fatalError("Not implemented.")
+    storage.ensureKineticEnergyCached()
+    return storage.angularKineticEnergy!
   }
   
   /// If there are any anchors, the free kinetic energy from the linear
   /// velocity is treated specially. It equals the total mass of non-anchor
   /// atoms, combined with the anchors' linear velocity.
   public var linear: Double {
-    fatalError("Not implemented.")
+    storage.ensureKineticEnergyCached()
+    return storage.linearKineticEnergy!
   }
   
   /// Kinetic energy contribution from disorganized thermal energy.
   /// Contributions from anchors are omitted.
   public var thermal: Double {
-    get { fatalError("Not implemented.") }
-    set { fatalError("Not implemented.") }
+    _read {
+      storage.ensureKineticEnergyCached()
+      yield storage.thermalKineticEnergy!
+    }
+    _modify {
+      storage.ensureKineticEnergyCached()
+      var energy = storage.thermalKineticEnergy!
+      yield &energy
+      storage.setThermalKineticEnergy(energy)
+    }
   }
 }
 
@@ -66,7 +76,7 @@ extension MM4RigidBody {
   public var anchors: Set<UInt32> {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: import a new rigid body initialized with different anchors.
-    _read { fatalError("Not implemented.") }
+    _read { yield storage.anchors }
   }
   
   /// The number of protons in each atom's nucleus.
@@ -78,7 +88,7 @@ extension MM4RigidBody {
   public var handles: Set<UInt32> {
     // _modify not supported b/c it requires very complex caching logic.
     // Workaround: import a new rigid body initialized with different targets.
-    _read { fatalError("Not implemented.") }
+    _read { yield storage.handles }
   }
   
   /// Pairs of atom indices representing sigma bonds.
