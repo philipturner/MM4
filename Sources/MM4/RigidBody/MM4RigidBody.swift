@@ -21,7 +21,7 @@ public struct MM4RigidBodyDescriptor {
   /// Required. The position (in nanometers) of each atom's nucleus.
   public var positions: [SIMD3<Float>]?
   
-  ///. Optional. The velocity (in nanometers per picosecond) of each atom.
+  /// Optional. The velocity (in nanometers per picosecond) of each atom.
   ///
   /// Velocities attributed to anchors are ignored. They are replaced with a
   /// value determined by the bulk velocities.
