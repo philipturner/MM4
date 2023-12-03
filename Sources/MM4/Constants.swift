@@ -42,3 +42,13 @@ public let MM4BoltzInKJPerMolPerK: Double = 8.314462618 / 1000
 
 /// 0.013806
 public let MM4BoltzInZJPerK: Double = 8.314462618 / 1000 * MM4ZJPerKJPerMol
+
+/// 1.660539
+///
+/// Converts from atomic mass units to yoctograms.
+public let MM4YgPerAmu: Double = MM4ZJPerKJPerMol
+
+/// 0.602214
+///
+/// Converts from yoctograms to atomic mass units.
+public let MM4AmuPerYg: Double = MM4KJPerMolPerZJ

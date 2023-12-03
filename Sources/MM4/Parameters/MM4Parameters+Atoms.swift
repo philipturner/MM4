@@ -22,7 +22,7 @@ public struct MM4Atoms {
   /// Convenient property for iterating over the atoms.
   public var indices: Range<Int> = 0..<0
   
-  /// The mass (in amu) of each atom after hydrogen mass repartitioning.
+  /// The mass (in yoctograms) of each atom after hydrogen mass repartitioning.
   public var masses: [Float] = []
   
   /// Each value corresponds to the atom at the same array index.
@@ -221,7 +221,10 @@ extension MM4Parameters {
   
   mutating func createMasses(hydrogenMassRepartitioning: Float) {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
-      MM4MassParameters.global.mass(atomicNumber: atomicNumber)
+      /// Units: amu -> yg
+      var mass = MM4MassParameters.global.mass(atomicNumber: atomicNumber)
+      mass *= Float(MM4YgPerAmu)
+      return mass
     }
     
     for atomID in atoms.indices

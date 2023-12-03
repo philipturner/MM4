@@ -196,12 +196,8 @@ extension MM4RigidBodyStorage {
       fatalError("This should never happen.")
     }
     
-    var linear: Double = .zero
     let v = SIMD3<Double>(linearVelocity)
-    linear += 0.5 * nonAnchorMass * (v * v).sum()
-    
-    // yoctograms per amu = zJ per kJ/mol
-    return MM4ZJPerKJPerMol * linear
+    return nonAnchorMass * (v * v).sum() / 2
   }
   
   // Angular kinetic energy about an angular mass defined by non-anchor atoms.
@@ -213,17 +209,13 @@ extension MM4RigidBodyStorage {
       fatalError("This should never happen.")
     }
     
-    var angular: Double = .zero
     let I = momentOfInertia
     let w = SIMD3<Double>(angularVelocity.angle * angularVelocity.axis)
     let velocityX = I.columns.0 * w.x
     let velocityY = I.columns.1 * w.y
     let velocityZ = I.columns.2 * w.z
     let Iw = velocityX + velocityY + velocityZ
-    angular += 0.5 * (w * Iw).sum()
-    
-    // yoctograms per amu = zJ per kJ/mol
-    return MM4ZJPerKJPerMol * angular
+    return (w * Iw).sum() / 2
   }
   
   // Total translational kinetic energy from non-anchor atoms.
@@ -255,9 +247,7 @@ extension MM4RigidBodyStorage {
         kinetic += MM4DoubleVector(vKineticZ).sum()
       }
     }
-    
-    // yoctograms per amu = zJ per kJ/mol
-    return MM4ZJPerKJPerMol * kinetic / 2
+    return kinetic / 2
   }
   
   func createThermalVelocities() {

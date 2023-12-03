@@ -72,19 +72,34 @@ Key:
 
 ### Units
 
-The following internally consistent unit systems are used for MM4 and OpenMM. The `MM4` module defines several constants for converting between units.
+The following unit systems are used for MM4 and OpenMM. The `MM4` module defines several constants for converting between them.
 
-|        | MM4   | OpenMM    |
+| Unit   | MM4   | OpenMM    |
 | ------ | ----- | --------- |
 | Angle  | rad   | rad       |
 | Energy | zJ    | kJ/mol    |
 | Force  | pN    | kJ/mol/nm |
-| Mass   | yg\*  | amu       |
+| Mass   | yg    | amu       |
 | Length | nm    | nm        |
 | Speed  | nm/ps | nm/ps     |
 | Time   | ps    | ps        |
 
-> \*Mass is currently in amu, but should be changed to yoctograms for consistency with other units. Expect a breaking API change for all mass-related APIs like `hydrogenMassRepartitioning`.
+| Value in SI Units | SI Unit | MM4   | OpenMM    |
+| ----------------- | ------- | ----- | --------- |
+| Angle             | rad     | 1     | 1         |
+| Energy            | J       | 1e-21 | 1.66e-21  |
+| Force             | N       | 1e-12 | 1.66e-12  |
+| Mass              | kg      | 1e-27 | 1.66e-27  |
+| Length            | m       | 1e-9  | 1e-9      |
+| Speed             | m/s     | 1000  | 1000      |
+| Time              | s       | 1e-12 | 1e-12     |
+
+MM4's unit system is internally consistent. Units for force and energy are derived from mass and velocity.
+
+```
+energy = 0.5 * m * v^2 = (10^-27) (10^3)^2 = 10^-21
+force = dU / dx = (10^-21) / (10^-9) = 10^-12
+```
 
 ### Releases
 

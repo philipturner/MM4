@@ -103,12 +103,12 @@ extension MM4RigidBody {
     parameters.bonds.indices
   }
   
-  /// The total mass (in amu) of all atoms, excluding anchors.
+  /// The total mass (in yoctograms) of all atoms, excluding anchors.
   public var mass: Double {
     storage.nonAnchorMass
   }
   
-  /// The mass (in amu) of each atom.
+  /// The mass (in yoctograms) of each atom.
   ///
   /// This is different than the masses in `MM4Parameters`. `MM4RigidBody`
   /// zeroes out the mass for each anchor, while `MM4Parameters` does not.

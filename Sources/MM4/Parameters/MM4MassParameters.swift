@@ -12,6 +12,9 @@ class MM4MassParameters {
     
   }
   
+  /// Units: amu
+  ///
+  /// > WARNING: Convert amu to yg.
   func mass(atomicNumber: UInt8) -> Float {
     Float(Self.sourceData[Int(atomicNumber)])
   }

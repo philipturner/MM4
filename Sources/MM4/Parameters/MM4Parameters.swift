@@ -17,15 +17,15 @@ public struct MM4ParametersDescriptor {
   /// the parameters.
   public var bonds: [SIMD2<UInt32>]?
   
-  /// Required. The amount of mass (in amu) to redistribute from a substituent
-  /// atom to each covalently bonded hydrogen.
+  /// Required. The amount of mass (in yoctograms) to redistribute from a
+  /// substituent atom to each covalently bonded hydrogen.
   ///
-  /// If not specified, the default is 1 amu.
+  /// If not specified, the default is a quantity equivalent to 1 amu.
   ///
   /// Each array element corresponds to a different rigid body. See the note in
   /// <doc:MM4ParametersDescriptor/bonds> about ordering the atoms from each
   /// rigid body.
-  public var hydrogenMassRepartitioning: Float = 1.0
+  public var hydrogenMassRepartitioning: Float = 1.0 * Float(MM4YgPerAmu)
   
   /// Required. The level of theory used for simulation.
   ///

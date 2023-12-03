@@ -89,8 +89,9 @@ extension MM4ForceField {
       // selectively set the anchors to zero.
       let masses = system.parameters.atoms.masses
       for (original, reordered) in system.reorderedIndices.enumerated() {
-        // Does not change the mass of virtual sites.
-        let mass = masses[Int(original)]
+        // Units: yg -> amu
+        var mass = masses[Int(original)]
+        mass *= Float(MM4AmuPerYg)
         system.system.setParticleMass(Double(mass), index: Int(reordered))
       }
       _anchors.forEach { originalID in
