@@ -21,10 +21,6 @@ public struct MM4ParametersDescriptor {
   /// substituent atom to each covalently bonded hydrogen.
   ///
   /// If not specified, the default is a quantity equivalent to 1 amu.
-  ///
-  /// Each array element corresponds to a different rigid body. See the note in
-  /// <doc:MM4ParametersDescriptor/bonds> about ordering the atoms from each
-  /// rigid body.
   public var hydrogenMassRepartitioning: Float = 1.0 * Float(MM4YgPerAmu)
   
   /// Required. The level of theory used for simulation.
