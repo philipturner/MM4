@@ -326,6 +326,9 @@ class MM4BendExtendedForce: MM4Force {
       var sortedStart: Int = 0
       var sortedEnd: Int = 3
       for lane in 0..<4 {
+        guard map[lane] != -1 else {
+          fatalError("Unexpected behavior creating bend extended force.")
+        }
         if angle[0] == map[lane] || angle[2] == map[lane] {
           sortedMap[sortedStart] = map[lane]
           sortedStart += 1
@@ -334,7 +337,8 @@ class MM4BendExtendedForce: MM4Force {
           sortedEnd -= 1
         }
       }
-      guard sortedEnd == 2, sortedEnd == 2 else {
+      guard sortedStart == 2, sortedEnd == 2 else {
+        // There should be two atoms from the angle, two not from the angle.
         fatalError("Unexpected number of atoms matched angle.")
       }
       

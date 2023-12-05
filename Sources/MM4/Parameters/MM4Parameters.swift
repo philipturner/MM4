@@ -59,10 +59,10 @@ public struct MM4Parameters {
   /// Atom pairs that have reduced nonbonded and electrostatic interactions.
   var nonbondedExceptions14: [SIMD2<UInt32>] = []
   
-  /// Map from atoms to bonds that can be efficiently traversed.
+  /// Map from atoms to bonds that requires bounds checking.
   var atomsToBondsMap: [SIMD4<Int32>] = []
   
-  /// Map from atoms to connected atoms that can be efficiently traversed.
+  /// Map from atoms to connected atoms that requires bounds checking.
   var atomsToAtomsMap: [SIMD4<Int32>] = []
   
   /// Create a set of parameters using the specified configuration.

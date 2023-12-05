@@ -59,7 +59,7 @@ extension MM4Parameters {
         
         if !succeeded {
           var neighbors: [MM4Address] = []
-          for lane in 0..<4 {
+          for lane in 0..<4 where map[lane] != -1 {
             let bondID = Int(map[lane])
             let bond = bonds.indices[Int(map[lane])]
             let otherID = other(atomID: bond[j], bondID: bondID)
@@ -67,6 +67,7 @@ extension MM4Parameters {
           }
           neighbors.append(createAddress(bond[1 - j]))
           
+          // There is an error because we exceeded the bond capacity (4).
           let address = createAddress(bond[j])
           throw MM4Error.openValenceShell(address, neighbors)
         }
@@ -81,7 +82,8 @@ extension MM4Parameters {
     for atomID in 0..<atoms.count {
       let bondsMap = atomsToBondsMap[atomID]
       var atomsMap = SIMD4<Int32>(repeating: -1)
-      for lane in 0..<4 {
+      
+      for lane in 0..<4 where bondsMap[lane] != -1 {
         let otherID = other(atomID: atomID, bondID: bondsMap[lane])
         atomsMap[lane] = Int32(truncatingIfNeeded: otherID)
       }
@@ -91,6 +93,7 @@ extension MM4Parameters {
   
   /// - throws: `.unsupportedRing`
   mutating func createTopology() throws {
+    // Map from atoms to connected atoms that can be efficiently traversed.
     var vAtomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
     vAtomsToAtomsMap = .allocate(capacity: atoms.count + 1)
     vAtomsToAtomsMap += 1
@@ -287,7 +290,7 @@ extension MM4Parameters {
       
       let map = atomsToAtomsMap[atomID]
       var otherElements: SIMD4<UInt8> = .zero
-      for lane in 0..<4 {
+      for lane in 0..<4 where map[lane] != -1 {
         if map[lane] == -1 {
           otherElements[lane] = 1
         } else {
