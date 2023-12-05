@@ -347,16 +347,10 @@ extension MM4Parameters {
     var nonbondedExceptions13Map: [SIMD2<UInt32>: Bool] = [:]
     var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
     for torsion in torsions.indices {
-      guard torsion[0] < torsion[3] else {
-        fatalError("Torsion was not sorted.")
-      }
       let pair = sortBond(SIMD2(torsion[0], torsion[3]))
       nonbondedExceptions14Map[pair] = true
     }
     for angle in angles.indices {
-      guard angle[0] < angle[2] else {
-        fatalError("Angle was not sorted.")
-      }
       let pair = sortBond(SIMD2(angle[0], angle[2]))
       nonbondedExceptions13Map[pair] = true
       nonbondedExceptions14Map[pair] = nil
