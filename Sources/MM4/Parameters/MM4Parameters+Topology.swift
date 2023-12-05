@@ -44,7 +44,11 @@ extension MM4Parameters {
       repeating: SIMD4(repeating: -1), count: atoms.count)
     
     for bondID in 0..<bonds.indices.count {
+      // Initialize the bonds map, so it can be used later when generating the
+      // topology of angles/torsions/rings.
       let bond = bonds.indices[bondID]
+      bonds.map[bond] = .max
+      
       for j in 0..<2 {
         let atomID = Int(bond[j])
         var map = atomsToBondsMap[atomID]
