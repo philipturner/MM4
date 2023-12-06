@@ -158,10 +158,6 @@ extension MM4Parameters {
             ringType = min(ringType, UInt8(truncatingIfNeeded: maskA.min()))
           }
           
-          if ringType != 6 {
-            print("Found a ring at atom \(atom1)")
-          }
-          
           if _slowPath(ringType < 5) {
             var addresses: [MM4Address] = []
             addresses.append(createAddress(atom1))
@@ -198,7 +194,7 @@ extension MM4Parameters {
       // Mask out the -1 indices, then check whether any atoms from the first
       // atom's map match the fourth atom's map.
       let map1 = vAtomsToAtomsMap[Int(torsion[0])]
-      let map4 = vAtomsToAtomsMap[Int(torsion[1])]
+      let map4 = vAtomsToAtomsMap[Int(torsion[3])]
       
       var match1: SIMD4<Int32> = .zero
       var match2: SIMD4<Int32> = .zero
