@@ -394,7 +394,7 @@ extension MM4Parameters {
           }
           
         default:
-          break
+          continueAttempt = true
         }
       }
       guard let bendingStiffnesses,
