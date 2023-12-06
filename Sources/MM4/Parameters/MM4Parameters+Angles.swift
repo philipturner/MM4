@@ -150,7 +150,11 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(108.900, 109.470, 110.800)
         case (123, 123, 123):
           bendingStiffnesses = SIMD3(repeating: 0.740)
-          equilibriumAngles = SIMD3(108.300, 108.900, 109.000)
+          if ringType == 5 {
+            equilibriumAngles = SIMD3(108.300, 108.900, 109.000)
+          } else {
+            continueAttempt = true
+          }
           
           // Nitrogen
         case (1, 1, 8):
