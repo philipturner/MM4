@@ -158,6 +158,10 @@ extension MM4Parameters {
             ringType = min(ringType, UInt8(truncatingIfNeeded: maskA.min()))
           }
           
+          if ringType != 6 {
+            print("Found a ring at atom \(atom1)")
+          }
+          
           if _slowPath(ringType < 5) {
             var addresses: [MM4Address] = []
             addresses.append(createAddress(atom1))
