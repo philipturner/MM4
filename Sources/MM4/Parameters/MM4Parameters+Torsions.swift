@@ -757,6 +757,8 @@ extension MM4Parameters {
          Kts_l == nil, Kts_r == nil,
          Kts_c[0] == 0, Kts_c[1] == 0 {
         Kts3 = Kts_c[2]
+        
+        // There are no extended parameters for this torsion.
         torsions.extendedParameters.append(nil)
       } else {
         Kts3 = 0.000
