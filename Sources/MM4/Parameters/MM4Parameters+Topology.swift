@@ -255,7 +255,9 @@ extension MM4Parameters {
       torsions.map[torsion]! = UInt32(truncatingIfNeeded: index)
     }
     for (index, ring) in rings.indices.enumerated() {
-      rings.map[ring]! = UInt32(truncatingIfNeeded: index)
+      // The rings map has not been initialized, and we avoid pre-initializing
+      // it for performance. The value of the subscript is not force-unwrapped.
+      rings.map[ring] = UInt32(truncatingIfNeeded: index)
     }
     
     for ring in rings.indices {
