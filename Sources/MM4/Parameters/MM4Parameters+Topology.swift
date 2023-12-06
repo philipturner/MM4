@@ -263,9 +263,12 @@ extension MM4Parameters {
     for ring in rings.indices {
       for lane in 0..<5 {
         let atomID = ring[lane]
-        let bond = sortBond(SIMD2(atomID, ring[wrap(lane + 1)]))
-        let angle = sortAngle(SIMD3(bond, ring[wrap(lane + 2)]))
-        let torsion = sortTorsion(SIMD4(angle, ring[wrap(lane + 3)]))
+        let unsortedBond = SIMD2(atomID, ring[wrap(lane + 1)])
+        let unsortedAngle = SIMD3(unsortedBond, ring[wrap(lane + 2)])
+        let unsortedTorsion = SIMD4(unsortedAngle, ring[wrap(lane + 3)])
+        let bond = sortBond(unsortedBond)
+        let angle = sortAngle(unsortedAngle)
+        let torsion = sortTorsion(unsortedTorsion)
         
         guard atomID < .max,
               let bondID = bonds.map[bond],
