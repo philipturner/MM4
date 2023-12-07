@@ -209,7 +209,7 @@ extension MM4RigidBodyStorage {
     }
     
     let I = momentOfInertia
-    let w = SIMD3<Double>(angularVelocity.angle * angularVelocity.axis)
+    let w = SIMD3<Double>(quaternionToVector(angularVelocity))
     let velocityX = I.columns.0 * w.x
     let velocityY = I.columns.1 * w.y
     let velocityZ = I.columns.2 * w.z
@@ -429,7 +429,7 @@ extension MM4RigidBodyStorage {
     // Query the bulk linear and angular momentum.
     let linearDrift = createLinearVelocity()
     let angularDrift = createAngularVelocity()
-    let wDrift = angularDrift.angle * angularDrift.axis
+    let wDrift = quaternionToVector(angularDrift)
     
     // Set momentum to zero and calculate the modified thermal energy.
     var correctedThermalKineticEnergy: Double = .zero
@@ -478,7 +478,7 @@ extension MM4RigidBodyStorage {
     // Rescale thermal velocities and superimpose over bulk velocities.
     let velocityScale = Float((
       newThermalKineticEnergy / correctedThermalKineticEnergy).squareRoot())
-    let w = constantAngularVelocity.angle * constantAngularVelocity.axis
+    let w = quaternionToVector(constantAngularVelocity)
     
     withMasses(nonAnchorMasses) { vMasses in
       for vID in 0..<atoms.vectorCount {

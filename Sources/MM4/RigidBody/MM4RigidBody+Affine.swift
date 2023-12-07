@@ -107,7 +107,7 @@ extension MM4RigidBody {
     storage.positions = nil
     
     let centerOfMass = storage.centerOfMass!
-    let w = rotation.angle * rotation.axis
+    let w = quaternionToVector(rotation)
     for vID in 0..<storage.atoms.vectorCount {
       var x = storage.vPositions[vID &* 3 &+ 0]
       var y = storage.vPositions[vID &* 3 &+ 1]
@@ -154,8 +154,8 @@ extension MM4RigidBody {
         fatalError("This should never happen.")
       }
       
-      let previousW = previous.angle * previous.axis
-      let nextW = next.angle * next.axis
+      let previousW = quaternionToVector(previous)
+      let nextW = quaternionToVector(next)
       storage.withMasses(storage.nonAnchorMasses) { vMasses in
         for vID in 0..<storage.atoms.vectorCount {
           let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x

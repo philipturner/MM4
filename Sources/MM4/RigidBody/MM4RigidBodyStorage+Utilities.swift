@@ -5,6 +5,17 @@
 //  Created by Philip Turner on 11/25/23.
 //
 
+import Numerics
+
+func quaternionToVector(_ quaternion: Quaternion<Float>) -> SIMD3<Float> {
+  let angleAxis = quaternion.angleAxis
+  if angleAxis.length == 0 || angleAxis.angle.isNaN {
+    return .zero
+  } else {
+    return angleAxis.angle * angleAxis.axis
+  }
+}
+
 extension MM4RigidBodyStorage {
   @inline(__always)
   func extractScalar(
