@@ -60,17 +60,16 @@ extension MM4RigidBody {
 
 extension MM4RigidBodyStorage {
   func createPositions() -> [SIMD3<Float>] {
-    var output: [SIMD3<Float>] = []
-    output.reserveCapacity(atoms.vectorCount * MM4VectorWidth)
-    output.withUnsafeMutableBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      
+    let capacity = atoms.vectorCount * MM4VectorWidth
+    let output = [SIMD3<Float>](unsafeUninitializedCapacity: capacity) {
+      let baseAddress = $0.baseAddress.unsafelyUnwrapped
       for vID in 0..<atoms.vectorCount {
         let x = vPositions[vID &* 3 &+ 0]
         let y = vPositions[vID &* 3 &+ 1]
         let z = vPositions[vID &* 3 &+ 2]
         swizzleFromVectorWidth((x, y, z), vID, baseAddress)
       }
+      $1 = atoms.count
     }
     return output
   }
