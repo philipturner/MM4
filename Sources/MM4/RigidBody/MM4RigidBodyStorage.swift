@@ -224,7 +224,7 @@ extension MM4RigidBody {
   ///
   /// This function is underscored to prevent it from appearing in autocomplete.
   mutating func _ensureReferencesUpdated() {
-    energy.kinetic.storage = storage
+    _energy.kinetic.storage = storage
   }
   
   /// Ensure copy-on-write semantics.
@@ -237,5 +237,3 @@ extension MM4RigidBody {
     }
   }
 }
-
-
