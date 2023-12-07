@@ -50,11 +50,11 @@ final class MM4RigidBodyStorage {
     self.handles = handles
     self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
-      $1 = 3 * atomCount
+      $1 = 3 * atomVectorCount
     }
     self.vVelocities = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
-      $1 = 3 * atomCount
+      $1 = 3 * atomVectorCount
     }
     
     self.anchorMass = .zero
