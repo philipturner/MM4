@@ -24,6 +24,7 @@ extension MM4RigidBody {
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
     ensureUniquelyReferenced()
+    storage.eraseRarelyCachedProperties()
     storage.anchorVelocitiesValid = nil
     storage.velocities = nil
     
