@@ -84,7 +84,6 @@ extension MM4RigidBody {
     _modify {
       ensureUniquelyReferenced()
       storage.ensureCenterOfMassCached()
-      storage.positions = nil
       let previous = storage.centerOfMass!
       yield &storage.centerOfMass!
       
@@ -97,32 +96,63 @@ extension MM4RigidBody {
         storage.vPositions[vID &* 3 &+ 1] += difference.y
         storage.vPositions[vID &* 3 &+ 2] += difference.z
       }
+      
+      // Invalidate cached properties. Some could be restored, but err on the
+      // side of simplicity for debugging.
+      storage.eraseRarelyCachedProperties()
+      storage.positions = nil
     }
   }
   
   /// Change the object's orientation by the specified quaternion.
+  ///
+  /// Each atom's angular and thermal velocity is also rotated by the specified
+  /// quaternion.
   public mutating func rotate(_ rotation: Quaternion<Float>) {
     ensureUniquelyReferenced()
     storage.ensureCenterOfMassCached()
-    storage.positions = nil
+    storage.ensureLinearVelocityCached()
     
     let centerOfMass = storage.centerOfMass!
-    let w = quaternionToVector(rotation)
+    let linearVelocity = storage.linearVelocity!
+    let prepared = vQuaternionPrepare(rotation)
     for vID in 0..<storage.atoms.vectorCount {
       var x = storage.vPositions[vID &* 3 &+ 0]
       var y = storage.vPositions[vID &* 3 &+ 1]
       var z = storage.vPositions[vID &* 3 &+ 2]
-      let rX = x - centerOfMass.x
-      let rY = y - centerOfMass.y
-      let rZ = z - centerOfMass.z
+      x -= centerOfMass.x
+      y -= centerOfMass.y
+      z -= centerOfMass.z
       
-      x += w.y * rZ - w.z * rY
-      y += w.z * rX - w.x * rZ
-      z += w.x * rY - w.y * rX
+      vQuaternionAct(prepared, &x, &y, &z)
+      x += centerOfMass.x
+      y += centerOfMass.y
+      z += centerOfMass.z
       storage.vPositions[vID &* 3 &+ 0] = x
       storage.vPositions[vID &* 3 &+ 1] = y
       storage.vPositions[vID &* 3 &+ 2] = z
+      
+      // Rotate the angular and thermal velocities so the atoms don't explode.
+      var vX = storage.vVelocities[vID &* 3 &+ 0]
+      var vY = storage.vVelocities[vID &* 3 &+ 1]
+      var vZ = storage.vVelocities[vID &* 3 &+ 2]
+      vX -= linearVelocity.x
+      vY -= linearVelocity.y
+      vZ -= linearVelocity.z
+      
+      vQuaternionAct(prepared, &vX, &vY, &vZ)
+      vX += linearVelocity.x
+      vY += linearVelocity.y
+      vZ += linearVelocity.z
+      storage.vVelocities[vID &* 3 &+ 0] = vX
+      storage.vVelocities[vID &* 3 &+ 1] = vY
+      storage.vVelocities[vID &* 3 &+ 2] = vZ
     }
+    
+    // Invalidate cached properties. Some could be restored, but err on the
+    // side of simplicity for debugging.
+    storage.eraseRarelyCachedProperties()
+    storage.positions = nil
   }
 }
 
@@ -142,7 +172,6 @@ extension MM4RigidBody {
       ensureUniquelyReferenced()
       storage.ensureCenterOfMassCached()
       storage.ensureAngularVelocityCached()
-      storage.velocities = nil
       let previous = storage.angularVelocity!
       yield &storage.angularVelocity!
       
@@ -193,6 +222,11 @@ extension MM4RigidBody {
           storage.vVelocities[vID &* 3 &+ 2] += vZ
         }
       }
+      
+      // Invalidate cached properties. Some could be restored, but err on the
+      // side of simplicity for debugging.
+      storage.eraseRarelyCachedProperties()
+      storage.velocities = nil
     }
   }
   
