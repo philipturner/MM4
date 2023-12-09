@@ -219,7 +219,7 @@ extension MM4Parameters {
     }
   }
   
-  mutating func createMasses(hydrogenMassRepartitioning: Float) {
+  mutating func createMasses(hydrogenMassScale: Float) {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
       /// Units: amu -> yg
       var mass = MM4MassParameters.global.mass(atomicNumber: atomicNumber)
@@ -229,11 +229,13 @@ extension MM4Parameters {
     
     for atomID in atoms.indices
     where atoms.atomicNumbers[Int(atomID)] == 1 {
-      atoms.masses[Int(atomID)] += hydrogenMassRepartitioning
+      let previousMass = atoms.masses[Int(atomID)]
+      let scaledMass = previousMass * hydrogenMassScale
+      atoms.masses[Int(atomID)] = scaledMass
       
       let map = atomsToBondsMap[Int(atomID)]
       let substituentID = Int(other(atomID: atomID, bondID: map[0]))
-      atoms.masses[substituentID] -= hydrogenMassRepartitioning
+      atoms.masses[substituentID] -= scaledMass - previousMass
     }
   }
   
@@ -268,7 +270,7 @@ extension MM4Parameters {
   // - Using the strange relationship that conflates the different vdW adjustments
   //   to create a single "R=0.85", I derived r=3.046 A, eps=0.0840.
   // - Si, P, S, Ge use the Hill function exactly instead of X/H vdW pairs.
-  mutating func createNonbondedParameters(hydrogenMassRepartitioning: Float) {
+  mutating func createNonbondedParameters(hydrogenMassScale: Float) {
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var epsilon: (default: Float, hydrogen: Float)
@@ -289,7 +291,7 @@ extension MM4Parameters {
         // may not be 100% accurate, but seems like the most logical course of
         // action. Most often, people will use the same amount of HMR for each
         // rigid body.
-        let t = hydrogenMassRepartitioning
+        let t = hydrogenMassScale - 1
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (default: 0.037, hydrogen: 0.024)
         radius = (default: 1.960, hydrogen: hydrogenRadius)

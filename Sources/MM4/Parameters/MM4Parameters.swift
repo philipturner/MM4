@@ -17,11 +17,14 @@ public struct MM4ParametersDescriptor {
   /// the parameters.
   public var bonds: [SIMD2<UInt32>]?
   
-  /// Required. The amount of mass (in yoctograms) to redistribute from a
-  /// substituent atom to each covalently bonded hydrogen.
+  /// Required. The factor to multiply hydrogen mass by.
   ///
-  /// If not specified, the default is a quantity equivalent to 1 amu.
-  public var hydrogenMassRepartitioning: Float = 1.0 * Float(MM4YgPerAmu)
+  /// If not specified, the default value gives hydrogens ~2 amu of mass.
+  ///
+  /// During hydrogen mass repartitioning, mass is added to hydrogens and
+  /// removed from atoms covalently bonded to hydrogens. The resulting structure
+  /// has the same total mass as before the transformation.
+  public var hydrogenMassScale: Float = 2
   
   /// Required. The level of theory used for simulation.
   ///
@@ -101,10 +104,9 @@ public struct MM4Parameters {
     try createCenterTypes()
     
     // Atom Parameters
-    let descriptorHMR = descriptor.hydrogenMassRepartitioning
     try createAtomCodes()
-    createMasses(hydrogenMassRepartitioning: descriptorHMR)
-    createNonbondedParameters(hydrogenMassRepartitioning: descriptorHMR)
+    createMasses(hydrogenMassScale: descriptor.hydrogenMassScale)
+    createNonbondedParameters(hydrogenMassScale: descriptor.hydrogenMassScale)
     createNonbondedExceptions()
     
     // Bond Parameters

@@ -70,7 +70,7 @@ The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
    non-hydrogen atoms lighter, to decrease the C-H/Si-H/Ge-H stretching
    frequency. You can, and should, disable HMR for energy-conserving
    simulations where timestep falls below 2 fs. This can be done by setting
- <doc:MM4ParametersDescriptor/hydrogenMassRepartitioning> to `0`.
+ <doc:MM4ParametersDescriptor/hydrogenMassScale> to `1`.
    Note that changing the repartitioning will shift the center of mass,
    which is where bulk angular momentum is applied.
 
