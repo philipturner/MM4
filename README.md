@@ -27,12 +27,13 @@ Quantum mechanics supports any element or bonding topology. The following restri
 | S             | 15  | 15  | not supported | not supported |
 | Ge            | 31  | 31  | not supported | not supported |
 
-The following are officially supported in the current release. Other atoms are experimental.
+The following are officially supported in the current release. Other atoms are unsupported.
 
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
 | H             | 5   | n/a | n/a           | n/a           |
 | C             | 1   | 123 | not supported | not supported |
+| Si            | 19  | 19  | n/a           | n/a           |
 
 ### Supported Bonds
 
@@ -50,12 +51,13 @@ Quantum mechanics supports any element or bonding topology. The following restri
 | S       |   | O |   |   |   |   |   |   |   |
 | Ge      | X | O |   |   |   |   |   |   | X |
 
-The following are officially supported in the current release. Other bonds are experimental.
+The following are officially supported in the current release. Other bonds are unsupported.
 
-| Element | H | C |
-| ------- | - | - |
-| H       |   | X |
-| C       | X | X |
+| Element | H | C | Si |
+| ------- | - | - | - |
+| H       |   | X | X |
+| C       | X | X |   |
+| Si      | x |   | X |
 
 Key:
 - X = nonpolar sigma bond
@@ -68,7 +70,7 @@ Key:
 | Linear  | anchor with velocity | external force\* |
 | Angular | flywheel             | linear to rotary converter |
 
-> \*There is currently an undocumented API restriction that prevents external forces from being set on a per-atom granularity. One can only use a per-rigid body granularity, with handles for selecting atoms that are affected. A future API change will fix this restriction.
+> \*There is a temporary API restriction that prevents external forces from being set on a per-atom granularity. One can only use a per-rigid body granularity, with handles for selecting atoms that are affected.
 
 ### Units
 
@@ -109,15 +111,15 @@ v1.0.0
 - Accurate simulation of 5-ring carbons
 - Anchors
 - External forces
-- Experimental, untested support for non-carbon elements
+- Support for hydrocarbons and hydrosilicons
 
 Future versions:
 - High-precision energy measurements
 - Quantum mechanics
 - Rigid body mechanics
-- Tested support for non-carbon elements
+- Support for non-carbon elements
 
 ## Tips
 
 List:
-- Compile this package in Swift release mode. Vectorized code is known to be extremely slow in debug mode. However, it may not be a bottleneck for small enough systems (under 1000 atoms).
+- Compile this package in Swift release mode. Vectorized code is known to be extremely slow in debug mode. However, it may not be a bottleneck for small systems (under 1000 atoms).
