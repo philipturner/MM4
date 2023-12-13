@@ -3,15 +3,13 @@ import MM4
 
 final class MM4Tests: XCTestCase {
   func testExample() throws {
-    print("hello world?")
-//    fatalError()
-    XCTAssertTrue(false)
+    
   }
 }
 
 // MARK: - General Requirements
 
-// TODO: Pick some examples experimental and computed forcefield values from the
+// Pick some examples experimental and computed forcefield values from the
 // MM3/MM4 research papers. Measure how well the current implementation
 // reproduces them. This should be a litmus test of how good the forcefield is.
 //
@@ -25,9 +23,6 @@ final class MM4Tests: XCTestCase {
 // In another file testing basic functionality, see what happens when
 // 'MM4RigidBody' and/or 'MM4ForceField' has zero atoms. There should be no
 // crashes or errors.
-//
-// Test mass of hydrogen atoms with the new rule. Does it agree with
-// what you expect from the old rule?
 //
 // Test whether the code enters an infinite loop while generating random
 // velocities.
