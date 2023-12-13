@@ -42,6 +42,9 @@ final class MM4ParametersTests: XCTestCase {
 // TODO: In another file testing basic functionality, see what happens when
 // 'MM4RigidBody' and/or 'MM4ForceField' has zero atoms. There should be no
 // crashes or errors.
-
-// Test whether the code enters an infinite loop while generating random
+//
+// TODO: Test mass of hydrogen atoms with the new rule. Does it agree with
+// what you expect from the old rule?
+//
+// TODO: Test whether the code enters an infinite loop while generating random
 // velocities.
