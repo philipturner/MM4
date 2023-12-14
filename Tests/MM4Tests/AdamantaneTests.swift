@@ -75,6 +75,16 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   // Check that bond parameters match the images in the DocC catalog.
   XCTAssertEqual(adamantane.bonds, params.bonds.indices)
   XCTAssertEqual(adamantane.bondRingTypes, params.bonds.ringTypes)
+  XCTAssertEqual(
+    adamantane.bondParameters.count, params.bonds.parameters.count)
+  XCTAssertEqual(
+    adamantane.bondParameters.count, params.bonds.extendedParameters.count)
+  XCTAssert(params.bonds.extendedParameters.allSatisfy { $0 == nil })
+  for (lhs, rhs) in zip(adamantane.bondParameters, params.bonds.parameters) {
+    // WARNING: This does not validate the potential well depth.
+    XCTAssertEqual(lhs.ks, rhs.stretchingStiffness, accuracy: lhs.ks * 1e-3)
+    XCTAssertEqual(lhs.l, rhs.equilibriumLength, accuracy: lhs.l * 1e-3)
+  }
   
   // For angles and torsions, we may need something more complex. Perhaps a
   // multi-stage sorting algorithm to identify which angles/torsions from the

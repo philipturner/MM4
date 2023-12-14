@@ -21,8 +21,8 @@ final class MM4Tests: XCTestCase {
 // MARK: - Tests for Carbon-Only Molecules
 
 // In another file testing basic functionality, see what happens when
-// 'MM4RigidBody' and/or 'MM4ForceField' has zero atoms. There should be no
-// crashes or errors.
+// 'MM4Parameters', 'MM4RigidBody', and/or 'MM4ForceField' have zero atoms.
+// There should be no crashes or errors.
 //
 // Test whether the code enters an infinite loop while generating random
 // velocities.

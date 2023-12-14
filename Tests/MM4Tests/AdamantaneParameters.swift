@@ -1,11 +1,13 @@
 //
-//  AdamantaneGeometry.swift
+//  AdamantaneParameters.swift
 //
 //
 //  Created by Philip Turner on 12/13/23.
 //
 
 import MM4
+
+// MARK: - Geometry
 
 // An adamantane-like cage with one sidewall carbon replaced with a sigma bond,
 // forming two 5-membered rings.
@@ -19,6 +21,7 @@ struct Adamantane {
   var atomRingTypes: [UInt8]
   var ringIndices: [SIMD8<UInt32>]
   var bondRingTypes: [UInt8]
+  var bondParameters: [(ks: Float, l: Float)]
   
   init(atomCode: MM4AtomCode) {
     // Initialize parameter inputs.
@@ -50,10 +53,12 @@ struct Adamantane {
       atomRingTypes = carbonAtomRingTypes
       ringIndices = carbonRingIndices
       bondRingTypes = carbonBondRingTypes
+      bondParameters = carbonBondParameters
     case .silicon:
       atomRingTypes = siliconAtomRingTypes
       ringIndices = siliconRingIndices
       bondRingTypes = siliconBondRingTypes
+      bondParameters = siliconBondParameters
     default:
       fatalError("Unrecognized atom code for adamantane.")
     }
@@ -169,6 +174,8 @@ private let siliconBonds: [SIMD2<UInt32>] = [
   SIMD2<UInt32>(19, 21),
 ]
 
+// MARK: - Parameters
+
 private let carbonAtomRingTypes: [UInt8] = [
   6, 6, 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 6, 5, 6, 6, 5, 6
 ]
@@ -193,4 +200,22 @@ private let carbonBondRingTypes: [UInt8] = [
 
 private let siliconBondRingTypes: [UInt8] = [
   6, 6, 6, 6, 6, 6, 6, 5, 6, 5, 6, 6, 6, 5, 6, 5, 6, 6, 5, 5, 6, 5, 5, 6, 5
+]
+
+private let carbonBondParameters: [(ks: Float, l: Float)] = [
+  (4.67, 1.112), (4.67, 1.112), (4.7, 1.112), (4.99, 1.529), (4.64, 1.112),
+  (4.64, 1.112), (4.56, 1.527), (4.99, 1.529), (4.7, 1.112), (4.99, 1.529),
+  (4.64, 1.112), (4.64, 1.112), (4.56, 1.527), (4.99, 1.529), (4.7, 1.112),
+  (4.99, 1.529), (4.64, 1.112), (4.64, 1.112), (4.99, 1.529), (4.64, 1.112),
+  (4.64, 1.112), (4.99, 1.529), (4.99, 1.529), (4.7, 1.112), (4.99, 1.529)
+]
+
+private let siliconBondParameters: [(ks: Float, l: Float)] = [
+  (2.65, 1.49266), (2.65, 1.49266), (2.65, 1.49266), (2.65, 1.49266),
+  (2.65, 1.49266), (2.65, 1.49266), (1.65, 2.3308089), (1.65, 2.3448088),
+  (2.65, 1.4926132), (1.65, 2.3448088), (2.65, 1.49266), (2.65, 1.49266),
+  (1.65, 2.3308089), (1.65, 2.3448088), (2.65, 1.4926132), (1.65, 2.3448088),
+  (2.65, 1.49266), (2.65, 1.49266), (1.65, 2.3424087), (1.65, 2.3424087),
+  (2.65, 1.4938133), (1.65, 2.3424087), (1.65, 2.3424087), (2.65, 1.4938133),
+  (1.65, 2.3475945)
 ]
