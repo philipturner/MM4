@@ -7,13 +7,12 @@ Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 ### Simulation
 
 Levels of theory:
-- Quantum mechanics
 - Molecular mechanics
 - Rigid body mechanics
 
 ### Supported Atoms
 
-Quantum mechanics supports any element or bonding topology. The following restrictions apply to molecular and rigid body mechanics.
+Rigid body mechanics supports any bonding topology. The following restrictions apply molecular mechanics.
 
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
@@ -37,7 +36,7 @@ The following are officially supported in the current release. Other atoms are u
 
 ### Supported Bonds
 
-Quantum mechanics supports any element or bonding topology. The following restrictions apply to molecular and rigid body mechanics.
+Rigid body mechanics supports any bonding topology. The following restrictions apply molecular mechanics.
 
 | Element | H | C | N | O | F | Si | P | S | Ge |
 | ------- | - | - | - | - | - | - | - | - | - |
@@ -67,10 +66,8 @@ Key:
 
 |         | Velocity             | Force           |
 | ------- | -------------------- | --------------- |
-| Linear  | anchor with velocity | external force\* |
-| Angular | flywheel             | linear to rotary converter |
-
-> \*There is a temporary API restriction that prevents external forces from being set on a per-atom granularity. One can only use a per-rigid body granularity, with handles for selecting atoms that are affected.
+| Linear  | anchor with velocity | external force  |
+| Angular | flywheel             | linear to rotary motion converter |
 
 ### Units
 
@@ -115,7 +112,6 @@ v1.0.0
 
 Future versions:
 - High-precision energy measurements
-- Quantum mechanics
 - Rigid body mechanics
 - Support for non-carbon elements
 

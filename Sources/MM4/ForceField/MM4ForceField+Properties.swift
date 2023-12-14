@@ -127,6 +127,10 @@ extension MM4ForceField {
   }
   
   /// The constant force (in piconewtons) exerted on each atom.
+  ///
+  /// > Note: There is a temporary API restriction that prevents external forces
+  /// from being set on a per-atom granularity. One can only use a per-rigid
+  /// body granularity, with handles for selecting atoms that are affected.
   public var externalForces: [SIMD3<Float>] {
     // TODO: Let the user apply forces to atoms that aren't handles in the
     // parent rigid body. This feature is planned - the reason MM4ForceField

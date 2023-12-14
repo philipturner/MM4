@@ -14,18 +14,12 @@ import OpenMM
 /// Once an `MM4ForceField` is created, the level of theory cannot be changed.
 /// The level in an imported or exported rigid body is simply ignored.
 public enum MM4LevelOfTheory: CaseIterable, Hashable {
-  /// One of the algorithms from the xTB package.
-  ///
-  /// The default time step is 2.174 femtoseconds.
-  case quantumMechanics(GFNLevelOfTheory)
-  
   /// The fourth molecular mechanics force field by Norman Allinger.
   ///
   /// The default time step is 4.348 femtoseconds.
   case molecularMechanics
   
-  /// Simplified version of MM4 using only nonbonded forces, with the same
-  /// restrictions on bonding topology.
+  /// Simplified version of MM4 using only nonbonded forces.
   ///
   /// The default time step has yet to be determined.
   case rigidBodyMechanics
@@ -33,8 +27,6 @@ public enum MM4LevelOfTheory: CaseIterable, Hashable {
   /// The default time step in picoseconds.
   public var defaultTimeStep: Double {
     switch self {
-    case .quantumMechanics:
-      return 50 / 23 * OpenMM_PsPerFs
     case .molecularMechanics:
       return 100 / 23 * OpenMM_PsPerFs
     case .rigidBodyMechanics:
@@ -44,26 +36,8 @@ public enum MM4LevelOfTheory: CaseIterable, Hashable {
   
   public static var allCases: [MM4LevelOfTheory] {
     return [
-      .quantumMechanics(.extendedTightBinding),
-      .quantumMechanics(.forceField),
       .molecularMechanics,
       .rigidBodyMechanics,
     ]
   }
-}
-
-/// A level of theory for quantum mechanics.
-///
-/// If the MM4 level of theory is `.quantumMechanics`, you must specify the
-/// GFN level of theory as well.
-public enum GFNLevelOfTheory: CaseIterable, Hashable {
-  /// A semi-empirical approximation to density functional theory.
-  ///
-  /// In the xTB package, this level of theory is named "GFN2-xTB".
-  case extendedTightBinding
-  
-  /// An expensive, polarizable force field supporting any bonding topology.
-  ///
-  /// In the xTB package, this level of theory is named "GFN-FF".
-  case forceField
 }
