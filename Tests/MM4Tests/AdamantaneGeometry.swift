@@ -10,11 +10,18 @@ import MM4
 // An adamantane-like cage with one sidewall carbon replaced with a sigma bond,
 // forming two 5-membered rings.
 struct Adamantane {
+  // Inputs to the parameters initializer.
   var atomicNumbers: [UInt8]
   var bonds: [SIMD2<UInt32>]
   var positions: [SIMD3<Float>]
   
+  // Expected values of the parameters.
+  var atomRingTypes: [UInt8]
+  var ringIndices: [SIMD8<UInt32>]
+  var bondRingTypes: [UInt8]
+  
   init(atomCode: MM4AtomCode) {
+    // Initialize parameter inputs.
     var rawAtoms: [SIMD4<Float>]
     var rawBonds: [SIMD2<UInt32>]
     
@@ -36,6 +43,21 @@ struct Adamantane {
     self.positions = rawAtoms.map {
       SIMD3($0.x, $0.y, $0.z)
     }
+    
+    // Initialize parameter outputs.
+    switch atomCode {
+    case .alkaneCarbon:
+      atomRingTypes = carbonAtomRingTypes
+      ringIndices = carbonRingIndices
+      bondRingTypes = carbonBondRingTypes
+    case .silicon:
+      atomRingTypes = siliconAtomRingTypes
+      ringIndices = siliconRingIndices
+      bondRingTypes = siliconBondRingTypes
+    default:
+      fatalError("Unrecognized atom code for adamantane.")
+    }
+    
   }
 }
 
@@ -147,4 +169,28 @@ private let siliconBonds: [SIMD2<UInt32>] = [
   SIMD2<UInt32>(19, 21),
 ]
 
-// TODO: - Copy parameters from the image, ensure they are the same.
+private let carbonAtomRingTypes: [UInt8] = [
+  6, 6, 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 6, 5, 6, 6, 5, 6
+]
+
+private let siliconAtomRingTypes: [UInt8] = [
+  6, 6, 6, 5, 6, 6, 5, 6, 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 6, 5, 6, 5, 6
+]
+
+private let carbonRingIndices: [SIMD8<UInt32>] = [
+  SIMD8<UInt32>(3, 21, 15, 13, 10, 4294967295, 4294967295, 4294967295),
+  SIMD8<UInt32>(3, 21, 18, 8, 5, 4294967295, 4294967295, 4294967295)
+]
+
+private let siliconRingIndices: [SIMD8<UInt32>] = [
+  SIMD8<UInt32>(6, 19, 21, 16, 14, 4294967295, 4294967295, 4294967295),
+  SIMD8<UInt32>(3, 19, 21, 11, 9, 4294967295, 4294967295, 4294967295)
+]
+
+private let carbonBondRingTypes: [UInt8] = [
+  6, 6, 6, 5, 6, 6, 6, 5, 6, 5, 6, 6, 6, 5, 6, 5, 6, 6, 5, 6, 6, 5, 5, 6, 5
+]
+
+private let siliconBondRingTypes: [UInt8] = [
+  6, 6, 6, 6, 6, 6, 6, 5, 6, 5, 6, 6, 6, 5, 6, 5, 6, 6, 5, 5, 6, 5, 5, 6, 5
+]

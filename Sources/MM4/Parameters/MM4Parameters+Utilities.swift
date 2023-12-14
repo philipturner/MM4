@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 10/13/23.
 //
 
+// MARK: - Locating Atoms
+
 extension MM4Parameters {
   @inline(__always)
   func other<T: FixedWidthInteger, U: FixedWidthInteger>(
@@ -28,7 +30,11 @@ extension MM4Parameters {
     }
     return output
   }
-  
+}
+
+// MARK: - Handling Different Elements
+
+extension MM4Parameters {
   /// Overloads the function `createAtomCodes()`, but is a more elegant API,
   /// that follows the de facto naming convention established for MM4 and
   /// related projects.
@@ -85,8 +91,12 @@ extension MM4Parameters {
     }
     return nonCarbonElementCount > 1
   }
-  
-  /// `codes` could also contain atom indices, for sorting the angle while
+}
+
+// MARK: - Sorting Within Bonds
+
+extension MM4Parameters {
+  /// `codes` could also contain atom indices, for sorting the bond while
   /// generating the bond topology.
   @inline(__always)
   func sortBond<T>(_ codes: SIMD2<T>) -> SIMD2<T>
@@ -129,5 +139,39 @@ extension MM4Parameters {
     } else {
       return codes
     }
+  }
+}
+
+// MARK: - Sorting Between Bonds
+
+extension MM4Parameters {
+  @inline(__always)
+  func compareAngle<T>(_ x: SIMD3<T>, _ y: SIMD3<T>) -> Bool
+  where T: FixedWidthInteger {
+    if x[1] != y[1] { return x[1] < y[1] }
+    if x[0] != y[0] { return x[0] < y[0] }
+    if x[2] != y[2] { return x[2] < y[2] }
+    return true
+  }
+  
+  @inline(__always)
+  func compareTorsion<T>(_ x: SIMD4<T>, _ y: SIMD4<T>) -> Bool
+  where T: FixedWidthInteger {
+    if x[1] != y[1] { return x[1] < y[1] }
+    if x[2] != y[2] { return x[2] < y[2] }
+    if x[0] != y[0] { return x[0] < y[0] }
+    if x[3] != y[3] { return x[3] < y[3] }
+    return true
+  }
+  
+  @inline(__always)
+  func compareRing<T>(_ x: SIMD8<T>, _ y: SIMD8<T>) -> Bool
+  where T: FixedWidthInteger {
+    if x[0] != y[0] { return x[0] < y[0] }
+    if x[1] != y[1] { return x[1] < y[1] }
+    if x[2] != y[2] { return x[2] < y[2] }
+    if x[3] != y[3] { return x[3] < y[3] }
+    if x[4] != y[4] { return x[4] < y[4] }
+    return true
   }
 }

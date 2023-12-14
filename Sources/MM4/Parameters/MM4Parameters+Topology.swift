@@ -184,8 +184,11 @@ extension MM4Parameters {
       }
     }
     angles.indices = angles.map.keys.map { $0 }
+    angles.indices.sort(by: compareAngle)
     torsions.indices = torsions.map.keys.map { $0 }
+    torsions.indices.sort(by: compareTorsion)
     
+    @inline(__always)
     func wrap(_ index: Int) -> Int {
       (index + 5) % 5
     }
@@ -210,6 +213,8 @@ extension MM4Parameters {
       match1 &+= match3
       match1.replace(with: SIMD4.zero, where: map4 .== -1)
       
+      // Atom indices within the angles and torsions are already sorted. Here,
+      // we initialize rings with correct ordering as well.
       for lane in 0..<4 where match1[lane] > 0 {
         var array: [UInt32] = []
         array.reserveCapacity(5)
@@ -232,8 +237,9 @@ extension MM4Parameters {
         ringsMap[output] = true
       }
     }
-    
     rings.indices = ringsMap.keys.map { $0 }
+    rings.indices.sort(by: compareRing)
+    
     atoms.ringTypes = .init(repeating: 6, count: atoms.count)
     bonds.ringTypes = .init(repeating: 6, count: bonds.indices.count)
     angles.ringTypes = .init(repeating: 6, count: angles.indices.count)
@@ -342,8 +348,6 @@ extension MM4Parameters {
         fatalError("This should never happen.")
       }
       atoms.centerTypes.append(carbonType)
-      
-      
     }
   }
 }

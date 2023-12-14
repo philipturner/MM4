@@ -36,7 +36,7 @@ The following are officially supported in the current release. Other atoms are u
 | Si            | 19  | 19  | n/a           | n/a           |
 | Au            | n/a | n/a | n/a           | n/a           |
 
-Gold atoms must be anchors or simulated with rigid body mechanics. They only participate in nonbonded interactions. For example, MM4 can simulate the vdW interaction between graphene and gold. It can prevent a graphene sheet from physically colliding with a gold surface. The interaction force would be combined with a quantum mechanical simulator, such as GFN-FF, that handles pi-bonded carbons but not bulk metals.
+Gold atoms should be anchors or simulated with rigid body mechanics. They only participate in nonbonded interactions. For example, MM4 can simulate the vdW interaction between graphene and gold. It can prevent a graphene sheet from physically colliding with a gold surface. The interaction force would be combined with a quantum mechanical simulator, such as GFN-FF, that handles pi-bonded carbons but not bulk metals.
 
 ### Supported Bonds
 

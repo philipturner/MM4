@@ -57,4 +57,26 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   // "mass" property of MM4RigidBody yet.
   let paramsMass = params.atoms.masses.reduce(Double(0)) { $0 + Double($1) }
   XCTAssert(abs(expectedTotalMass - paramsMass) < 1e-3)
+  
+  // Check that atom parameters match the images in the DocC catalog.
+  // NOTE: This does not validate the van der Waals parameters.
+  func sortRing(_ x: SIMD8<UInt32>, _ y: SIMD8<UInt32>) -> Bool {
+    for lane in 0..<8 {
+      if x[lane] < y[lane] { return true }
+      if x[lane] > y[lane] { return false }
+    }
+    return true
+  }
+  XCTAssertEqual(adamantane.atomRingTypes, params.atoms.ringTypes)
+  XCTAssertEqual(
+    adamantane.ringIndices.sorted(by: sortRing),
+    params.rings.indices.sorted(by: sortRing))
+  
+  // Check that bond parameters match the images in the DocC catalog.
+  XCTAssertEqual(adamantane.bonds, params.bonds.indices)
+  XCTAssertEqual(adamantane.bondRingTypes, params.bonds.ringTypes)
+  
+  // For angles and torsions, we may need something more complex. Perhaps a
+  // multi-stage sorting algorithm to identify which angles/torsions from the
+  // image match the current parameter object's order.
 }

@@ -61,10 +61,6 @@ public class MM4ForceField {
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
     
-    // TODO: Find a way to fail when the user simulates gold atoms, without
-    // setting them as anchors or using rigid body mechanics. The current
-    // implementation treats them like noble gas particles.
-    
     _energy = MM4ForceFieldEnergy(forceField: self)
     
     _externalForces = Array(
