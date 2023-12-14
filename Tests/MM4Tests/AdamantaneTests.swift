@@ -89,4 +89,19 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   // For angles and torsions, we may need something more complex. Perhaps a
   // multi-stage sorting algorithm to identify which angles/torsions from the
   // image match the current parameter object's order.
+  
+  XCTAssertEqual(adamantane.angleRingTypes.count, params.angles.indices.count)
+  XCTAssertEqual(adamantane.angleParameters.count, params.angles.indices.count)
+  XCTAssertEqual(params.angles.parameters.count, params.angles.indices.count)
+  XCTAssertEqual(
+    params.angles.extendedParameters.count, params.angles.indices.count)
+  
+  XCTAssertEqual(
+    adamantane.torsionRingTypes.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    adamantane.torsionParameters.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    params.torsions.parameters.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    params.torsions.extendedParameters.count, params.torsions.indices.count)
 }
