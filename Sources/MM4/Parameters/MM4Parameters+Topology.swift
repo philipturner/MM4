@@ -287,11 +287,12 @@ extension MM4Parameters {
   /// - throws: `.unsupportedCenterType`
   mutating func createCenterTypes() throws {
     let permittedAtomicNumbers: [UInt8] = [6, 7, 8, 14, 15, 16, 32]
+    let blacklistedAtomicNumbers: [UInt8] = [1, 9, 79]
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       guard permittedAtomicNumbers.contains(atomicNumber) else {
         precondition(
-          atomicNumber == 1 || atomicNumber == 9,
+          blacklistedAtomicNumbers.contains(atomicNumber),
           "Atomic number \(atomicNumber) not recognized.")
         atoms.centerTypes.append(nil)
         continue

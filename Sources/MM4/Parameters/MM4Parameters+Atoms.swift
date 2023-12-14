@@ -102,6 +102,11 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   ///
   /// MM4 atom code: 123
   case cyclopentaneCarbon = 123
+  
+  /// Gold (metallic)
+  ///
+  /// MM4 atom code: 216
+  case gold = 216
 }
 
 /// The number of hydrogens surrounding the carbon or silicon.
@@ -192,6 +197,9 @@ extension MM4Parameters {
       case 32:
         output = .germanium
         valenceCount = 4
+      case 79:
+        output = .gold
+        valenceCount = 0
       default:
         let address = createAddress(atomID)
         throw MM4Error.missingParameter([address])
@@ -316,6 +324,23 @@ extension MM4Parameters {
       case 32:
         epsilon = (default: 0.200, hydrogen: -1)
         radius = (default: 2.440, hydrogen: -1)
+      case 79:
+        // Using the parameter froms https://doi.org/10.1002/cphc.200300792.
+        // The vdW radius is larger than
+        // https://en.wikipedia.org/wiki/Van_der_Waals_radius by an amount
+        // similar to the other MM4 elements. Compare this to
+        // https://doi.org/10.1021/la9707484 where the radius is 1.85 Å.
+        //
+        // One source noted that metals can't be represented very well with a
+        // vdW potential. It may be more appropriate to create a separate
+        // nonbonded force for gold. For the time being, plug the epsilon and
+        // radius parameters into the Buckingham potential just for simplicity
+        // of implementation. The main purpose is to prevent atoms from
+        // colliding with gold due to Pauli repulsion. Dynamics may change due
+        // to the magnitude of the attractive force, but properly engineered
+        // systems can be insensitive to this error.
+        epsilon = (default: 0.078, hydrogen: -1)
+        radius = (default: 2.074, hydrogen: -1)
       default:
         fatalError("This should never happen.")
       }
