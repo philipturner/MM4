@@ -2,13 +2,20 @@ import XCTest
 import MM4
 
 final class GoldTests: XCTestCase {
-  func testGold() throws {
+  static func createGoldParameters() throws -> MM4Parameters {
     var paramsDesc = MM4ParametersDescriptor()
     paramsDesc.atomicNumbers = goldAtoms.map { UInt8($0.w) }
     paramsDesc.bonds = []
-    
+    return try MM4Parameters(descriptor: paramsDesc)
+  }
+  
+  static func createGoldPositions() -> [SIMD3<Float>] {
+    return goldAtoms.map { SIMD3<Float>($0.x, $0.y, $0.z) }
+  }
+  
+  func testGold() throws {
     // Check that the number of atoms and their elements are the same.
-    let params = try MM4Parameters(descriptor: paramsDesc)
+    let params = try Self.createGoldParameters()
     XCTAssertEqual(goldAtoms.map { UInt8($0.w) }, params.atoms.atomicNumbers)
     XCTAssertEqual(goldAtoms.count, params.atoms.count)
     XCTAssertEqual(goldAtoms.indices, params.atoms.indices)

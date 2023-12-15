@@ -14,6 +14,7 @@ final class AdamantaneTests: XCTestCase {
 
 private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   let adamantane = Adamantane(atomCode: atomCode)
+  
   var paramsDesc = MM4ParametersDescriptor()
   paramsDesc.atomicNumbers = adamantane.atomicNumbers
   paramsDesc.bonds = adamantane.bonds
@@ -91,12 +92,7 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
     XCTAssert(compare(lhs.l, rhs.equilibriumLength))
   }
   
-  // For angles and torsions, we may need something more complex. Perhaps a
-  // multi-stage sorting algorithm to identify which angles/torsions from the
-  // image match the current parameter object's order.
-  
-  // WARNING: This is an O(n^2) algorithm in debug mode. It may be slow.
-  
+  // Check that angle parameters match the images in the DocC catalog.
   XCTAssertEqual(adamantane.angleRingTypes.count, params.angles.indices.count)
   XCTAssertEqual(adamantane.angleParameters.count, params.angles.indices.count)
   XCTAssertEqual(params.angles.parameters.count, params.angles.indices.count)
@@ -130,6 +126,7 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   }
   XCTAssert(angleMarks.allSatisfy { $0 == true })
   
+  // Check that torsion parameters match the images in the DocC catalog.
   XCTAssertEqual(
     adamantane.torsionRingTypes.count, params.torsions.indices.count)
   XCTAssertEqual(
