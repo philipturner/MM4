@@ -72,6 +72,11 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
     adamantane.ringIndices.sorted(by: sortRing),
     params.rings.indices.sorted(by: sortRing))
   
+  // Not force-inlining because that could make it worse in debug mode.
+  func compare(_ x: Float, _ y: Float) -> Bool {
+    abs(x - y) <= max(abs(x), abs(y)) * 1e-3
+  }
+  
   // Check that bond parameters match the images in the DocC catalog.
   XCTAssertEqual(adamantane.bonds, params.bonds.indices)
   XCTAssertEqual(adamantane.bondRingTypes, params.bonds.ringTypes)
@@ -82,19 +87,48 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   XCTAssert(params.bonds.extendedParameters.allSatisfy { $0 == nil })
   for (lhs, rhs) in zip(adamantane.bondParameters, params.bonds.parameters) {
     // WARNING: This does not validate the potential well depth.
-    XCTAssertEqual(lhs.ks, rhs.stretchingStiffness, accuracy: lhs.ks * 1e-3)
-    XCTAssertEqual(lhs.l, rhs.equilibriumLength, accuracy: lhs.l * 1e-3)
+    XCTAssert(compare(lhs.ks, rhs.stretchingStiffness))
+    XCTAssert(compare(lhs.l, rhs.equilibriumLength))
   }
   
   // For angles and torsions, we may need something more complex. Perhaps a
   // multi-stage sorting algorithm to identify which angles/torsions from the
   // image match the current parameter object's order.
   
+  // WARNING: This is an O(n^2) algorithm in debug mode. It may be slow.
+  
   XCTAssertEqual(adamantane.angleRingTypes.count, params.angles.indices.count)
   XCTAssertEqual(adamantane.angleParameters.count, params.angles.indices.count)
   XCTAssertEqual(params.angles.parameters.count, params.angles.indices.count)
   XCTAssertEqual(
     params.angles.extendedParameters.count, params.angles.indices.count)
+  XCTAssert(params.angles.extendedParameters.allSatisfy { $0 == nil })
+  
+  var angleMarks = [Bool](
+    repeating: false, count: params.angles.indices.count)
+  for i in params.angles.indices.indices {
+    let paramsRingType = params.angles.ringTypes[i]
+    let paramsParams = params.angles.parameters[i]
+    
+    var succeeded = false
+    for j in params.angles.indices.indices where !angleMarks[j] {
+      // WARNING: This does not validate stretch-bend stiffness.
+      let imageRingType = adamantane.angleRingTypes[j]
+      let imageParams = adamantane.angleParameters[j]
+      if paramsRingType == imageRingType,
+         compare(paramsParams.bendingStiffness, imageParams.kθ),
+         compare(paramsParams.equilibriumAngle, imageParams.θ),
+         compare(paramsParams.bendBendStiffness, imageParams.kθθ) {
+        angleMarks[j] = true
+        succeeded = true
+        break
+      }
+    }
+    XCTAssert(
+      succeeded,
+      "Angle \(i) of the MM4Parameters failed: \(paramsRingType), \(paramsParams)")
+  }
+  XCTAssert(angleMarks.allSatisfy { $0 == true })
   
   XCTAssertEqual(
     adamantane.torsionRingTypes.count, params.torsions.indices.count)
@@ -104,4 +138,43 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
     params.torsions.parameters.count, params.torsions.indices.count)
   XCTAssertEqual(
     params.torsions.extendedParameters.count, params.torsions.indices.count)
+  XCTAssert(params.torsions.extendedParameters.allSatisfy { $0 == nil })
+  
+  var torsionMarks = [Bool](
+    repeating: false, count: params.torsions.indices.count)
+  for i in params.torsions.indices.indices {
+    let paramsRingType = params.torsions.ringTypes[i]
+    let paramsParams = params.torsions.parameters[i]
+    
+    // There are no V6 terms. All torsions containing 2 hydrogens involve a
+    // 5-ring carbon.
+    XCTAssertEqual(paramsParams.n, 2)
+    
+    var succeeded = false
+    for j in params.torsions.indices.indices where !torsionMarks[j] {
+      // WARNING: This does not validate stretch-bend stiffness.
+      let imageRingType = adamantane.torsionRingTypes[j]
+      let imageParams = adamantane.torsionParameters[j]
+      if paramsRingType == imageRingType,
+         compare(paramsParams.V1, imageParams.V1),
+         compare(paramsParams.Vn, imageParams.V2),
+         compare(paramsParams.V3, imageParams.V3),
+         compare(paramsParams.Kts3, imageParams.Kts) {
+        torsionMarks[j] = true
+        succeeded = true
+        break
+      }
+    }
+    XCTAssert(
+      succeeded,
+      "Torsion \(i) of the MM4Parameters failed: \(paramsRingType), \(paramsParams)")
+  }
+  XCTAssert(torsionMarks.allSatisfy { $0 == true })
+  
+  for i in 0..<torsionMarks.count where !torsionMarks[i] {
+    print("Failed torsion: \(i)")
+    print("-", adamantane.torsionRingTypes[i])
+    print("-", adamantane.torsionParameters[i])
+    print()
+  }
 }

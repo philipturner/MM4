@@ -22,8 +22,8 @@ let package = Package(
     .target(
       name: "MM4",
       dependencies: [
-        .product(name: "OpenMM", package: "swift-openmm"),
         .product(name: "Numerics", package: "swift-numerics"),
+        .product(name: "OpenMM", package: "swift-openmm"),
       ]),
     .testTarget(
       name: "MM4Tests",

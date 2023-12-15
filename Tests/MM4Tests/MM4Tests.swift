@@ -7,17 +7,6 @@ final class MM4Tests: XCTestCase {
   }
 }
 
-// MARK: - General Requirements
-
-// Pick some examples experimental and computed forcefield values from the
-// MM3/MM4 research papers. Measure how well the current implementation
-// reproduces them. This should be a litmus test of how good the forcefield is.
-//
-// Then, this should expand to measuring bulk properties of materials we want to
-// handle. Diamond, lonsdaleite, silicon carbide, silicon, germanium carbide,
-// and germanium should all be checked for correctness. We may need to tweak the
-// parameters for germanium to get correct results.
-
 // MARK: - Tests for Carbon-Only Molecules
 
 // In another file testing basic functionality, see what happens when
@@ -28,6 +17,18 @@ final class MM4Tests: XCTestCase {
 // velocities.
 
 // MARK: - Tests for Non-Carbon Elements
+
+// Pick some examples experimental and computed forcefield values from the
+// MM3/MM4 research papers. Measure how well the current implementation
+// reproduces them. This should be a litmus test of how good the forcefield is.
+// Once can use ab initio structures from GFN2-xTB as an independent evaluation
+// of the correct structure. Examining how GFN calculates vibrational
+// frequencies could also enable tests of stiffness.
+//
+// Then, this should expand to measuring bulk properties of materials we want to
+// handle. Diamond, lonsdaleite, silicon carbide, silicon, germanium carbide,
+// and germanium should all be checked for correctness. We may need to tweak the
+// parameters for germanium to get correct results.
 
 // Measure material properties of solid germanium to check that the
 // Ge-Ge-Ge equilibrium angle is correct.
