@@ -24,6 +24,13 @@ public struct MM4ParametersDescriptor {
   /// During hydrogen mass repartitioning, mass is added to hydrogens and
   /// removed from atoms covalently bonded to hydrogens. The resulting structure
   /// has the same total mass as before the transformation.
+  ///
+  /// > Note: If the level of theory is `.rigidBodyMechanics`, hydrogen mass
+  ///   partitioning will not take place. The reason is that bonding topology is
+  ///   not required. Rigorously check whether this disrepancy will cause errors
+  ///   in workflows that alternate between molecular mechanics and rigid body
+  ///   mechanics. Alternatively, deactivate hydrogen mass repartitioning at the
+  ///   cost of slower molecular mechanics simulation.
   public var hydrogenMassScale: Float = 2
   
   /// Required. The level of theory used for simulation.

@@ -1,6 +1,9 @@
 import XCTest
 import MM4
 
+// Test the basic functionality of the rigid body API, and bulk properties
+// derived from rigid body mechanics.
+
 // MARK: - Test Execution
 
 final class MM4RigidBodyTests: XCTestCase {
@@ -62,10 +65,24 @@ private func testInertia(_ rigidBody: MM4RigidBody) {
   // absolute errors enables use of more ergonomic testing functions.
   
   let mass = deriveMass(rigidBody)
-  XCTAssertEqual(mass, rigidBody.mass, accuracy: 1e-3)
+  XCTAssertEqual(mass, rigidBody.mass, accuracy: 1e-3, "mass")
   
-  // TODO: continue
-  // https://gist.github.com/philipturner/b07137b478bac692eceaa079f4993f32
+  func compareVectors(_ x: SIMD3<Float>, _ y: SIMD3<Float>, _ message: String) {
+    XCTAssertEqual(x.x, y.x, accuracy: 1e-3, message)
+    XCTAssertEqual(x.y, y.y, accuracy: 1e-3, message)
+    XCTAssertEqual(x.z, y.z, accuracy: 1e-3, message)
+  }
+  
+  let centerOfMass = deriveCenterOfMass(rigidBody)
+  compareVectors(centerOfMass, rigidBody.centerOfMass, "center of mass")
+  
+  let momentOfInertia = deriveMomentOfInertia(rigidBody)
+  compareVectors(
+    momentOfInertia.0, rigidBody.momentOfInertia.0, "moment of inertia")
+  compareVectors(
+    momentOfInertia.1, rigidBody.momentOfInertia.1, "moment of inertia")
+  compareVectors(
+    momentOfInertia.2, rigidBody.momentOfInertia.2, "moment of inertia")
 }
 
 private func deriveMass(_ rigidBody: MM4RigidBody) -> Double {
@@ -79,15 +96,41 @@ private func deriveMass(_ rigidBody: MM4RigidBody) -> Double {
 private func deriveCenterOfMass(
   _ rigidBody: MM4RigidBody
 ) -> SIMD3<Float> {
-  // derive the mass
-  fatalError("Not implemented.")
+  var output: SIMD3<Double> = .zero
+  for i in rigidBody.parameters.atoms.indices {
+    let position = rigidBody.positions[i]
+    let mass = rigidBody.parameters.atoms.masses[i]
+    output += SIMD3<Double>(mass * position)
+  }
+  output /= deriveMass(rigidBody)
+  return SIMD3<Float>(output)
 }
 
 private func deriveMomentOfInertia(
   _ rigidBody: MM4RigidBody
 ) -> (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
-  // derive the center of mass
-  fatalError("Not implemented.")
+  let centerOfMass = deriveCenterOfMass(rigidBody)
+  var output: (
+    SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
+  ) = (.zero, .zero, .zero)
+  
+  for i in rigidBody.parameters.atoms.indices {
+    let delta = rigidBody.positions[i] - centerOfMass
+    let mass = rigidBody.parameters.atoms.masses[i]
+    let STS = (delta * delta).sum()
+    output.0[0] += Double(mass * STS)
+    output.1[1] += Double(mass * STS)
+    output.2[2] += Double(mass * STS)
+    
+    output.0 -= SIMD3<Double>(mass * delta * delta.x)
+    output.1 -= SIMD3<Double>(mass * delta * delta.y)
+    output.2 -= SIMD3<Double>(mass * delta * delta.z)
+  }
+  return (
+    SIMD3<Float>(output.0),
+    SIMD3<Float>(output.1),
+    SIMD3<Float>(output.2)
+  )
 }
 
 private func invertMomentOfInertia(
@@ -98,4 +141,6 @@ private func invertMomentOfInertia(
 
 // MARK: - Velocity
 
-// MARK: - Mutation
+// Test that when certain velocities are entered into the object descriptor, it
+// automatically recognizes the correct velocity. Then, test that a stationary
+// object with its velocity mutated shows the expected atom velocities.

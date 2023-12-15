@@ -9,12 +9,12 @@ final class MM4Tests: XCTestCase {
 
 // MARK: - Tests for Carbon-Only Molecules
 
-// In another file testing basic functionality, see what happens when
-// 'MM4Parameters', 'MM4RigidBody', and/or 'MM4ForceField' have zero atoms.
-// There should be no crashes or errors.
+// Every part of the API should have defined behavior in every edge case. This
+// includes places where the atom count is zero, every atom is an anchor, etc.
+// Each edge case should have a unit test.
 //
 // Test whether the code enters an infinite loop while generating random
-// velocities.
+// velocities. This is a hypothesized bug in the untested implementation.
 
 // MARK: - Tests for Non-Carbon Elements
 
