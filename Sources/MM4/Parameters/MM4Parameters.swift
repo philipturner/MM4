@@ -12,9 +12,25 @@ public struct MM4ParametersDescriptor {
   
   /// Required. Pairs of atom indices representing sigma bonds.
   ///
-  /// The bonding topology must arrange atoms from a single rigid body
-  /// contiguously in memory. Otherwise, there will be an error when creating
-  /// the parameters.
+  /// If the level of theory is `.rigidBodyMechanics`, then `bonds` must contain
+  /// exclusively the bonds between hydrogen and non-hydrogen atoms. Such bonds
+  /// are needed to properly implement hydrogen mass repartitioning and hydrogen
+  /// reduction factors for vdW forces. MM4 does not parameterize any bonds that
+  /// give a partial charge to hydrogen. Therefore, the generated partial
+  /// charges are zero (even for bonds that are obviously polar). This rule
+  /// mistreats the N-H bonds disallowed by `.molecularMechanics`, but accepted
+  /// by rigid body mechanics. In addition, the MM4 default hydrogen reduction
+  /// factor of 0.94 is assigned to every X-H bond except Si-H and Ge-H. You can
+  /// override such parameters after the `MM4Parameters` object initializes.
+  ///
+  /// With rigid body mechanics, you may not specify any bonds between a pair of
+  /// non-hydrogen atoms (e.g. C-C). This design choice removes an ambiguity
+  /// about the source of truth for partial charges. To acquire accurate partial
+  /// charges, you must generate them externally. Next, copy the charges
+  /// into the `MM4Parameters` object after it initializes. For example, create
+  /// a separate `MM4Parameters` with molecular mechanics and transfer over
+  /// [`.atoms.parameters`](<doc:MM4Atoms/parameters>). Or, run the structure
+  /// through the xTB program and record the partial charges.
   public var bonds: [SIMD2<UInt32>]?
   
   /// Required. The factor to multiply hydrogen mass by.
@@ -24,13 +40,6 @@ public struct MM4ParametersDescriptor {
   /// During hydrogen mass repartitioning, mass is added to hydrogens and
   /// removed from atoms covalently bonded to hydrogens. The resulting structure
   /// has the same total mass as before the transformation.
-  ///
-  /// > Note: If the level of theory is `.rigidBodyMechanics`, hydrogen mass
-  ///   partitioning will not take place. The reason is that bonding topology is
-  ///   not required. Rigorously check whether this disrepancy will cause errors
-  ///   in workflows that alternate between molecular mechanics and rigid body
-  ///   mechanics. Alternatively, deactivate hydrogen mass repartitioning at the
-  ///   cost of slower molecular mechanics simulation.
   public var hydrogenMassScale: Float = 2
   
   /// Required. The level of theory used for simulation.
