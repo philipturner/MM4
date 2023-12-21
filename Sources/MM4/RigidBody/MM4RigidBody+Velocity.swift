@@ -21,6 +21,16 @@ extension MM4RigidBody {
   @_specialize(where T == Double)
   @_specialize(where T == Float)
   public mutating func setVelocities<T: BinaryFloatingPoint>(
+    _ array: Array<SIMD3<T>>
+  ) {
+    array.withUnsafeBufferPointer {
+      setVelocities($0)
+    }
+  }
+  
+  @_specialize(where T == Double)
+  @_specialize(where T == Float)
+  public mutating func setVelocities<T: BinaryFloatingPoint>(
     _ buffer: UnsafeBufferPointer<SIMD3<T>>
   ) {
     ensureUniquelyReferenced()

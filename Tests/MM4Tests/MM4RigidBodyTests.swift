@@ -65,28 +65,43 @@ private func testRigidBody(descriptor: MM4RigidBodyDescriptor) throws {
     newVelocities[i] = .random(in: -0.1...0.1)
   }
   
+  // Pseudo-randomly switch between the two APIs for setting data.
+  var setMethodCounter = 0
+  func setPositions(_ array: [SIMD3<Float>]) {
+    setMethodCounter += 1
+    if setMethodCounter % 3 == 0 {
+      rigidBody.setPositions(array)
+    } else {
+      array.withUnsafeBufferPointer {
+        rigidBody.setPositions($0)
+      }
+    }
+  }
+  func setVelocities(_ array: [SIMD3<Float>]) {
+    setMethodCounter += 1
+    if setMethodCounter % 3 == 0 {
+      rigidBody.setVelocities(array)
+    } else {
+      array.withUnsafeBufferPointer {
+        rigidBody.setVelocities($0)
+      }
+    }
+  }
+  
   for changePositions in [false, true] {
     for changeVelocities in [false, true] {
       // Reset the state to zero, to avoid interference from previous trials.
-      zeroPositions.withUnsafeBufferPointer {
-        rigidBody.setPositions($0)
-      }
-      zeroVelocities.withUnsafeBufferPointer {
-        rigidBody.setVelocities($0)
-      }
+      setPositions(zeroPositions)
+      setVelocities(zeroVelocities)
       XCTAssert(rigidBody.positions.allSatisfy { $0 == .zero })
       XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
       
       // Change the object based on the current permutation of state changes.
       if changePositions {
-        newPositions.withUnsafeBufferPointer {
-          rigidBody.setPositions($0)
-        }
+        setPositions(newPositions)
       }
       if changeVelocities {
-        newVelocities.withUnsafeBufferPointer {
-          rigidBody.setVelocities($0)
-        }
+        setVelocities(newVelocities)
       }
       
       // Test both the position/velocity properties and low-level getters into
@@ -118,7 +133,6 @@ private func testRigidBody(descriptor: MM4RigidBodyDescriptor) throws {
   XCTAssert(
     rigidBody.centerOfMass != originalCenterOfMass,
     "tests did not cover functionality")
-  print(rigidBody.centerOfMass, originalCenterOfMass)
   testInertia(rigidBody)
   
   // Run the bulk velocity tests on similar rigid bodies created with the same
