@@ -9,7 +9,11 @@ import Numerics
 
 func quaternionToVector(_ quaternion: Quaternion<Float>) -> SIMD3<Float> {
   let angleAxis = quaternion.angleAxis
-  if angleAxis.length == 0 || angleAxis.angle.isNaN {
+  let axis = angleAxis.axis
+  
+  if axis[0].isNaN || axis[1].isNaN || axis[2].isNaN {
+    return .zero
+  } else if angleAxis.length == 0 || angleAxis.angle.isNaN {
     return .zero
   } else {
     return angleAxis.angle * angleAxis.axis
