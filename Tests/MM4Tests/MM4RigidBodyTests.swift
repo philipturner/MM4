@@ -20,7 +20,7 @@ final class MM4RigidBodyTests: XCTestCase {
     let positions = GoldTests.createGoldPositions()
     
     // Although it is good practice to make the gold atoms all be anchors, that
-    // would be cross-coverage for this simple test case.
+    // would be cross-coverage for this test case.
     var rigidBodyDesc = MM4RigidBodyDescriptor()
     rigidBodyDesc.parameters = try GoldTests.createGoldParameters()
     rigidBodyDesc.positions = positions
@@ -139,10 +139,10 @@ private func testRigidBody(descriptor: MM4RigidBodyDescriptor) throws {
   testInertia(rigidBody)
   
   // Run the bulk velocity tests on similar rigid bodies created with the same
-  // descriptor. These must be regenerated from scratch to decouple from bugs
-  // caught by 'MM4RigidBodyMutationTests'.
+  // descriptor.
   testLinearVelocity(descriptor)
   testAngularVelocity(descriptor)
+  testCoW(descriptor)
 }
 
 // MARK: - Inertia
@@ -502,4 +502,37 @@ private func testAngularVelocity(_ descriptor: MM4RigidBodyDescriptor) {
       XCTAssertEqual(velocity, actualVelocity, accuracy: 1e-5)
     }
   }
+}
+
+// MARK: - Copy on Write
+
+private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
+  var rigidBody1 = MM4RigidBody(descriptor: descriptor)
+  var rigidBody2 = rigidBody1
+  
+  let centerOfMass1 = rigidBody1.centerOfMass
+  XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
+  XCTAssertEqual(centerOfMass1, rigidBody2.centerOfMass, accuracy: 1e-3)
+  XCTAssertEqual(rigidBody1.centerOfMass, rigidBody2.centerOfMass)
+  
+  let delta2 = SIMD3<Float>.random(in: -2...2)
+  rigidBody2.centerOfMass += delta2
+  let centerOfMass2 = centerOfMass1 + delta2
+  XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
+  XCTAssertEqual(centerOfMass2, rigidBody2.centerOfMass, accuracy: 1e-3)
+  XCTAssertNotEqual(centerOfMass1, centerOfMass2)
+  XCTAssertNotEqual(rigidBody1.centerOfMass, rigidBody2.centerOfMass)
+  
+  let rigidBody3 = rigidBody1
+  let velocity1 = SIMD3<Float>.random(in: -0.2...0.2)
+  rigidBody1.linearVelocity = velocity1
+  XCTAssertEqual(velocity1, rigidBody1.linearVelocity, accuracy: 1e-3)
+  XCTAssertEqual(.zero, rigidBody2.linearVelocity, accuracy: 1e-3)
+  XCTAssertEqual(.zero, rigidBody3.linearVelocity, accuracy: 1e-3)
+  XCTAssertNotEqual(rigidBody1.linearVelocity, rigidBody2.linearVelocity)
+  XCTAssertNotEqual(rigidBody1.linearVelocity, rigidBody3.linearVelocity)
+  XCTAssertEqual(rigidBody2.linearVelocity, rigidBody3.linearVelocity)
+  
+  XCTAssertEqual(rigidBody1.centerOfMass, rigidBody3.centerOfMass)
+  XCTAssertNotEqual(rigidBody2.centerOfMass, rigidBody3.centerOfMass)
 }
