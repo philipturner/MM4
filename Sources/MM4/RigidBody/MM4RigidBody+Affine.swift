@@ -103,57 +103,6 @@ extension MM4RigidBody {
       storage.positions = nil
     }
   }
-  
-  /// Change the object's orientation by the specified quaternion.
-  ///
-  /// Each atom's angular and thermal velocity is also rotated by the specified
-  /// quaternion.
-  public mutating func rotate(_ rotation: Quaternion<Float>) {
-    ensureUniquelyReferenced()
-    storage.ensureCenterOfMassCached()
-    storage.ensureLinearVelocityCached()
-    
-    let centerOfMass = storage.centerOfMass!
-    let linearVelocity = storage.linearVelocity!
-    let prepared = vQuaternionPrepare(rotation)
-    for vID in 0..<storage.atoms.vectorCount {
-      var x = storage.vPositions[vID &* 3 &+ 0]
-      var y = storage.vPositions[vID &* 3 &+ 1]
-      var z = storage.vPositions[vID &* 3 &+ 2]
-      x -= centerOfMass.x
-      y -= centerOfMass.y
-      z -= centerOfMass.z
-      
-      vQuaternionAct(prepared, &x, &y, &z)
-      x += centerOfMass.x
-      y += centerOfMass.y
-      z += centerOfMass.z
-      storage.vPositions[vID &* 3 &+ 0] = x
-      storage.vPositions[vID &* 3 &+ 1] = y
-      storage.vPositions[vID &* 3 &+ 2] = z
-      
-      // Rotate the angular and thermal velocities so the atoms don't explode.
-      var vX = storage.vVelocities[vID &* 3 &+ 0]
-      var vY = storage.vVelocities[vID &* 3 &+ 1]
-      var vZ = storage.vVelocities[vID &* 3 &+ 2]
-      vX -= linearVelocity.x
-      vY -= linearVelocity.y
-      vZ -= linearVelocity.z
-      
-      vQuaternionAct(prepared, &vX, &vY, &vZ)
-      vX += linearVelocity.x
-      vY += linearVelocity.y
-      vZ += linearVelocity.z
-      storage.vVelocities[vID &* 3 &+ 0] = vX
-      storage.vVelocities[vID &* 3 &+ 1] = vY
-      storage.vVelocities[vID &* 3 &+ 2] = vZ
-    }
-    
-    // Invalidate cached properties. Some could be restored, but err on the
-    // side of simplicity for debugging.
-    storage.eraseRarelyCachedProperties()
-    storage.positions = nil
-  }
 }
 
 // MARK: - Velocity
