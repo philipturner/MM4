@@ -181,9 +181,8 @@ extension MM4RigidBody {
   
   /// The constant force (in piconewtons) exerted on the entire object.
   ///
-  /// The force is distributed evenly among all non-anchor atoms in the rigid
-  /// body. If an anchor is explicitly selected as a handle, there will be a
-  /// fatal error.
+  /// The force is distributed evenly among all handles in the rigid body. If an
+  /// anchor is explicitly selected as a handle, there will be a fatal error.
   public var externalForce: SIMD3<Float> {
     _read {
       yield storage.externalForce
