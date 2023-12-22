@@ -148,10 +148,12 @@ public struct MM4Parameters {
       $0 &+ atomOffset
     }
     atomsToBondsMap += other.atomsToBondsMap.map {
-      $0 &+ Int32(truncatingIfNeeded: bondOffset)
+      let modified = $0 &+ Int32(truncatingIfNeeded: bondOffset)
+      return $0.replacing(with: modified, where: $0 .>= 0)
     }
     atomsToAtomsMap += other.atomsToAtomsMap.map {
-      $0 &+ Int32(truncatingIfNeeded: atomOffset)
+      let modified = $0 &+ Int32(truncatingIfNeeded: atomOffset)
+      return $0.replacing(with: modified, where: $0 .>= 0)
     }
   }
 }

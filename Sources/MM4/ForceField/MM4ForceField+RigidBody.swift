@@ -15,6 +15,9 @@ extension MM4ForceField {
     var angleCapacity: Int = 0
     var torsionCapacity: Int = 0
     var ringCapacity: Int = 0
+    var exception13Capacity: Int = 0
+    var exception14Capacity: Int = 0
+    
     var ranges: [Range<UInt32>] = []
     for rigidBody in rigidBodies {
       let oldAtomCapacity = UInt32(atomCapacity)
@@ -25,6 +28,9 @@ extension MM4ForceField {
       angleCapacity += parameters.angles.indices.count
       torsionCapacity += parameters.torsions.indices.count
       ringCapacity += parameters.rings.indices.count
+      exception13Capacity += parameters.nonbondedExceptions13.count
+      exception14Capacity += parameters.nonbondedExceptions14.count
+      
       ranges.append(oldAtomCapacity..<UInt32(atomCapacity))
     }
     
@@ -38,8 +44,8 @@ extension MM4ForceField {
     parameters.angles.reserveCapacity(angleCapacity)
     parameters.torsions.reserveCapacity(torsionCapacity)
     parameters.rings.reserveCapacity(ringCapacity)
-    parameters.nonbondedExceptions13.reserveCapacity(atomCapacity)
-    parameters.nonbondedExceptions14.reserveCapacity(atomCapacity)
+    parameters.nonbondedExceptions13.reserveCapacity(exception13Capacity)
+    parameters.nonbondedExceptions14.reserveCapacity(exception14Capacity)
     parameters.atomsToBondsMap.reserveCapacity(bondCapacity)
     parameters.atomsToAtomsMap.reserveCapacity(atomCapacity)
     

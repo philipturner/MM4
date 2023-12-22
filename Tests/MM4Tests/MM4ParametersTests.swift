@@ -1,5 +1,9 @@
 import XCTest
+#if DEBUG
+@testable import MM4
+#else
 import MM4
+#endif
 
 // TODO: -
 // - Test the functionality that combines the data of multiple parameters
@@ -36,6 +40,11 @@ final class MM4ParametersTests: XCTestCase {
     XCTAssertEqual([], params.torsions.ringTypes)
     XCTAssertEqual(0, params.torsions.parameters.count)
     XCTAssertEqual(0, params.torsions.extendedParameters.count)
+  }
+  
+  func testParametersCombination() throws {
+    let descriptors = try MM4RigidBodyTests.createRigidBodyDescriptors()
+    try _testParametersCombination(descriptors)
   }
   
   func testSilaAdamantane() throws {
@@ -240,4 +249,161 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
     print("-", adamantane.torsionParameters[i])
     print()
   }
+  
+  #if DEBUG
+  // Check that nonbonded exceptions are not duplicated.
+  for exceptionID in params.nonbondedExceptions13.indices {
+    let exception = params.nonbondedExceptions13[exceptionID]
+    let reversedException = SIMD2(exception[1], exception[0])
+    for otherException in params.nonbondedExceptions13[(exceptionID + 1)...] {
+      XCTAssertNotEqual(exception, otherException)
+      XCTAssertNotEqual(reversedException, otherException)
+    }
+  }
+  for exceptionID in params.nonbondedExceptions14.indices {
+    let exception = params.nonbondedExceptions14[exceptionID]
+    let reversedException = SIMD2(exception[1], exception[0])
+    for otherException in params.nonbondedExceptions14[(exceptionID + 1)...] {
+      XCTAssertNotEqual(exception, otherException)
+      XCTAssertNotEqual(reversedException, otherException)
+    }
+  }
+  #endif
+}
+
+private func _testParametersCombination(
+  _ descriptors: [MM4RigidBodyDescriptor]
+) throws {
+#if DEBUG
+  var atomCapacity: Int = 0
+  var bondCapacity: Int = 0
+  var angleCapacity: Int = 0
+  var torsionCapacity: Int = 0
+  var ringCapacity: Int = 0
+  var ranges: [Range<UInt32>] = []
+  for descriptor in descriptors {
+    let oldAtomCapacity = UInt32(atomCapacity)
+    
+    let parameters = descriptor.parameters!
+    atomCapacity += parameters.atoms.count
+    bondCapacity += parameters.bonds.indices.count
+    angleCapacity += parameters.angles.indices.count
+    torsionCapacity += parameters.torsions.indices.count
+    ringCapacity += parameters.rings.indices.count
+    ranges.append(oldAtomCapacity..<UInt32(atomCapacity))
+  }
+  
+  var paramsDesc = MM4ParametersDescriptor()
+  paramsDesc.atomicNumbers = []
+  paramsDesc.bonds = []
+  var combinedParameters = try! MM4Parameters(descriptor: paramsDesc)
+  combinedParameters.atoms.reserveCapacity(atomCapacity)
+  combinedParameters.bonds.reserveCapacity(bondCapacity)
+  combinedParameters.angles.reserveCapacity(angleCapacity)
+  combinedParameters.torsions.reserveCapacity(torsionCapacity)
+  combinedParameters.rings.reserveCapacity(ringCapacity)
+  combinedParameters.nonbondedExceptions13.reserveCapacity(atomCapacity)
+  combinedParameters.nonbondedExceptions14.reserveCapacity(atomCapacity)
+  combinedParameters.atomsToBondsMap.reserveCapacity(bondCapacity)
+  combinedParameters.atomsToAtomsMap.reserveCapacity(atomCapacity)
+  
+  for descriptor in descriptors {
+    combinedParameters.append(contentsOf: descriptor.parameters!)
+  }
+  
+  // The objects are expected to be in the order:
+  // - adamantane
+  // - sila-adamantane
+  // - empty
+  let adamantane = Adamantane(atomCode: .alkaneCarbon)
+  XCTAssertEqual(
+    descriptors[0].parameters!.atoms.count, adamantane.atomicNumbers.count)
+  XCTAssertEqual(
+    descriptors[1].parameters!.atoms.count, adamantane.atomicNumbers.count)
+  XCTAssertEqual(
+    descriptors[2].parameters!.atoms.count, 0)
+  XCTAssertTrue(descriptors[0].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertFalse(descriptors[0].parameters!.atoms.atomicNumbers.contains(14))
+  XCTAssertFalse(descriptors[1].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertTrue(descriptors[1].parameters!.atoms.atomicNumbers.contains(14))
+  XCTAssertFalse(descriptors[2].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertFalse(descriptors[2].parameters!.atoms.atomicNumbers.contains(14))
+  
+  var atomStart: Int = 0
+  var bondStart: Int = 0
+  var angleStart: Int = 0
+  var torsionStart: Int = 0
+  var ringStart: Int = 0
+  var exception13Start: Int = 0
+  var exception14Start: Int = 0
+  for rigidBodyID in descriptors.indices {
+    let thisParameters = descriptors[rigidBodyID].parameters!
+    
+    for thisID in thisParameters.nonbondedExceptions13.indices {
+      let combinedID = exception13Start + thisID
+      XCTAssertEqual(
+        combinedParameters.nonbondedExceptions13[combinedID],
+        thisParameters.nonbondedExceptions13[thisID] &+ UInt32(atomStart))
+    }
+    for thisID in thisParameters.nonbondedExceptions14.indices {
+      let combinedID = exception14Start + thisID
+      XCTAssertEqual(
+        combinedParameters.nonbondedExceptions14[combinedID],
+        thisParameters.nonbondedExceptions14[thisID] &+ UInt32(atomStart))
+    }
+    
+    for thisID in thisParameters.atoms.indices {
+      let combinedID = atomStart + thisID
+      XCTAssertEqual(
+        combinedParameters.atoms.atomicNumbers[combinedID],
+        thisParameters.atoms.atomicNumbers[thisID])
+      XCTAssertEqual(
+        combinedParameters.atoms.masses[combinedID],
+        thisParameters.atoms.masses[thisID])
+      XCTAssertEqual(
+        combinedParameters.atoms.parameters[combinedID].epsilon.default,
+        thisParameters.atoms.parameters[thisID].epsilon.default)
+      XCTAssertEqual(
+        combinedParameters.atoms.ringTypes[combinedID],
+        thisParameters.atoms.ringTypes[thisID])
+      
+      // First test what happens when you blindly add something to -1. Then,
+      // test what happens when you only replace nonnegative lanes.
+      let combinedBonds = combinedParameters.atomsToBondsMap[combinedID]
+      let combinedAtoms = combinedParameters.atomsToAtomsMap[combinedID]
+      var thisBonds = thisParameters.atomsToBondsMap[thisID]
+      var thisAtoms = thisParameters.atomsToAtomsMap[thisID]
+      let modifiedBonds = thisBonds &+ Int32(bondStart)
+      let modifiedAtoms = thisAtoms &+ Int32(atomStart)
+      thisBonds.replace(with: modifiedBonds, where: thisBonds .>= 0)
+      thisAtoms.replace(with: modifiedAtoms, where: thisAtoms .>= 0)
+      XCTAssertEqual(combinedBonds, thisBonds)
+      XCTAssertEqual(combinedAtoms, thisAtoms)
+    }
+    
+    for thisID in thisParameters.bonds.indices.indices {
+      let combinedID = bondStart + thisID
+      let thisIndices = thisParameters.bonds.indices[thisID]
+      let combinedIndices = combinedParameters.bonds.indices[combinedID]
+      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
+      XCTAssertEqual(
+        combinedParameters.bonds.map[combinedIndices]!,
+        thisParameters.bonds.map[thisIndices]! &+ UInt32(bondStart))
+      XCTAssertEqual(
+        combinedParameters.bonds.parameters[combinedID].potentialWellDepth,
+        thisParameters.bonds.parameters[thisID].potentialWellDepth)
+      XCTAssertEqual(
+        combinedParameters.bonds.ringTypes[combinedID],
+        thisParameters.bonds.ringTypes[thisID])
+    }
+    
+    atomStart += thisParameters.atoms.count
+    bondStart += thisParameters.bonds.indices.count
+    angleStart += thisParameters.angles.indices.count
+    torsionStart += thisParameters.torsions.indices.count
+    ringStart += thisParameters.rings.indices.count
+    exception13Start += thisParameters.nonbondedExceptions13.count
+    exception14Start += thisParameters.nonbondedExceptions14.count
+  }
+#endif
 }
