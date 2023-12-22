@@ -21,6 +21,10 @@ import MM4
 
 // MARK: - Test Execution
 
+// TODO: Remove handles from the simulator, make the external force be per-atom.
+// - Tests of anchor functionality might be moved into regular rigid body tests
+//   and/or rigid body energy tests.
+
 final class MM4RigidBodyForceTests: XCTestCase {
   func testRigidBodyForce() throws {
     let descriptors = try MM4RigidBodyTests.createRigidBodyDescriptors()
