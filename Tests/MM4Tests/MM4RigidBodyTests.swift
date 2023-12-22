@@ -535,4 +535,23 @@ private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
   
   XCTAssertEqual(rigidBody1.centerOfMass, rigidBody3.centerOfMass)
   XCTAssertNotEqual(rigidBody2.centerOfMass, rigidBody3.centerOfMass)
+  for i in descriptor.parameters!.atoms.indices {
+    let original = descriptor.positions![i]
+    let modified = original + delta2
+    XCTAssertEqual(rigidBody1.positions[i], original, accuracy: 1e-3)
+    XCTAssertEqual(rigidBody2.positions[i], modified, accuracy: 1e-3)
+    XCTAssertEqual(rigidBody3.positions[i], original, accuracy: 1e-3)
+  }
+  
+  var rigidBody4 = rigidBody3
+  let parameters = descriptor.parameters!
+  let velocity4 = SIMD3<Float>.random(in: -0.2...0.2)
+  let velocities4 = Array(repeating: velocity4, count: parameters.atoms.count)
+  rigidBody4.setVelocities(velocities4)
+  for i in parameters.atoms.indices {
+    XCTAssertEqual(rigidBody3.velocities[i], .zero, accuracy: 1e-5)
+    XCTAssertEqual(rigidBody4.velocities[i], velocity4, accuracy: 1e-5)
+  }
+  XCTAssertEqual(.zero, rigidBody3.linearVelocity, accuracy: 1e-5)
+  XCTAssertEqual(velocity4, rigidBody4.linearVelocity, accuracy: 1e-5)
 }
