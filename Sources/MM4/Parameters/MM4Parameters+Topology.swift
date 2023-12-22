@@ -21,11 +21,14 @@ public struct MM4Rings {
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {
     let ringOffset = UInt32(self.indices.count)
     self.indices += other.indices.map {
-      $0 &+ atomOffset
+      let modified = $0 &+ atomOffset
+      return $0.replacing(with: modified, where: $0 .< UInt32.max)
     }
-    for key in other.map.keys {
+    for var key in other.map.keys {
       let value = other.map[key].unsafelyUnwrapped
-      self.map[key &+ atomOffset] = value &+ ringOffset
+      let modifiedKey = key &+ atomOffset
+      key.replace(with: modifiedKey, where: key .< UInt32.max)
+      self.map[key] = value &+ ringOffset
     }
     self.ringTypes += other.ringTypes
   }

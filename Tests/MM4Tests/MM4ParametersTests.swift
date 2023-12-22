@@ -427,20 +427,20 @@ private func _testParametersCombination(
         thisParameters.torsions.ringTypes[thisID])
     }
     
-    // TODO: Fix the rings, so the -1 indices remain -1 after the transformation.
-    
     for thisID in thisParameters.rings.indices.indices {
       let combinedID = ringStart + thisID
-      let thisIndices = thisParameters.rings.indices[thisID]
-      let combinedIndices = combinedParameters.rings.indices[combinedID]
-      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
+      let combinedRing = combinedParameters.rings.indices[combinedID]
+      var thisRing = thisParameters.rings.indices[thisID]
       XCTAssertEqual(
-        combinedParameters.rings.map[combinedIndices]!,
-        thisParameters.rings.map[thisIndices]! &+ UInt32(ringStart))
-//      print(combinedID, thisID, combinedParameters.rings.ringTypes.count,  thisParameters.rings.ringTypes.count)
+        combinedParameters.rings.map[combinedRing]!,
+        thisParameters.rings.map[thisRing]! &+ UInt32(ringStart))
       XCTAssertEqual(
         combinedParameters.rings.ringTypes[combinedID],
         thisParameters.rings.ringTypes[thisID])
+      
+      let modifiedRing = thisRing &+ UInt32(atomStart)
+      thisRing.replace(with: modifiedRing, where: thisRing .< UInt32.max)
+      XCTAssertEqual(combinedRing, thisRing)
     }
     
     atomStart += thisParameters.atoms.count
