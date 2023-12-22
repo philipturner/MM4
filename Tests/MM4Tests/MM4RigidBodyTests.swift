@@ -25,7 +25,7 @@ final class MM4RigidBodyTests: XCTestCase {
     rigidBodyDesc.parameters = try GoldTests.createGoldParameters()
     rigidBodyDesc.positions = positions
     
-    try testRigidBody(descriptor: rigidBodyDesc)
+    testRigidBody(descriptor: rigidBodyDesc)
   }
 }
 
@@ -40,10 +40,10 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   rigidBodyDesc.parameters = try MM4Parameters(descriptor: paramsDesc)
   rigidBodyDesc.positions = adamantane.positions
   
-  try testRigidBody(descriptor: rigidBodyDesc)
+  testRigidBody(descriptor: rigidBodyDesc)
 }
 
-private func testRigidBody(descriptor: MM4RigidBodyDescriptor) throws {
+private func testRigidBody(descriptor: MM4RigidBodyDescriptor) {
   // Test whether the initial velocities are zero. Also, test whether the
   // positions and velocities are different after the rigid body is changed with
   // 'setPositions' and 'setVelocities'.
