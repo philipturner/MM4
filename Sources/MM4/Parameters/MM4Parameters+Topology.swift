@@ -244,6 +244,7 @@ extension MM4Parameters {
     bonds.ringTypes = .init(repeating: 6, count: bonds.indices.count)
     angles.ringTypes = .init(repeating: 6, count: angles.indices.count)
     torsions.ringTypes = .init(repeating: 6, count: torsions.indices.count)
+    rings.ringTypes = .init(repeating: 6, count: rings.indices.count)
     
     guard bonds.indices.count < Int32.max,
           angles.indices.count < Int32.max,
@@ -266,7 +267,8 @@ extension MM4Parameters {
       rings.map[ring] = UInt32(truncatingIfNeeded: index)
     }
     
-    for ring in rings.indices {
+    for ringID in rings.indices.indices {
+      let ring = rings.indices[ringID]
       for lane in 0..<5 {
         let atomID = ring[lane]
         let unsortedBond = SIMD2(atomID, ring[wrap(lane + 1)])
@@ -287,6 +289,7 @@ extension MM4Parameters {
         angles.ringTypes[Int(angleID)] = 5
         torsions.ringTypes[Int(torsionID)] = 5
       }
+      rings.ringTypes[ringID] = 5
     }
   }
   

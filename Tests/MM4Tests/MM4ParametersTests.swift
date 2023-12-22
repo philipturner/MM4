@@ -5,10 +5,6 @@ import XCTest
 import MM4
 #endif
 
-// TODO: -
-// - Test the functionality that combines the data of multiple parameters
-//   (@testable in debug mode).
-
 // Tests parameters for carbon-only molecules.
 final class MM4ParametersTests: XCTestCase {
   func testAdamantane() throws {
@@ -147,6 +143,10 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   XCTAssertEqual(
     adamantane.ringIndices.sorted(by: sortRing),
     params.rings.indices.sorted(by: sortRing))
+  
+  let expectedRingArray = [UInt8](
+    repeating: 5, count: adamantane.ringIndices.count)
+  XCTAssertEqual(expectedRingArray, params.rings.ringTypes)
   
   // Not force-inlining because that could make it worse in debug mode.
   func compare(_ x: Float, _ y: Float) -> Bool {
@@ -367,8 +367,6 @@ private func _testParametersCombination(
         combinedParameters.atoms.ringTypes[combinedID],
         thisParameters.atoms.ringTypes[thisID])
       
-      // First test what happens when you blindly add something to -1. Then,
-      // test what happens when you only replace nonnegative lanes.
       let combinedBonds = combinedParameters.atomsToBondsMap[combinedID]
       let combinedAtoms = combinedParameters.atomsToAtomsMap[combinedID]
       var thisBonds = thisParameters.atomsToBondsMap[thisID]
@@ -395,6 +393,54 @@ private func _testParametersCombination(
       XCTAssertEqual(
         combinedParameters.bonds.ringTypes[combinedID],
         thisParameters.bonds.ringTypes[thisID])
+    }
+    
+    for thisID in thisParameters.angles.indices.indices {
+      let combinedID = angleStart + thisID
+      let thisIndices = thisParameters.angles.indices[thisID]
+      let combinedIndices = combinedParameters.angles.indices[combinedID]
+      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
+      XCTAssertEqual(
+        combinedParameters.angles.map[combinedIndices]!,
+        thisParameters.angles.map[thisIndices]! &+ UInt32(angleStart))
+      XCTAssertEqual(
+        combinedParameters.angles.parameters[combinedID].bendingStiffness,
+        thisParameters.angles.parameters[thisID].bendingStiffness)
+      XCTAssertEqual(
+        combinedParameters.angles.ringTypes[combinedID],
+        thisParameters.angles.ringTypes[thisID])
+    }
+    
+    for thisID in thisParameters.torsions.indices.indices {
+      let combinedID = torsionStart + thisID
+      let thisIndices = thisParameters.torsions.indices[thisID]
+      let combinedIndices = combinedParameters.torsions.indices[combinedID]
+      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
+      XCTAssertEqual(
+        combinedParameters.torsions.map[combinedIndices]!,
+        thisParameters.torsions.map[thisIndices]! &+ UInt32(torsionStart))
+      XCTAssertEqual(
+        combinedParameters.torsions.parameters[combinedID].V3,
+        thisParameters.torsions.parameters[thisID].V3)
+      XCTAssertEqual(
+        combinedParameters.torsions.ringTypes[combinedID],
+        thisParameters.torsions.ringTypes[thisID])
+    }
+    
+    // TODO: Fix the rings, so the -1 indices remain -1 after the transformation.
+    
+    for thisID in thisParameters.rings.indices.indices {
+      let combinedID = ringStart + thisID
+      let thisIndices = thisParameters.rings.indices[thisID]
+      let combinedIndices = combinedParameters.rings.indices[combinedID]
+      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
+      XCTAssertEqual(
+        combinedParameters.rings.map[combinedIndices]!,
+        thisParameters.rings.map[thisIndices]! &+ UInt32(ringStart))
+//      print(combinedID, thisID, combinedParameters.rings.ringTypes.count,  thisParameters.rings.ringTypes.count)
+      XCTAssertEqual(
+        combinedParameters.rings.ringTypes[combinedID],
+        thisParameters.rings.ringTypes[thisID])
     }
     
     atomStart += thisParameters.atoms.count
