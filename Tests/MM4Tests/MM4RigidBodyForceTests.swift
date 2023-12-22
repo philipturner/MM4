@@ -5,49 +5,26 @@ import MM4
 // external forces. This includes every edge case that calculates inertia and
 // velocity differently.
 //
+// NOTE: This part of the test suite will be incomplete until MM4ForceField is
+// fully functioning. We need to define exactly how external forces are
+// imported/exported to the rigid body.
+//
 // Edge cases:
+// - Sort the atoms by farthest distance from the CoM, then choose some
+//   interesting ones for the anchors.
 // - Set an anchor to one linear velocity, when the rest of the object has an
 //   entirely different linear velocity. Ensure the rest of the atoms' velocity
 //   does not appear in the bulk linear velocity.
+// - Test combinations where anchors and handles collide. You may need to add
+//   some MM4 errors for invalid anchors and/or invalid handles.
 
 // MARK: - Test Execution
 
 final class MM4RigidBodyForceTests: XCTestCase {
-  func testAdamantane() throws {
-    try testAdamantaneVariant(atomCode: .alkaneCarbon)
+  func testRigidBodyForce() throws {
+    let descriptors = try MM4RigidBodyTests.createRigidBodyDescriptors()
+    for descriptor in descriptors {
+      _ = descriptor
+    }
   }
-  
-  func testSilaAdamantane() throws {
-    try testAdamantaneVariant(atomCode: .silicon)
-  }
-  
-  func testGold() throws {
-    let positions = GoldTests.createGoldPositions()
-    
-    // Although it is good practice to make the gold atoms all be anchors, that
-    // would be cross-coverage for this test case.
-    var rigidBodyDesc = MM4RigidBodyDescriptor()
-    rigidBodyDesc.parameters = try GoldTests.createGoldParameters()
-    rigidBodyDesc.positions = positions
-    
-    testRigidBodyForce(descriptor: rigidBodyDesc)
-  }
-}
-
-private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
-  let adamantane = Adamantane(atomCode: atomCode)
-  
-  var paramsDesc = MM4ParametersDescriptor()
-  paramsDesc.atomicNumbers = adamantane.atomicNumbers
-  paramsDesc.bonds = adamantane.bonds
-  
-  var rigidBodyDesc = MM4RigidBodyDescriptor()
-  rigidBodyDesc.parameters = try MM4Parameters(descriptor: paramsDesc)
-  rigidBodyDesc.positions = adamantane.positions
-  
-  testRigidBodyForce(descriptor: rigidBodyDesc)
-}
-
-private func testRigidBodyForce(descriptor: MM4RigidBodyDescriptor) {
-  
 }

@@ -115,6 +115,10 @@ extension MM4ForceField {
             rigidBody.externalForce = .init(repeating: .nan)
           }
         }
+        
+        // TODO: Some validation testing to assert that previous external
+        // forces are the same among the handles? Or rigorously test that this
+        // is true inside the test suite.
         if rigidBody.handles != previousHandles {
           rigidBody.externalForce = .init(repeating: .nan)
         }

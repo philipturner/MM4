@@ -149,15 +149,13 @@ extension MM4ForceField {
   /// forcefield cannot initialize. See <doc:MM4ParametersDescriptor/bonds> for
   /// more details.
   ///
+  /// The set of rigid bodies must cover every atom in the system. No two ranges
+  /// may overlap the same atom.
+  ///
   /// Rigid bodies should have atoms laid out contiguously in memory, in Morton
   /// order. This format ensures spatial locality, which increases performance
   /// of nonbonded forces. Therefore, rigid bodies are contiguous ranges of the
   /// atom list.
-  ///
-  /// The set of rigid bodies must cover every atom in the system. No two ranges
-  /// may overlap the same atom. If the array of rigid bodies is unspecified, it
-  /// defaults to a range encompassing the entire system. This ensures the
-  /// closed system's net momentum stays conserved.
   public var rigidBodyRanges: [Range<UInt32>] {
     _read {
       yield _rigidBodyRanges

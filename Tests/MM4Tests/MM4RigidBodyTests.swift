@@ -8,141 +8,145 @@ import Numerics
 // MARK: - Test Execution
 
 final class MM4RigidBodyTests: XCTestCase {
-  func testAdamantane() throws {
-    try testAdamantaneVariant(atomCode: .alkaneCarbon)
-  }
-  
-  func testSilaAdamantane() throws {
-    try testAdamantaneVariant(atomCode: .silicon)
-  }
-  
-  func testGold() throws {
-    let positions = GoldTests.createGoldPositions()
-    
-    // Although it is good practice to make the gold atoms all be anchors, that
-    // would be cross-coverage for this test case.
-    var rigidBodyDesc = MM4RigidBodyDescriptor()
-    rigidBodyDesc.parameters = try GoldTests.createGoldParameters()
-    rigidBodyDesc.positions = positions
-    
-    testRigidBody(descriptor: rigidBodyDesc)
-  }
-}
-
-private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
-  let adamantane = Adamantane(atomCode: atomCode)
-  
-  var paramsDesc = MM4ParametersDescriptor()
-  paramsDesc.atomicNumbers = adamantane.atomicNumbers
-  paramsDesc.bonds = adamantane.bonds
-  
-  var rigidBodyDesc = MM4RigidBodyDescriptor()
-  rigidBodyDesc.parameters = try MM4Parameters(descriptor: paramsDesc)
-  rigidBodyDesc.positions = adamantane.positions
-  
-  testRigidBody(descriptor: rigidBodyDesc)
-}
-
-private func testRigidBody(descriptor: MM4RigidBodyDescriptor) {
-  // Test whether the initial velocities are zero. Also, test whether the
-  // positions and velocities are different after the rigid body is changed with
-  // 'setPositions' and 'setVelocities'.
-  var rigidBody = MM4RigidBody(descriptor: descriptor)
-  XCTAssertEqual(rigidBody.positions, descriptor.positions!)
-  XCTAssertEqual(rigidBody.velocities.count, descriptor.positions!.count)
-  XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
-  testInertia(rigidBody)
-  
-  let originalCenterOfMass = rigidBody.centerOfMass
-  
-  // Ensure all four permutations of changing positions and velocities result
-  // in the expected state.
-  let zeroPositions = [SIMD3<Float>](
-    repeating: .zero, count: rigidBody.parameters.atoms.count)
-  let zeroVelocities = [SIMD3<Float>](
-    repeating: .zero, count: rigidBody.parameters.atoms.count)
-  var newPositions = zeroPositions
-  var newVelocities = zeroVelocities
-  for i in rigidBody.parameters.atoms.indices {
-    newPositions[i] = .random(in: -2...2)
-    newVelocities[i] = .random(in: -0.1...0.1)
-  }
-  
-  // Pseudo-randomly switch between the two APIs for setting data.
-  var setMethodCounter = 0
-  func setPositions(_ array: [SIMD3<Float>]) {
-    setMethodCounter += 1
-    if setMethodCounter % 3 == 0 {
-      rigidBody.setPositions(array)
-    } else {
-      array.withUnsafeBufferPointer {
-        rigidBody.setPositions($0)
-      }
-    }
-  }
-  func setVelocities(_ array: [SIMD3<Float>]) {
-    setMethodCounter += 1
-    if setMethodCounter % 3 == 0 {
-      rigidBody.setVelocities(array)
-    } else {
-      array.withUnsafeBufferPointer {
-        rigidBody.setVelocities($0)
-      }
-    }
-  }
-  
-  for changePositions in [false, true] {
-    for changeVelocities in [false, true] {
-      // Reset the state to zero, to avoid interference from previous trials.
-      setPositions(zeroPositions)
-      setVelocities(zeroVelocities)
-      XCTAssert(rigidBody.positions.allSatisfy { $0 == .zero })
+  func testRigidBody() throws {
+    let descriptors = try MM4RigidBodyTests.createRigidBodyDescriptors()
+    for descriptor in descriptors {
+      // Test whether the initial velocities are zero. Also, test whether the
+      // positions and velocities are different after the rigid body is changed
+      // with 'setPositions' and 'setVelocities'.
+      var rigidBody = MM4RigidBody(descriptor: descriptor)
+      XCTAssertEqual(rigidBody.positions, descriptor.positions!)
+      XCTAssertEqual(rigidBody.velocities.count, descriptor.positions!.count)
       XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
+      testInertia(rigidBody)
       
-      // Change the object based on the current permutation of state changes.
-      if changePositions {
-        setPositions(newPositions)
-      }
-      if changeVelocities {
-        setVelocities(newVelocities)
+      let originalCenterOfMass = rigidBody.centerOfMass
+      
+      // Ensure all four permutations of changing positions and velocities
+      // result in the expected state.
+      let zeroPositions = [SIMD3<Float>](
+        repeating: .zero, count: rigidBody.parameters.atoms.count)
+      let zeroVelocities = [SIMD3<Float>](
+        repeating: .zero, count: rigidBody.parameters.atoms.count)
+      var newPositions = zeroPositions
+      var newVelocities = zeroVelocities
+      for i in rigidBody.parameters.atoms.indices {
+        newPositions[i] = .random(in: -2...2)
+        newVelocities[i] = .random(in: -0.1...0.1)
       }
       
-      // Test both the position/velocity properties and low-level getters into
-      // copies of the arrays.
-      if changePositions {
-        XCTAssertEqual(newPositions, rigidBody.positions)
+      // Pseudo-randomly switch between the two APIs for setting data.
+      var setMethodCounter = 0
+      func setPositions(_ array: [SIMD3<Float>]) {
+        setMethodCounter += 1
+        if setMethodCounter % 3 == 0 {
+          rigidBody.setPositions(array)
+        } else {
+          array.withUnsafeBufferPointer {
+            rigidBody.setPositions($0)
+          }
+        }
       }
-      if changeVelocities {
-        XCTAssertEqual(newVelocities, rigidBody.velocities)
+      func setVelocities(_ array: [SIMD3<Float>]) {
+        setMethodCounter += 1
+        if setMethodCounter % 3 == 0 {
+          rigidBody.setVelocities(array)
+        } else {
+          array.withUnsafeBufferPointer {
+            rigidBody.setVelocities($0)
+          }
+        }
       }
-      let expectedPositions = changePositions ? newPositions : zeroPositions
-      let expectedVelocities = changeVelocities ? newVelocities : zeroVelocities
-      var outputPositions = zeroPositions
-      var outputVelocities = zeroVelocities
-      outputPositions.withUnsafeMutableBufferPointer {
-        rigidBody.getPositions($0)
+      
+      for changePositions in [false, true] {
+        for changeVelocities in [false, true] {
+          // Reset the state to zero, to avoid interference from previous
+          // trials.
+          setPositions(zeroPositions)
+          setVelocities(zeroVelocities)
+          XCTAssert(rigidBody.positions.allSatisfy { $0 == .zero })
+          XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
+          
+          // Change the object based on the current permutation of state
+          // changes.
+          if changePositions {
+            setPositions(newPositions)
+          }
+          if changeVelocities {
+            setVelocities(newVelocities)
+          }
+          
+          // Test both the position/velocity properties and low-level getters
+          // into copies of the arrays.
+          if changePositions {
+            XCTAssertEqual(newPositions, rigidBody.positions)
+          }
+          if changeVelocities {
+            XCTAssertEqual(newVelocities, rigidBody.velocities)
+          }
+          let expectedPositions =
+          changePositions ? newPositions : zeroPositions
+          let expectedVelocities =
+          changeVelocities ? newVelocities : zeroVelocities
+          
+          var outputPositions = zeroPositions
+          var outputVelocities = zeroVelocities
+          outputPositions.withUnsafeMutableBufferPointer {
+            rigidBody.getPositions($0)
+          }
+          outputVelocities.withUnsafeMutableBufferPointer {
+            rigidBody.getVelocities($0)
+          }
+          XCTAssertEqual(outputPositions, expectedPositions)
+          XCTAssertEqual(outputVelocities, expectedVelocities)
+        }
       }
-      outputVelocities.withUnsafeMutableBufferPointer {
-        rigidBody.getVelocities($0)
-      }
-      XCTAssertEqual(outputPositions, expectedPositions)
-      XCTAssertEqual(outputVelocities, expectedVelocities)
+      
+      // Repeat the inertia tests after changing the positions and velocities.
+      // If random initialization doesn't change the CoM, the tests fail to
+      // cover the functionality.
+      XCTAssert(
+        rigidBody.centerOfMass != originalCenterOfMass,
+        "tests did not cover functionality")
+      testInertia(rigidBody)
+      
+      // Run the bulk velocity tests on similar rigid bodies created with the
+      // same descriptor.
+      testLinearVelocity(descriptor)
+      testAngularVelocity(descriptor)
+      testCoW(descriptor)
     }
   }
-  
-  // Repeat the inertia tests after changing the positions and velocities. If
-  // random initialization doesn't change the CoM, the tests fail to cover the
-  // functionality.
-  XCTAssert(
-    rigidBody.centerOfMass != originalCenterOfMass,
-    "tests did not cover functionality")
-  testInertia(rigidBody)
-  
-  // Run the bulk velocity tests on similar rigid bodies created with the same
-  // descriptor.
-  testLinearVelocity(descriptor)
-  testAngularVelocity(descriptor)
-  testCoW(descriptor)
+}
+
+extension MM4RigidBodyTests {
+  static func createRigidBodyDescriptors() throws -> [MM4RigidBodyDescriptor] {
+    var output: [MM4RigidBodyDescriptor] = []
+    for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
+      let adamantane = Adamantane(atomCode: atomCode)
+      
+      var paramsDesc = MM4ParametersDescriptor()
+      paramsDesc.atomicNumbers = adamantane.atomicNumbers
+      paramsDesc.bonds = adamantane.bonds
+      
+      var rigidBodyDesc = MM4RigidBodyDescriptor()
+      rigidBodyDesc.parameters = try MM4Parameters(descriptor: paramsDesc)
+      rigidBodyDesc.positions = adamantane.positions
+      output.append(rigidBodyDesc)
+    }
+    
+    do {
+      let positions = MM4ParametersTests.createGoldPositions()
+      
+      // Although it is good practice to make the gold atoms all be anchors,
+      // setting that to the default would mean cross-coverage in test cases.
+      var rigidBodyDesc = MM4RigidBodyDescriptor()
+      rigidBodyDesc.parameters = try MM4ParametersTests.createGoldParameters()
+      rigidBodyDesc.positions = positions
+      output.append(rigidBodyDesc)
+    }
+    return output
+  }
 }
 
 // MARK: - Inertia
