@@ -96,6 +96,9 @@ extension MM4RigidBody {
         storage.vPositions[vID &* 3 &+ 1] += difference.y
         storage.vPositions[vID &* 3 &+ 2] += difference.z
       }
+      if storage.atoms.count == 0 {
+        storage.centerOfMass = .zero
+      }
       
       // Invalidate cached properties. Some could be restored, but err on the
       // side of simplicity for debugging.
@@ -218,6 +221,9 @@ extension MM4RigidBody {
         storage.vVelocities[vID &* 3 &+ 0] += difference.x
         storage.vVelocities[vID &* 3 &+ 1] += difference.y
         storage.vVelocities[vID &* 3 &+ 2] += difference.z
+      }
+      if storage.atoms.count == 0 {
+        storage.linearVelocity = .zero
       }
     }
   }

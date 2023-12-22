@@ -25,7 +25,6 @@ Rigid body mechanics supports any bonding topology. The following restrictions a
 | P (trivalent) | 25  | 25  | not supported | not supported |
 | S             | 15  | 15  | not supported | not supported |
 | Ge            | 31  | 31  | not supported | not supported |
-| Au            | n/a | n/a | n/a           | n/a           |
 
 The following are officially supported in the current release. Other atoms are unsupported.
 
@@ -34,35 +33,30 @@ The following are officially supported in the current release. Other atoms are u
 | H             | 5   | n/a | n/a           | n/a           |
 | C             | 1   | 123 | not supported | not supported |
 | Si            | 19  | 19  | n/a           | n/a           |
-| Au            | n/a | n/a | n/a           | n/a           |
-
-Gold atoms should be anchors or simulated with rigid body mechanics. They only participate in nonbonded interactions. For example, MM4 can simulate the vdW interaction between graphene and gold. It can prevent a graphene sheet from physically colliding with a gold surface. The interaction force would be combined with a quantum mechanical simulator, such as GFN-FF, that handles pi-bonded carbons but not bulk metals.
 
 ### Supported Bonds
 
 Rigid body mechanics supports any bonding topology. The following restrictions apply molecular mechanics.
 
-| Element | H | C | N | O | F | Si | P | S | Ge | Au |
-| ------- | - | - | - | - | - | - | - | - | - | - |
-| H       |   | X |   |   |   | X |   |   | X |   |
-| C       | X | X | O | O | O | O | O | O | O |   |
-| N       |   | O |   |   |   |   |   |   |   |   |
-| O       |   | O |   |   |   |   |   |   |   |   |
-| F       |   | O |   |   |   |   |   |   |   |   |
-| Si      | X | O |   |   |   | X |   |   |   |   |
-| P       |   | O |   |   |   |   |   |   |   |   |
-| S       |   | O |   |   |   |   |   |   |   |   |
-| Ge      | X | O |   |   |   |   |   |   | X |   |
-| Au      |   |   |   |   |   |   |   |   |   |   |
+| Element | H | C | N | O | F | Si | P | S | Ge |
+| ------- | - | - | - | - | - | - | - | - | - |
+| H       |   | X |   |   |   | X |   |   | X |
+| C       | X | X | O | O | O | O | O | O | O |
+| N       |   | O |   |   |   |   |   |   |   |
+| O       |   | O |   |   |   |   |   |   |   |
+| F       |   | O |   |   |   |   |   |   |   |
+| Si      | X | O |   |   |   | X |   |   |   |
+| P       |   | O |   |   |   |   |   |   |   |
+| S       |   | O |   |   |   |   |   |   |   |
+| Ge      | X | O |   |   |   |   |   |   | X |
 
 The following are officially supported in the current release. Other bonds are unsupported.
 
-| Element | H | C | Si | Au |
-| ------- | - | - | - | - |
-| H       |   | X | X |   |
-| C       | X | X |   |   |
-| Si      | x |   | X |   |
-| Au      |   |   |   |   |
+| Element | H | C | Si |
+| ------- | - | - | - |
+| H       |   | X | X |
+| C       | X | X |   |
+| Si      | x |   | X |
 
 Key:
 - X = nonpolar sigma bond

@@ -142,12 +142,20 @@ extension MM4RigidBodyStorage {
   func ensureCenterOfMassCached() {
     if self.centerOfMass == nil {
       self.centerOfMass = createCenterOfMass()
+    }  else if atoms.count == 0 {
+      precondition(
+        centerOfMass! == .zero,
+        "Nonzero center of mass for empty rigid body.")
     }
   }
   
   func ensureMomentOfInertiaCached() {
     if self.momentOfInertia == nil {
       self.momentOfInertia = createMomentOfInertia()
+    } else if atoms.count == 0 {
+      precondition(
+        momentOfInertia!.columns == (.zero, .zero, .zero),
+        "Nonzero moment of inertia for empty rigid body.")
     }
   }
   
@@ -163,6 +171,10 @@ extension MM4RigidBodyStorage {
       } else {
         linearVelocity = .zero
       }
+    } else if atoms.count == 0 {
+      precondition(
+        linearVelocity! == .zero,
+        "Nonzero linear velocity for empty rigid body.")
     }
   }
   
@@ -174,6 +186,10 @@ extension MM4RigidBodyStorage {
       } else {
         angularVelocity = .zero
       }
+    } else if atoms.count == 0 {
+      precondition(
+        angularVelocity! == .zero,
+        "Nonzero angular velocity for empty rigid body.")
     }
   }
   

@@ -17,6 +17,7 @@ import MM4
 //   does not appear in the bulk linear velocity.
 // - Test combinations where anchors and handles collide. You may need to add
 //   some MM4 errors for invalid anchors and/or invalid handles.
+// - Test what happens when every atom is an anchor.
 
 // MARK: - Test Execution
 
