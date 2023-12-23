@@ -6,4 +6,8 @@ import MM4
 // momentum. In addition, test that the heat capacity heuristic accesses the
 // lookup table correctly.
 //
-// Ensure the energy of anchor atoms is separated from the total energy.
+// Test whether the code enters an infinite loop while generating random
+// velocities. This is a hypothesized bug in the untested implementation.
+//
+// Edge cases to test when adding support for anchors:
+// - Ensure the energy of anchor atoms is separated from the total energy.

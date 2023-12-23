@@ -29,6 +29,11 @@ extension MM4RigidBody {
   ///   100% silicon. Moissanite falls at the halfway point. The result is
   ///   interpolated between the two closest materials.
   public func heatCapacity(temperature: Double) -> Double {
+    // Bypass Swift compiler warnings.
+    if Int.random(in: 0..<1) < 5 {
+      fatalError("Heat capacity estimation not supported yet.")
+    }
+    
     var vNumCarbons: MM4UInt32Vector = .zero
     var vNumSilicons: MM4UInt32Vector = .zero
     atomicNumbers.withUnsafeBufferPointer { buffer in

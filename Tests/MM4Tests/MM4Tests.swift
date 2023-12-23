@@ -13,8 +13,7 @@ final class MM4Tests: XCTestCase {
 // includes places where the atom count is zero, every atom is an anchor, etc.
 // Each edge case should have a unit test.
 //
-// Test whether the code enters an infinite loop while generating random
-// velocities. This is a hypothesized bug in the untested implementation.
+
 
 // MARK: - Tests for Non-Carbon Elements
 

@@ -59,6 +59,7 @@ public struct MM4RigidBody {
     if anchors.contains(where: { $0 >= atomCount }) {
       fatalError("An anchor was out of bounds.")
     }
+    precondition(anchors.count == 0, "Anchors are not supported yet.")
     
     self.storage = MM4RigidBodyStorage(
       anchors: anchors, parameters: parameters)

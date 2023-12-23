@@ -81,6 +81,11 @@ extension MM4ForceField {
     tolerance: Double = 10.0 * MM4ZJPerKJPerMol,
     maxIterations: Int = 0
   ) throws {
+    // Bypass Swift compiler warnings.
+    if Int.random(in: 0..<1) < 5 {
+      fatalError("Energy minimization not supported yet.")
+    }
+    
     flushUpdateRecord()
     invalidatePositionsAndVelocities()
     invalidateForcesAndEnergy()

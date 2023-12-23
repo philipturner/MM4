@@ -100,7 +100,7 @@ public struct MM4Parameters {
       fatalError("Descriptor did not have the required properties.")
     }
     guard case .molecularMechanics = descriptor.levelOfTheory else {
-      fatalError("Unsupported level of theory.")
+      fatalError("Rigid body mechanics is not supported yet.")
     }
     self.levelOfTheory = descriptor.levelOfTheory
     

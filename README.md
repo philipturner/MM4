@@ -102,21 +102,15 @@ force = dU / dx = (10^-21) / (10^-9) = 10^-12
 
 ### Releases
 
-Current version: v1.0.0-beta0
-
 v1.0.0
 - Accurate simulation of 5-ring carbons
-- Anchors
-- Energy minimization
 - External forces
 - Support for hydrocarbons and hydrosilicons
 
 Future versions:
+- Anchors
+- Energy minimization
+- Heat capacity estimation
 - High-precision energy measurements
 - Rigid body mechanics
 - Support for non-carbon elements
-
-## Tips
-
-List:
-- Compile this package in Swift release mode. Vectorized code is known to be extremely slow in debug mode. However, it may not be a bottleneck for small systems (under 1000 atoms).
