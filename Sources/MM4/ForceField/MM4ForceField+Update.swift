@@ -105,6 +105,10 @@ extension MM4ForceField {
         fatalError("Number of external forces does not match atom count.")
       }
       
+      // Do not enforce the restriction that anchors must have nonzero external
+      // force here. The check is not performed here for the bulk linear
+      // velocity either. Rather, the error should appear when exporting to a
+      // rigid body.
       let force = system.forces.external
       force.updateForces(_externalForces, system: system)
       force.updateParametersInContext(context)

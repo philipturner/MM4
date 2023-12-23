@@ -67,7 +67,7 @@ Key:
 |         | Velocity             | Force           |
 | ------- | -------------------- | --------------- |
 | Linear  | anchor with velocity | external force  |
-| Angular | flywheel             | linear to rotary motion converter |
+| Angular | flywheel             | lever           |
 
 ### Units
 
@@ -107,6 +107,7 @@ Current version: v1.0.0-beta0
 v1.0.0
 - Accurate simulation of 5-ring carbons
 - Anchors
+- Energy minimization
 - External forces
 - Support for hydrocarbons and hydrosilicons
 

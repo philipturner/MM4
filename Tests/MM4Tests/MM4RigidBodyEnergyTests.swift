@@ -6,4 +6,4 @@ import MM4
 // momentum. In addition, test that the heat capacity heuristic accesses the
 // lookup table correctly.
 //
-// Test the energy of anchor atoms is separated from the total energy.
+// Ensure the energy of anchor atoms is separated from the total energy.

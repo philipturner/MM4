@@ -43,12 +43,6 @@ public class MM4ForceField {
   /// Stores the anchor IDs separately for each rigid body.
   var _rigidBodyAnchors: [Set<UInt32>] = []
   
-  /// Stores the external forces separately for each rigid body.
-  var _rigidBodyExternalForces: [SIMD3<Float>] = []
-  
-  /// Stores the handles separately for each rigid body.
-  var _rigidBodyHandles: [Set<UInt32>] = []
-  
   /// Stores the atom range for each rigid body.
   var _rigidBodyRanges: [Range<UInt32>] = []
   
@@ -62,10 +56,8 @@ public class MM4ForceField {
     updateRecord = MM4UpdateRecord()
     
     _energy = MM4ForceFieldEnergy(forceField: self)
-    
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)
-    
     for level in MM4LevelOfTheory.allCases {
       _timeStep[level] = level.defaultTimeStep
     }
@@ -74,8 +66,6 @@ public class MM4ForceField {
     _levelOfTheory = Array(
       repeating: parameters.levelOfTheory, count: rigidBodyCount)
     _rigidBodyAnchors = Array(repeating: [], count: rigidBodyCount)
-    _rigidBodyExternalForces = Array(repeating: .zero, count: rigidBodyCount)
-    _rigidBodyHandles = Array(repeating: [], count: rigidBodyCount)
     _rigidBodyRanges = rigidBodyRanges
   }
 }

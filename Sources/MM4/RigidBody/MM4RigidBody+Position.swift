@@ -167,3 +167,59 @@ extension MM4RigidBodyStorage {
   }
 }
 
+// MARK: - Properties
+
+extension MM4RigidBody {
+  /// Symmetric matrix specifying the rigid body's moment of inertia.
+  ///
+  /// If there is more than one anchor, this is the inertia of non-anchor atoms
+  /// around the center of mass defined by anchors.
+  public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
+    // no setter; instead use rotate()
+    get {
+      storage.ensureMomentOfInertiaCached()
+      let momentOfInertia = storage.momentOfInertia!
+      return (
+        SIMD3<Float>(momentOfInertia.columns.0),
+        SIMD3<Float>(momentOfInertia.columns.1),
+        SIMD3<Float>(momentOfInertia.columns.2)
+      )
+    }
+  }
+  
+  /// Center of mass, treating anchors as astronomically larger than
+  /// non-anchors.
+  ///
+  /// If there are any anchors, this is the mass-weighted average of the
+  /// anchors.
+  public var centerOfMass: SIMD3<Float> {
+    _read {
+      storage.ensureCenterOfMassCached()
+      yield storage.centerOfMass!
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.ensureCenterOfMassCached()
+      let previous = storage.centerOfMass!
+      yield &storage.centerOfMass!
+      
+      let difference = storage.centerOfMass! - previous
+      guard any(difference .!= .zero) else {
+        return
+      }
+      for vID in 0..<storage.atoms.vectorCount {
+        storage.vPositions[vID &* 3 &+ 0] += difference.x
+        storage.vPositions[vID &* 3 &+ 1] += difference.y
+        storage.vPositions[vID &* 3 &+ 2] += difference.z
+      }
+      if storage.atoms.count == 0 {
+        storage.centerOfMass = .zero
+      }
+      
+      // Invalidate cached properties. Some could be restored, but err on the
+      // side of simplicity for debugging.
+      storage.eraseRarelyCachedProperties()
+      storage.positions = nil
+    }
+  }
+}

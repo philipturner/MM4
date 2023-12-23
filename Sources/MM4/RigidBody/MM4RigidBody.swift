@@ -8,12 +8,14 @@
 /// A descriptor for a rigid body.
 public struct MM4RigidBodyDescriptor {
   /// Optional. Indices of atoms that should be treated as having infinite mass.
+  ///
+  /// If not specified, the default is an empty set.
   public var anchors: Set<UInt32>?
   
-  /// Optional. Indices of atoms where external force is applied.
+  /// Optional. The constant force (in piconewtons) exerted on each atom.
   ///
-  /// If not specified, external force is distributed over the entire object.
-  public var handles: Set<UInt32>?
+  /// If not specified, the default is zero for every atom.
+  public var externalForces: [SIMD3<Float>]?
   
   /// Required. The parameters for the rigid body.
   public var parameters: MM4Parameters?
@@ -23,8 +25,7 @@ public struct MM4RigidBodyDescriptor {
   
   /// Optional. The velocity (in nanometers per picosecond) of each atom.
   ///
-  /// Velocities attributed to anchors are ignored. They are replaced with a
-  /// value determined by the bulk velocities.
+  /// If not specified, the default is zero for every atom.
   public var velocities: [SIMD3<Float>]?
   
   public init() {
@@ -55,27 +56,16 @@ public struct MM4RigidBody {
     
     let atomCount = descriptorParameters.atoms.count
     let anchors = descriptor.anchors ?? []
-    var handles: Set<UInt32>
-    if let descriptorHandles = descriptor.handles {
-      handles = descriptorHandles
-      for anchor in anchors {
-        if handles.contains(anchor) {
-          fatalError("Atom \(anchor) was both an anchor and a handle.")
-        }
-      }
-    } else {
-      handles = []
-      for atomID in 0..<atomCount {
-        handles.insert(UInt32(truncatingIfNeeded: atomID))
-      }
-    }
-    guard !anchors.contains(where: { $0 >= atomCount }),
-          !handles.contains(where: { $0 >= atomCount }) else {
-      fatalError("An anchor or handle was out of bounds.")
+    if anchors.contains(where: { $0 >= atomCount }) {
+      fatalError("An anchor was out of bounds.")
     }
     
     self.storage = MM4RigidBodyStorage(
-      anchors: anchors, handles: handles, parameters: parameters)
+      anchors: anchors, parameters: parameters)
+    descriptor.externalForces?.withUnsafeBufferPointer {
+      // setExternalForces($0)
+      _ = $0
+    }
     descriptorPositions.withUnsafeBufferPointer {
       setPositions($0)
     }
@@ -88,3 +78,36 @@ public struct MM4RigidBody {
   }
 }
 
+// MARK: - Properties
+
+extension MM4RigidBody {
+  /// Indices of atoms that should be treated as having infinite mass.
+  public var anchors: Set<UInt32> {
+    // _modify not supported b/c it requires very complex caching logic.
+    // Workaround: import a new rigid body initialized with different anchors.
+    _read { yield storage.anchors }
+  }
+  
+  /// The number of protons in each atom's nucleus.
+  public var atomicNumbers: [UInt8] {
+    parameters.atoms.atomicNumbers
+  }
+  
+  /// Pairs of atom indices representing sigma bonds.
+  public var bonds: [SIMD2<UInt32>] {
+    parameters.bonds.indices
+  }
+  
+  /// The total mass (in yoctograms) of all atoms, excluding anchors.
+  public var mass: Double {
+    storage.nonAnchorMass
+  }
+  
+  /// The mass (in yoctograms) of each atom.
+  ///
+  /// This is different than the masses in `MM4Parameters`. `MM4RigidBody`
+  /// zeroes out the mass for each anchor, while `MM4Parameters` does not.
+  public var masses: [Float] {
+    storage.nonAnchorMasses
+  }
+}

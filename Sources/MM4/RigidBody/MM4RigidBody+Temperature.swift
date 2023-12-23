@@ -6,105 +6,6 @@
 //
 
 extension MM4RigidBody {
-  /// Estimate of the heat capacity in kT.
-  ///
-  /// This may not be the most appropriate number for characterizing thermal
-  /// properties. Molecular dynamics does not simulate certain quantum effects,
-  /// such as freezing of higher energy vibrational modes. Freezing is the
-  /// primary reason for diamond's exceptionally low heat capacity. Perform
-  /// simulations at both 3 kT and the estimated heat capacity (0.75-2.5 kT).
-  /// Report whether the system functions correctly and efficiently in both
-  /// sets of conditions.
-  ///
-  /// Heat capacity is derived from data for C, SiC, and Si. The object is
-  /// matched to one of these materials based on its elemental composition.
-  /// - Elements with Z=6 to Z=8 are treated like carbon.
-  /// - Elements with Z=14 to Z=32 are treated like silicon.
-  /// - Heat capacity of octane (0.87 kT) is close to diamond (0.74 kT) at 298 K
-  ///   ([Gang et al., 1998](https://doi.org/10.1016/S0301-0104(97)00369-8)).
-  ///   Therefore, hydrogens and halogens likely have the same thermodynamic
-  ///   characteristics as whatever bulk they are attached to. These atoms are
-  ///   omitted from the enthalpy derivation.
-  /// - The elemental composition is mapped to a spectrum: 100% carbon to
-  ///   100% silicon. Moissanite falls at the halfway point. The result is
-  ///   interpolated between the two closest materials.
-  public func heatCapacity(temperature: Double) -> Double {
-    var vNumCarbons: MM4UInt32Vector = .zero
-    var vNumSilicons: MM4UInt32Vector = .zero
-    atomicNumbers.withUnsafeBufferPointer { buffer in
-      let rawBaseAddress = OpaquePointer(buffer.baseAddress)
-      let vBaseAddress = UnsafeRawPointer(rawBaseAddress)!
-        .assumingMemoryBound(to: MM4UInt8Vector.self)
-      
-      // Atomic numbers at the end of the list are padded with zero.
-      for vID in 0..<storage.atoms.vectorCount {
-        let atomicNumber = MM4UInt32Vector(
-          truncatingIfNeeded: vBaseAddress[vID])
-        
-        let isHalogen =
-        (atomicNumber .== 1) .|
-        (atomicNumber .== 9) .|
-        (atomicNumber .== 17) .|
-        (atomicNumber .== 35) .|
-        (atomicNumber .== 53)
-        
-        var isCarbon =
-        (atomicNumber .>= 6) .&
-        (atomicNumber .<= 8) .&
-        (.!isHalogen)
-        
-        var isSilicon =
-        (atomicNumber .>= 14) .&
-        (atomicNumber .<= 32) .&
-        (.!isHalogen)
-        
-        // We can't be 100% sure the backing array for atomic numbers will still
-        // be padded to the vector width.
-        if vID == storage.atoms.vectorCount - 1 {
-          let edge = storage.atoms.count - vID * MM4VectorWidth
-          for lane in edge..<MM4VectorWidth {
-            isCarbon[lane] = false
-            isSilicon[lane] = false
-          }
-        }
-        
-        vNumCarbons.replace(with: vNumCarbons &+ 1, where: isCarbon)
-        vNumSilicons.replace(with: vNumSilicons &+ 1, where: isSilicon)
-      }
-    }
-    
-    let numCarbons = vNumCarbons.wrappedSum()
-    let numSilicons = vNumSilicons.wrappedSum()
-    let numTotal = numCarbons + numSilicons
-    guard numTotal > 0 else {
-      fatalError("Zero non-hydrogen or non-halogen atoms.")
-    }
-    let closenessC = Double(numCarbons) / Double(numTotal)
-    let closenessSi = Double(numSilicons) / Double(numTotal)
-    
-    func lookupCapacity(keys: [Double], values: [Double]) -> Double {
-      let key = binarySearch(keys, element: temperature)
-      let value =
-      values[key.lowerIndex] * key.lowerWeight +
-      values[key.upperIndex] * key.upperWeight
-      return value
-    }
-    var capacity: Double = 0
-    
-    if closenessC < 0.5 {
-      capacity += 2 * (closenessC - 0.5) * lookupCapacity(
-        keys: diamondLookupTemperatures, values: diamondLookupCapacities)
-      capacity += 2 * (1 - closenessC) * lookupCapacity(
-        keys: moissaniteLookupTemperatures, values: moissaniteLookupCapacities)
-    } else {
-      capacity += 2 * (closenessSi - 0.5) * lookupCapacity(
-        keys: siliconLookupTemperatures, values: siliconLookupCapacities)
-      capacity += 2 * (1 - closenessSi) * lookupCapacity(
-        keys: moissaniteLookupTemperatures, values: moissaniteLookupCapacities)
-    }
-    return capacity
-  }
-  
   /// Set the thermal kinetic energy to match a given temperature, assuming
   /// positions are energy-minimized at 0 K.
   ///
@@ -157,489 +58,276 @@ extension MM4RigidBody {
   }
 }
 
-// MARK: - Utilities
-
-fileprivate typealias BinaryReturn = (
-  lowerIndex: Int, lowerWeight: Double,
-  upperIndex: Int, upperWeight: Double
-)
-
-/*
- // https://en.wikipedia.org/wiki/Binary_search_algorithm
- function binary_search(A, n, T) is
-     L := 0
-     R := n − 1
-     while L ≤ R do
-         m := floor((L + R) / 2)
-         if A[m] < T then
-             L := m + 1
-         else if A[m] > T then
-             R := m − 1
-         else:
-             return m
-     return unsuccessful
- */
-fileprivate func binarySearch(
-  _ array: [Double],
-  element: Double
-) -> BinaryReturn {
-  func equalLower(_ lower: Int) -> BinaryReturn {
-    return (lower, 1.000, lower + 1, 0.000)
-  }
-  func equalUpper(_ upper: Int) -> BinaryReturn {
-    return (upper - 1, 0.000, upper, 1.000)
-  }
-  if element < array.first! {
-    return equalLower(0)
-  } else if element > array.last! {
-    return equalUpper(array.count - 1)
-  } else if element.isNaN {
-    fatalError("Invalid search element: \(element)")
-  }
-  
-  var L = 0
-  var R = array.count - 1
-  while L <= R {
-    let m = (L + R) / 2
-    if array[m] < element {
-      L = m + 1
-    } else if array[m] > element {
-      R = m - 1
-    } else {
-      break
-    }
-  }
-  
-  if L <= R {
-    let m = (L + R) / 2
-    guard array[m] == element else {
-      fatalError("Middle of binary search was invalid.")
-    }
-    if m == 0 {
-      return equalLower(0)
-    } else {
-      return equalUpper(m)
-    }
-  } else {
-    swap(&L, &R)
-    guard L < R else {
-      fatalError("Swapped L was not less than swapped R.")
-    }
-    guard L + 1 == R else {
-      fatalError("L and R were not separated by 1.")
+extension MM4RigidBodyStorage {
+  func createThermalVelocities() {
+    ensureCenterOfMassCached()
+    ensureLinearVelocityCached()
+    ensureAngularVelocityCached()
+    defer {
+      // There are multiple exit points for this function, so it's simplest to
+      // check anchor velocities in a 'defer' statement.
+      ensureAnchorVelocitiesValid()
     }
     
-    let distanceL = element - array[L]
-    let distanceR = array[R] - element
-    let distanceLR = distanceL + distanceR
-    guard distanceL > 0, distanceR > 0, distanceLR > 0 else {
-      fatalError("Distances were either zero or negative.")
+    // Express that every bulk quantity, except thermal kinetic energy, is the
+    // same as before thermalization.
+    guard let centerOfMass,
+          let constantLinearVelocity = linearVelocity,
+          let constantAngularVelocity = angularVelocity,
+          let newThermalKineticEnergy = thermalKineticEnergy else {
+      fatalError("This should never happen.")
     }
     
-    let closenessL = 1 - distanceL / distanceLR
-    let closenessR = 1 - distanceR / distanceLR
-    return (L, closenessL, R, closenessR)
+    // Handle the special case where velocity rescaling would cause division by
+    // zero.
+    if anchors.count == atoms.count {
+      guard newThermalKineticEnergy == 0 else {
+        fatalError(
+          "Cannot create thermal velocities when all atoms are anchors.")
+      }
+      return
+    }
+    
+    // Reference implementation from OpenMM.
+    /*
+     // Generate the list of Gaussian random numbers.
+     OpenMM_SFMT::SFMT sfmt;
+     init_gen_rand(randomSeed, sfmt);
+     std::vector<double> randoms;
+     while (randoms.size() < system.getNumParticles()*3) {
+         double x, y, r2;
+         do {
+             x = 2.0*genrand_real2(sfmt)-1.0;
+             y = 2.0*genrand_real2(sfmt)-1.0;
+             r2 = x*x + y*y;
+         } while (r2 >= 1.0 || r2 == 0.0);
+         double multiplier = sqrt((-2.0*std::log(r2))/r2);
+         randoms.push_back(x*multiplier);
+         randoms.push_back(y*multiplier);
+     }
+
+     // Assign the velocities.
+     std::vector<Vec3> velocities(system.getNumParticles(), Vec3());
+     int nextRandom = 0;
+     for (int i = 0; i < system.getNumParticles(); i++) {
+         double mass = system.getParticleMass(i);
+         if (mass != 0) {
+             double velocityScale = sqrt(BOLTZ*temperature/mass);
+             velocities[i] = Vec3(randoms[nextRandom++], randoms[nextRandom++], randoms[nextRandom++])*velocityScale;
+         }
+     }
+     return velocities;
+     */
+    @inline(__always)
+    func gaussian(_ seed: MM4UInt32Vector) -> (
+      x: MM4FloatVector, y: MM4FloatVector, r2: MM4FloatVector
+    ) {
+      let seedPair = unsafeBitCast(seed, to: MM4UInt16VectorPair.self)
+      let floatPair = MM4FloatVectorPair(seedPair) / Float(UInt16.max)
+      let x = 2 * floatPair.evenHalf - 1
+      let y = 2 * floatPair.oddHalf - 1
+      let r2 = x * x + y * y
+      return (x, y, r2)
+    }
+    
+    // First, generate a unitless list of velocities. Pad the list to 64 more
+    // than required (21 atoms) to decrease the overhead of repeated
+    // reinitialization in the final loop iterations.
+    var scalarsRequired = 3 * atoms.vectorCount * MM4VectorWidth
+    scalarsRequired = (scalarsRequired + 4 - 1) / 4 * 4
+    let scalarsCapacity = 64 + scalarsRequired
+    let scalarsPointer: UnsafeMutablePointer<UInt16> =
+      .allocate(capacity: scalarsCapacity)
+    defer { scalarsPointer.deallocate() }
+    
+    // Repeatedly compact the list, removing pairs that failed.
+    var scalarsFinished = 0
+    var generator = SystemRandomNumberGenerator()
+    while scalarsFinished < scalarsRequired {
+      // Round down to UInt64 alignment.
+      scalarsFinished = scalarsFinished / 4 * 4
+      
+      // Fill up to the capacity, rather than the required amount.
+      let quadsToGenerate = (scalarsCapacity - scalarsFinished) / 4
+      let quadsPointer: UnsafeMutablePointer<UInt64> = .init( OpaquePointer(scalarsPointer + scalarsFinished / 4))
+      for i in 0..<quadsToGenerate {
+        quadsPointer[i] = generator.next()
+      }
+      
+      // The first of these pointers acts as a cursor.
+      var pairsPointer: UnsafeMutablePointer<UInt32> = .init( OpaquePointer(scalarsPointer + scalarsFinished / 4))
+      let pairsVectorPointer: UnsafeMutablePointer<MM4UInt32Vector> = .init( OpaquePointer(scalarsPointer + scalarsFinished / 4))
+      
+      for vID in 0..<quadsToGenerate * 4 / MM4VectorWidth {
+        let seed = pairsVectorPointer[vID]
+        let (_, _, r2) = gaussian(seed)
+        
+        let mask = (r2 .< 1) .& (r2 .!= 0)
+        for lane in 0..<MM4VectorWidth {
+          if mask[lane] {
+            pairsPointer.pointee = seed[lane]
+            pairsPointer += 1
+          }
+        }
+      }
+      let newScalarsPointer: UnsafeMutablePointer<UInt16> = .init(
+        OpaquePointer(pairsPointer))
+      scalarsFinished = newScalarsPointer - scalarsPointer
+    }
+    
+    // Generate velocities, zeroing out the ones from anchors.
+    //
+    // E_particle = E_system / (atoms.count - anchors.count)
+    // E_openmm = 3/2 kT
+    // kT = 2/3 * (translational kinetic energy)
+    //
+    // mass = anchor ? INF : mass
+    // v_rms = sqrt(2/3 * E_particle / mass)
+    // v = (gaussian(0, 1), gaussian(0, 1), gaussian(0, 1)) * v_rms
+    let xyPointer: UnsafePointer<MM4UInt32Vector> = .init(
+      OpaquePointer(scalarsPointer))
+    let zPointer: UnsafePointer<MM4UInt16Vector> = .init(
+      OpaquePointer(scalarsPointer + 2 * MM4VectorWidth * atoms.vectorCount))
+    let particleCount = Double(atoms.count - anchors.count)
+    let particleEnergy = newThermalKineticEnergy / particleCount
+    
+    // Units: zJ -> kJ/mol
+    let particleEnergyTerm = Float(
+      Double(2.0 / 3) * MM4KJPerMolPerZJ * particleEnergy)
+    
+    withMasses(nonAnchorMasses) { vMasses in
+      for vID in 0..<atoms.vectorCount {
+        var xGaussian: MM4FloatVector
+        var yGaussian: MM4FloatVector
+        var zGaussian: MM4FloatVector
+        do {
+          let z = MM4FloatVector(zPointer[vID]) / Float(UInt16.max)
+          let zLow = 2 * z.evenHalf - 1
+          let zHigh = 2 * z.oddHalf - 1
+          let zR2 = zLow * zLow + zHigh * zHigh
+          let (x, y, xyR2) = gaussian(xyPointer[vID])
+          var (xyLog, zLog) = (xyR2, zR2)
+          
+          // There is no simple way to access vectorized transcendentals on
+          // non-Apple platforms. Ideally, one would copy code from Sleef. We
+          // can only keep our fingers crossed that the compiler will
+          // "auto-vectorize" this transcendental function, which may have
+          // control flow operations that prevent it from actually vectorizing.
+          for lane in 0..<MM4VectorWidth {
+            xyLog[lane] = Float.log(xyLog[lane])
+          }
+          for lane in 0..<MM4VectorWidth / 2 {
+            zLog[lane] = Float.log(zLog[lane])
+          }
+          
+          let xyMultiplier = (-2 * xyLog / xyR2).squareRoot()
+          let zMultiplier = (-2 * zLog / zR2).squareRoot()
+          xGaussian = x * xyMultiplier
+          yGaussian = y * xyMultiplier
+          
+          var zBroadcasted: MM4FloatVector = .zero
+          zBroadcasted.evenHalf = zMultiplier
+          zBroadcasted.oddHalf = zMultiplier
+          zGaussian = z * zBroadcasted
+        }
+        
+        var mass = vMasses[vID]
+        mass.replace(with: .greatestFiniteMagnitude, where: mass .== 0)
+        let velocityScale = (particleEnergyTerm / mass).squareRoot()
+        vVelocities[vID &* 3 &+ 0] = xGaussian * velocityScale
+        vVelocities[vID &* 3 &+ 1] = yGaussian * velocityScale
+        vVelocities[vID &* 3 &+ 2] = zGaussian * velocityScale
+      }
+    }
+    
+    // Query the bulk linear and angular momentum.
+    let linearDrift = createLinearVelocity()
+    let angularDrift = createAngularVelocity()
+    let wDrift = quaternionToVector(angularDrift)
+    
+    // Set momentum to zero and calculate the modified thermal energy.
+    var correctedThermalKineticEnergy: Double = .zero
+    withMasses(nonAnchorMasses) { vMasses in
+      withSegmentedLoop(chunk: 256) {
+        var vKineticX: MM4FloatVector = .zero
+        var vKineticY: MM4FloatVector = .zero
+        var vKineticZ: MM4FloatVector = .zero
+        for vID in $0 {
+          let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+          let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+          let rZ = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+          var vX = vVelocities[vID &* 3 &+ 0]
+          var vY = vVelocities[vID &* 3 &+ 1]
+          var vZ = vVelocities[vID &* 3 &+ 2]
+          
+          // Apply the correction to linear velocity.
+          vX -= linearDrift.x
+          vY -= linearDrift.y
+          vZ -= linearDrift.z
+          
+          // Apply the correction to angular velocity.
+          let w = wDrift
+          vX -= w.y * rZ - w.z * rY
+          vY -= w.z * rX - w.x * rZ
+          vZ -= w.x * rY - w.y * rX
+          
+          // Mask out the changes to anchor velocities.
+          let mass = vMasses[vID]
+          vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
+          vKineticX.addProduct(mass, vX * vX)
+          vKineticY.addProduct(mass, vY * vY)
+          vKineticZ.addProduct(mass, vZ * vZ)
+          vVelocities[vID &* 3 &+ 0] = vX
+          vVelocities[vID &* 3 &+ 1] = vY
+          vVelocities[vID &* 3 &+ 2] = vZ
+        }
+        correctedThermalKineticEnergy += MM4DoubleVector(vKineticX).sum()
+        correctedThermalKineticEnergy += MM4DoubleVector(vKineticY).sum()
+        correctedThermalKineticEnergy += MM4DoubleVector(vKineticZ).sum()
+      }
+    }
+    
+    // Rescale thermal velocities and superimpose over bulk velocities.
+    let velocityScale = Float((
+      newThermalKineticEnergy / correctedThermalKineticEnergy).squareRoot())
+    let w = quaternionToVector(constantAngularVelocity)
+    
+    withMasses(nonAnchorMasses) { vMasses in
+      for vID in 0..<atoms.vectorCount {
+        let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+        let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+        let rZ = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        var vX = vVelocities[vID &* 3 &+ 0]
+        var vY = vVelocities[vID &* 3 &+ 1]
+        var vZ = vVelocities[vID &* 3 &+ 2]
+        
+        // Apply the correction to thermal velocity.
+        vX *= velocityScale
+        vY *= velocityScale
+        vZ *= velocityScale
+        
+        // Apply the bulk angular velocity.
+        vX += w.y * rZ - w.z * rY
+        vY += w.z * rX - w.x * rZ
+        vZ += w.x * rY - w.y * rX
+        
+        // Mask out the changes to angular velocity for anchors.
+        let mass = vMasses[vID]
+        vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        
+        // Apply the bulk linear velocity.
+        vX += constantLinearVelocity.x
+        vY += constantLinearVelocity.y
+        vZ += constantLinearVelocity.z
+        
+        vVelocities[vID &* 3 &+ 0] = vX
+        vVelocities[vID &* 3 &+ 1] = vY
+        vVelocities[vID &* 3 &+ 2] = vZ
+      }
+    }
   }
 }
-
-/// Units: kelvin.
-fileprivate let diamondLookupTemperatures: [Double] = [
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  20,
-  25,
-  30,
-  40,
-  50,
-  60,
-  70,
-  80,
-  90,
-  100,
-  120,
-  140,
-  160,
-  175,
-  200,
-  225,
-  250,
-  275,
-  300,
-  350,
-  400,
-  450,
-  500,
-  600,
-  700,
-  800,
-  900,
-  1000,
-  1100,
-]
-
-/// Units: kelvin.
-fileprivate let moissaniteLookupTemperatures: [Double] = [
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  20,
-  30,
-  40,
-  50,
-  60,
-  70,
-  80,
-  90,
-  100,
-  110,
-  120,
-  130,
-  140,
-  150,
-  160,
-  170,
-  180,
-  190,
-  200,
-  210,
-  220,
-  230,
-  240,
-  250,
-  260,
-  270,
-  273.15,
-  280,
-  290,
-  298.15,
-  300,
-  400,
-  500,
-  600,
-  700,
-  800,
-  900,
-  1000,
-  1100,
-  1200,
-  1300,
-  1400,
-  1500,
-  1600,
-  1700,
-  1800,
-  1900,
-  2000,
-  2100,
-  2200,
-  2300,
-  2400,
-  2500,
-  2600,
-  2700,
-  2800,
-  2900,
-]
-
-/// Units: kelvin.
-fileprivate let siliconLookupTemperatures: [Double] = [
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  15,
-  20,
-  25,
-  30,
-  35,
-  40,
-  45,
-  50,
-  60,
-  70,
-  75,
-  80,
-  90,
-  100,
-  110,
-  120,
-  125,
-  130,
-  140,
-  150,
-  160,
-  170,
-  175,
-  180,
-  190,
-  200,
-  210,
-  220,
-  225,
-  230,
-  240,
-  250,
-  260,
-  270,
-  273.15,
-  280,
-  290,
-  298.15,
-  300,
-  350,
-  400,
-  450,
-  500,
-  550,
-  600,
-  650,
-  700,
-  750,
-  800,
-  850,
-  900,
-  950,
-  1000,
-  1100,
-  1200,
-  1300,
-  1400,
-  1500,
-  1600,
-  1687,
-]
-
-/// Units: kT at the corresponding temperature.
-fileprivate let diamondLookupCapacities: [Double] = [
-  0,
-  0.00000002087545327,
-  0.0000001670036262,
-  0.0000005636372384,
-  0.00000133602901,
-  0.000002609431659,
-  0.000004509097907,
-  0.000007160280473,
-  0.00001068823208,
-  0.00001521820544,
-  0.00002087545327,
-  0.00002778522831,
-  0.00003607278326,
-  0.00004586337084,
-  0.00005728224378,
-  0.0000704546548,
-  0.0001660716863,
-  0.0003220784219,
-  0.0005535722877,
-  0.001308443589,
-  0.002566562425,
-  0.004428578302,
-  0.007297089247,
-  0.01142371903,
-  0.01741236469,
-  0.02596757277,
-  0.05223709406,
-  0.09229559779,
-  0.1458411354,
-  0.1937503007,
-  0.2868510945,
-  0.3919795045,
-  0.5016371422,
-  0.6268451287,
-  0.7500401251,
-  0.9939138802,
-  1.224401251,
-  1.432242483,
-  1.615927833,
-  1.913850373,
-  2.135279288,
-  2.301854222,
-  2.425653115,
-  2.521773394,
-  2.595247534,
-]
-
-/// Units: kT at the corresponding temperature.
-fileprivate let moissaniteLookupCapacities: [Double] = [
-  0,
-  0.000000283076738,
-  0.000002264613904,
-  0.000007643071927,
-  0.00001811691123,
-  0.00003538459225,
-  0.00006114457541,
-  0.00009709532115,
-  0.0001449352899,
-  0.000206362942,
-  0.000283076738,
-  0.0003767751383,
-  0.0004891566033,
-  0.0006219195935,
-  0.0007767625692,
-  0.0009553839909,
-  0.002264613904,
-  0.007297089247,
-  0.0176136637,
-  0.0344724561,
-  0.05887996151,
-  0.09184267501,
-  0.1401544383,
-  0.1962665384,
-  0.2556497474,
-  0.3220784219,
-  0.3917782054,
-  0.4639942266,
-  0.5357070002,
-  0.6089295165,
-  0.6821520327,
-  0.7581424104,
-  0.8318681742,
-  0.9045874429,
-  0.9763002165,
-  1.048516238,
-  1.120732259,
-  1.189425547,
-  1.256860717,
-  1.321276401,
-  1.382420977,
-  1.441300938,
-  1.459417849,
-  1.505213375,
-  1.568370941,
-  1.616682704,
-  1.627250902,
-  2.054004811,
-  2.310157806,
-  2.482016839,
-  2.606822228,
-  2.702439259,
-  2.780442627,
-  2.845864806,
-  2.903738273,
-  2.951546789,
-  2.994322829,
-  3.032066394,
-  3.064777484,
-  3.094972336,
-  3.12265095,
-  3.145297089,
-  3.165426991,
-  3.183040654,
-  3.200654318,
-  3.215751744,
-  3.225816695,
-  3.238397883,
-  3.248462834,
-  3.258527784,
-  3.266076497,
-  3.27362521,
-  3.278657686,
-]
-
-/// Units: kT at the corresponding temperature.
-fileprivate let siliconLookupCapacities: [Double] = [
-  0,
-  0.0000009309598268,
-  0.000007447678614,
-  0.00002516237671,
-  0.0000593817657,
-  0.0001162496993,
-  0.0002007457301,
-  0.0003188597546,
-  0.0004763050277,
-  0.0006780129901,
-  0.0009309598268,
-  0.003673322107,
-  0.01137358672,
-  0.0286865528,
-  0.05785422179,
-  0.09742602839,
-  0.1487851816,
-  0.205677171,
-  0.2652152995,
-  0.3885013231,
-  0.5113062305,
-  0.5731296608,
-  0.6354342074,
-  0.7569160452,
-  0.8667308155,
-  0.9965119076,
-  1.112581188,
-  1.16923262,
-  1.225162377,
-  1.335939379,
-  1.437936012,
-  1.536685109,
-  1.630502766,
-  1.674404619,
-  1.718306471,
-  1.80298292,
-  1.881404859,
-  1.951286986,
-  2.015997113,
-  2.04919413,
-  2.079745008,
-  2.138320904,
-  2.191363964,
-  2.240197258,
-  2.287106086,
-  2.301299014,
-  2.331128217,
-  2.374067837,
-  2.406422901,
-  2.413519365,
-  2.564830407,
-  2.677171037,
-  2.76641809,
-  2.83714217,
-  2.892350253,
-  2.937214337,
-  2.976665865,
-  3.012990137,
-  3.047149387,
-  3.080105846,
-  3.111017561,
-  3.140485927,
-  3.168631224,
-  3.19569401,
-  3.246090931,
-  3.290834737,
-  3.332571566,
-  3.373225884,
-  3.412557133,
-  3.448881405,
-  3.479672841,
-]

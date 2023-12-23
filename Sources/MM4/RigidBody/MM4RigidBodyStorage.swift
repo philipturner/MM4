@@ -11,8 +11,7 @@ final class MM4RigidBodyStorage {
   // Sources of truth.
   var anchors: Set<UInt32>
   var atoms: (count: Int, vectorCount: Int)
-  var externalForce: SIMD3<Float>
-  var handles: Set<UInt32>
+  var externalForces: [SIMD3<Float>]
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
   
@@ -23,7 +22,6 @@ final class MM4RigidBodyStorage {
   var nonAnchorMasses: [Float]
   
   // Frequently cached (special handling).
-  var anchorVelocitiesValid: Bool?
   var centerOfMass: SIMD3<Float>?
   var positions: [SIMD3<Float>]?
   var velocities: [SIMD3<Float>]?
@@ -38,7 +36,6 @@ final class MM4RigidBodyStorage {
   
   init(
     anchors: Set<UInt32>,
-    handles: Set<UInt32>,
     parameters: MM4Parameters
   ) {
     // Initialize stored properties.
@@ -46,8 +43,7 @@ final class MM4RigidBodyStorage {
     let atomVectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     self.anchors = anchors
     self.atoms = (atomCount, atomVectorCount)
-    self.externalForce = .zero
-    self.handles = handles
+    self.externalForces = Array(repeating: .zero, count: atomCount)
     self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
       $0.initialize(repeating: .zero)
       $1 = 3 * atomVectorCount
@@ -96,8 +92,7 @@ final class MM4RigidBodyStorage {
     // Initialize stored properties, without copying cached ones.
     atoms = other.atoms
     anchors = other.anchors
-    externalForce = other.externalForce
-    handles = other.handles
+    externalForces = other.externalForces
     vPositions = other.vPositions
     vVelocities = other.vVelocities
     
@@ -109,7 +104,6 @@ final class MM4RigidBodyStorage {
   
   func eraseFrequentlyCachedProperties() {
     // WARNING: Always ensure this reflects recently added properties.
-    anchorVelocitiesValid = nil
     centerOfMass = nil
     positions = nil
     velocities = nil

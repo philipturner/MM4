@@ -1,13 +1,70 @@
 //
-//  MM4ForceField+Minimize.swift
+//  MM4ForceField+Energy.swift
 //
 //
-//  Created by Philip Turner on 10/21/23.
+//  Created by Philip Turner on 12/22/23.
 //
 
 import OpenMM
 
+/// A data structure wrapping a system's energy.
+public struct MM4ForceFieldEnergy {
+  var forceField: MM4ForceField
+  
+  var _explosionThreshold: Double
+  
+  /// Whether to throw an error during an energy explosion.
+  ///
+  /// > Warning: Enabling this feature may significantly degrade performance.
+  ///
+  /// The default is `false`.
+  ///
+  /// Energy is tracked in low precision, as high precision is not needed
+  /// to detect energy explosions.
+  public var tracked: Bool = false
+  
+  init(forceField: MM4ForceField) {
+    let atoms = forceField.system.parameters.atoms
+    self.forceField = forceField
+    self._explosionThreshold = 1e6 * (Double(atoms.count) / 1e4)
+  }
+  
+  /// The threshold at which energy is considered to have exploded.
+  ///
+  /// The default is 1 million zJ per 10,000 atoms.
+  public var explosionThreshold: Double {
+    get { _explosionThreshold }
+    set {
+      guard newValue > 0 else {
+        fatalError("Explosion threshold must be positive and nonzero.")
+      }
+      _explosionThreshold = newValue
+    }
+  }
+  
+  /// The system's total kinetic energy, in zeptojoules.
+  public var kinetic: Double {
+    forceField.ensureForcesAndEnergyCached()
+    return forceField.cachedState.kineticEnergy!
+  }
+  
+  /// The system's total potential energy, in zeptojoules.
+  public var potential: Double {
+    forceField.ensureForcesAndEnergyCached()
+    return forceField.cachedState.potentialEnergy!
+  }
+}
+
 extension MM4ForceField {
+  /// The system's energy.
+  ///
+  /// To make the default behavior have high performance, energy is reported in
+  /// low precision. To request a high-precision estimate, fetch it using an
+  /// `MM4State`.
+  public var energy: MM4ForceFieldEnergy {
+    _energy
+  }
+  
   /// Minimize the system's potential energy, removing thermal potential energy.
   ///
   /// OpenMM uses the L-BFGS algorithm for gradient descent. It is an O(n)
