@@ -46,6 +46,36 @@ final class MM4ParametersTests: XCTestCase {
   func testSilaAdamantane() throws {
     try testAdamantaneVariant(atomCode: .silicon)
   }
+  
+  func testUnsupportedRing() throws {
+    let ringLengths: [Int] = [3, 4, 5, 6]
+    
+    for ringLength in ringLengths {
+      var atomicNumbers: [UInt8] = []
+      var bonds: [SIMD2<UInt32>] = []
+      for i in 0..<ringLength {
+        atomicNumbers.append(6)
+        atomicNumbers.append(1)
+        atomicNumbers.append(1)
+        bonds.append(SIMD2(UInt32(i * 3), UInt32(i * 3 + 1)))
+        bonds.append(SIMD2(UInt32(i * 3), UInt32(i * 3 + 2)))
+        if i > 0 {
+          bonds.append(SIMD2(UInt32(i * 3 - 3), UInt32(i * 3)))
+        }
+      }
+      bonds.append(SIMD2(UInt32(0), UInt32(ringLength * 3 - 3)))
+      
+      var desc = MM4ParametersDescriptor()
+      desc.atomicNumbers = atomicNumbers
+      desc.bonds = bonds
+      
+      if ringLength < 5 {
+        XCTAssertThrowsError(try MM4Parameters(descriptor: desc))
+      } else {
+        XCTAssertNoThrow(try MM4Parameters(descriptor: desc))
+      }
+    }
+  }
 }
 
 private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
