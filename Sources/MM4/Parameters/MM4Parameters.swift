@@ -73,10 +73,10 @@ public struct MM4Parameters {
   public var levelOfTheory: MM4LevelOfTheory
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
-  var nonbondedExceptions13: [SIMD2<UInt32>] = []
+  public var nonbondedExceptions13: [SIMD2<UInt32>] = []
   
   /// Atom pairs that have reduced nonbonded and electrostatic interactions.
-  var nonbondedExceptions14: [SIMD2<UInt32>] = []
+  public var nonbondedExceptions14: [SIMD2<UInt32>] = []
   
   /// Map from atoms to bonds that requires bounds checking.
   var atomsToBondsMap: [SIMD4<Int32>] = []
