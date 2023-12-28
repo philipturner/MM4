@@ -19,7 +19,7 @@ class MM4NonbondedForce: MM4Force {
   }
   
   required init(system: MM4System) {
-    // WARNING: This is not correct!
+    // WARNING
     //
     // The hydrogens needs to be shifted toward C/Si/Ge by a factor of 0.94.
     // Run the forcefield through initially without that modification. Only
@@ -34,9 +34,30 @@ class MM4NonbondedForce: MM4Force {
     // charge. Computing the coulomb interaction on their virtual sites creates
     // zero energy, removing the need to account for the position being
     // different.
+    
+    // An issue arises with this functional form: the extremely
+    // malformed case where hydrogens approach closer than the vdW radius. This
+    // may happen when a (100) crystal surface has hydrogen collisions. The
+    // hydrogens often fall into an attractive region of the potential,
+    // whose minimum is r = 0.
+    //
+    // To overcome the issue, the functional form becomes piecewise in this
+    // extreme region. The region never appears in any realistic minimized
+    // structure. This graph (https://www.desmos.com/calculator/5eypewn7fl)
+    // shows the following potentials (in order):
+    // - vdW H-H
+    // - close-range section of clamped vdW H-H
+    //   - freezes the attractive term at the value with r = 0.5 * r_vdW
+    // - Morse C-H
+    //
+    // The clamping doesn't occur until the hydrogens are in an extremely steep
+    // region of the vdW potential. The graph is in zeptojoules. While the
+    // minimum of the vdW well is ~0.1 zJ, the crossover with the clamped region
+    // occurs on the scale of attojoules. This can be seen by changing the 1000x
+    // multiplier for every equation to 1x.
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
-        -2.25 * (radius / r)^6 +
+        -2.25 * (min(2, radius / r))^6 +
         1.84e5 * exp(-12.00 * (r / radius))
       );
       epsilon = select(isHydrogenBond, heteroatomEpsilon, hydrogenEpsilon);
@@ -96,7 +117,7 @@ class MM4NonbondedExceptionForce: MM4Force {
     let correction = dispersionFactor - 1
     let force = OpenMM_CustomBondForce(energy: """
       epsilon * (
-        \(-2.25 * correction) * (radius / r)^6
+        \(-2.25 * correction) * (min(2, radius / r))^6
       );
       """)
     force.addPerBondParameter(name: "epsilon")
@@ -106,10 +127,10 @@ class MM4NonbondedExceptionForce: MM4Force {
     // Separate force for (Si, Ge) to (H, C, Si, Ge) interactions.
     let legacyForce = OpenMM_CustomBondForce(energy: """
       legacyEpsilon * (
-        -2.25 * (legacyRadius / r)^6 +
+        -2.25 * (min(2, legacyRadius / r))^6 +
         1.84e5 * exp(-12.00 * (r / legacyRadius))
       ) - epsilon * (
-        -2.25 * (radius / r)^6 +
+        -2.25 * (min(2, radius / r))^6 +
         1.84e5 * exp(-12.00 * (r / radius))
       );
       """)
