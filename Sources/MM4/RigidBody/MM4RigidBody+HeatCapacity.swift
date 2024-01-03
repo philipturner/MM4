@@ -5,6 +5,14 @@
 //  Created by Philip Turner on 12/22/23.
 //
 
+// There needs to be a built-in way to get heat capacity, just like there is
+// built-in parameters generation. Not having this feature will make important
+// simulation workflows unfeasible. You can always specify your own value, just
+// like with parameters.
+//
+// This is effectively a forcefield parameter; it just doesn't belong as a
+// property of 'MM4Parameters'.
+
 extension MM4RigidBody {
   /// Estimate of the heat capacity in kT.
   ///

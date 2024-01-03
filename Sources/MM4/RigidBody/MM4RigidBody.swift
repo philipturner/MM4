@@ -5,7 +5,7 @@
 //  Created by Philip Turner on 11/19/23.
 //
 
-// TODO: Consider removing anchors from the forcefield, having the user simply
+// TODO: Remove anchors from the forcefield, have the user simply
 // mark such atoms as having 0 mass in MM4Parameters. The user defines what to
 // do with energy in edge cases. They can compute it manually if they want to.
 // Anchors have 0 contribution to energy and their thermal velocity is zero.

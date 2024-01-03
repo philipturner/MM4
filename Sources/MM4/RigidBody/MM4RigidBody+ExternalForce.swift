@@ -7,13 +7,6 @@
 
 import Numerics
 
-// Change the external forces to their own object property, which are
-// written/read from the MM4ForceField just like positions and velocities.
-// Use the same mutation restrictions as positions/velocities, which allows
-// you to enforce the restriction that anchors have no force.
-
-// MARK: - Properties
-
 extension MM4RigidBody {
   /// The constant force (in piconewtons) exerted on each atom.
   public var externalForces: [SIMD3<Float>] {
@@ -21,6 +14,9 @@ extension MM4RigidBody {
     // changed to something invalid. Implementing this in an ergonomic way would
     // result in an O(n^2) implementation, as the atom that was changed during
     // _modify is unknown.
+    //
+    // Workaround: use the externalForces property of the descriptor.
+    // Workaround: use the exposed setExternalForces function.
     _read {
       yield storage.externalForces
     }

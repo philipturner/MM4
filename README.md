@@ -4,11 +4,19 @@ General-purpose simulator for molecular nanotechnology.
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-### Simulation
+### Supported Forces
 
-Levels of theory:
-- Molecular mechanics
-- Rigid body mechanics
+Forces:
+- bend
+- bend-bend
+- external
+- nonbonded
+- stretch
+- stretch-bend
+- stretch-stretch
+- torsion
+- torsion-bend
+- torsion-stretch
 
 ### Supported Atoms
 
@@ -108,9 +116,7 @@ v1.0.0
 - Support for hydrocarbons and hydrosilicons
 
 Future versions:
-- Anchors
 - Energy minimization
 - Heat capacity estimation
 - High-precision energy measurements
-- Rigid body mechanics
 - Support for non-carbon elements

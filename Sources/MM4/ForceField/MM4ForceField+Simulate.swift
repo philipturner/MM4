@@ -11,19 +11,13 @@ extension MM4ForceField {
   /// The largest time step that may be taken during simulation, in picoseconds.
   /// Some steps may have a smaller duration.
   ///
-  /// If not specified, the time step defaults to the value of
-  /// [`defaultTimeStep`](<doc:MM4LevelOfTheory/defaultTimeStep>).
-  public var timeStep: [MM4LevelOfTheory: Double] {
+  /// The default value is 100 / 23 fs.
+  public var timeStep: Double {
     _read {
       yield _timeStep
     }
     _modify {
       yield &_timeStep
-      for level in MM4LevelOfTheory.allCases {
-        guard _timeStep[level] != nil else {
-          fatalError("Cannot set time step to 'nil'.")
-        }
-      }
     }
   }
 }
@@ -51,12 +45,14 @@ extension MM4ForceField {
     invalidatePositionsAndVelocities()
     invalidateForcesAndEnergy()
     
+    // Internal state should be flushed the same way during this edge case as
+    // when there is actually motion over time. It's less edge cases to check
+    // and less complex behavior to reason about.
     if time == 0 {
       return
     }
     
     // Check whether the arguments are valid.
-    let timeStep = self._timeStep[.molecularMechanics]!
     guard time > 0, timeStep > 0 else {
       fatalError("Time or time step was invalid.")
     }

@@ -11,6 +11,8 @@ extension MM4RigidBody {
   /// The velocity (in nanometers per picosecond) of each atom.
   public var velocities: [SIMD3<Float>] {
     // _modify not supported b/c it requires very complex caching logic.
+    //
+    // Workaround: use the velocities property of the descriptor.
     // Workaround: use the exposed setVelocities function.
     _read {
       storage.ensureVelocitiesCached()

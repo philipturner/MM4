@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
+import OpenMM
+
 // There shouldn't need to be a force field descriptor. It should be possible
 // to define its state entirely through the parameters. To have a simple
 // implementation with just stretch/bend/nonbonded. Either the MM4Parameters
@@ -44,13 +46,10 @@ public class MM4ForceField {
   /// Stores the external forces before reordering.
   var _externalForces: [SIMD3<Float>] = []
   
-  /// Stores the time step for each level of theory.
-  var _timeStep: [MM4LevelOfTheory: Double] = [:]
+  /// Stores the time step, in picoseconds.
+  var _timeStep: Double = 100 / 23 * OpenMM_PsPerFs
   
   // MARK: - Properties for Rigid Bodies
-  
-  /// Stores the level of theory for each rigid body.
-  var _levelOfTheory: [MM4LevelOfTheory] = []
   
   /// Stores the anchor IDs separately for each rigid body.
   var _rigidBodyAnchors: [Set<UInt32>] = []
@@ -70,13 +69,8 @@ public class MM4ForceField {
     _energy = MM4ForceFieldEnergy(forceField: self)
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)
-    for level in MM4LevelOfTheory.allCases {
-      _timeStep[level] = level.defaultTimeStep
-    }
     
     let rigidBodyCount = rigidBodyRanges.count
-    _levelOfTheory = Array(
-      repeating: parameters.levelOfTheory, count: rigidBodyCount)
     _rigidBodyAnchors = Array(repeating: [], count: rigidBodyCount)
     _rigidBodyRanges = rigidBodyRanges
   }

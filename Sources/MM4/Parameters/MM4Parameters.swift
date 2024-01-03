@@ -10,30 +10,7 @@ public struct MM4ParametersDescriptor {
   /// Required. The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8]?
   
-  // TODO: Remove rigid body mechanics and 'MM4LevelOfTheory'.
-  // TODO: Remove the documentation comment about rigid body mechanics.
-  
   /// Required. Pairs of atom indices representing sigma bonds.
-  ///
-  /// If the level of theory is `.rigidBodyMechanics`, then `bonds` must contain
-  /// exclusively the bonds between hydrogen and non-hydrogen atoms. Such bonds
-  /// are needed to properly implement hydrogen mass repartitioning and hydrogen
-  /// reduction factors for vdW forces. MM4 does not parameterize any bonds that
-  /// give a partial charge to hydrogen. Therefore, the generated partial
-  /// charges are zero (even for bonds that are obviously polar). This rule
-  /// mistreats the N-H bonds disallowed by `.molecularMechanics`, but accepted
-  /// by rigid body mechanics. In addition, the MM4 default hydrogen reduction
-  /// factor of 0.94 is assigned to every X-H bond except Si-H and Ge-H. You can
-  /// override such parameters after the `MM4Parameters` object initializes.
-  ///
-  /// With rigid body mechanics, you may not specify any bonds between a pair of
-  /// non-hydrogen atoms (e.g. C-C). This design choice removes an ambiguity
-  /// about the source of truth for partial charges. To acquire accurate partial
-  /// charges, you must generate them externally. Next, copy the charges
-  /// into the `MM4Parameters` object after it initializes. For example, create
-  /// a separate `MM4Parameters` with molecular mechanics and transfer over
-  /// [`.atoms.parameters`](<doc:MM4Atoms/parameters>). Or, run the structure
-  /// through the xTB program and record the partial charges.
   public var bonds: [SIMD2<UInt32>]?
   
   /// Required. The forces to assign parameters for.
@@ -65,11 +42,6 @@ public struct MM4ParametersDescriptor {
   /// has the same total mass as before the transformation.
   public var hydrogenMassScale: Float = 2
   
-  /// Required. The level of theory used for simulation.
-  ///
-  /// The default is `.molecularMechanics`.
-  public var levelOfTheory: MM4LevelOfTheory = .molecularMechanics
-  
   public init() {
     
   }
@@ -91,9 +63,6 @@ public struct MM4Parameters {
   
   /// Parameters for a group of 5 atoms.
   public var rings: MM4Rings = MM4Rings()
-  
-  /// The level of theory used for simulation.
-  public var levelOfTheory: MM4LevelOfTheory
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   public var nonbondedExceptions13: [SIMD2<UInt32>] = []
@@ -126,10 +95,6 @@ public struct MM4Parameters {
     guard !descriptor.forces.contains(.external) else {
       fatalError("External forces do not use fixed parameters.")
     }
-    guard case .molecularMechanics = descriptor.levelOfTheory else {
-      fatalError("Rigid body mechanics is not supported yet.")
-    }
-    self.levelOfTheory = descriptor.levelOfTheory
     
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.

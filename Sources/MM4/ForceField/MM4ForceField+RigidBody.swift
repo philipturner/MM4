@@ -59,13 +59,6 @@ extension MM4ForceField {
   }
   
   /// Write the force field's internal state to the specified rigid body.
-  ///
-  /// This method does not overwrite the rigid body's anchors.
-  ///
-  /// If the exported rigid body has a different level of theory than when the
-  /// force field was initialized, nothing happens. The discrepancy in level of
-  /// theory is ignored, and the level currently used in the force field does
-  /// not change.
   public func export(to rigidBody: inout MM4RigidBody, index: Int) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     if updateRecord.active() {
@@ -137,11 +130,6 @@ extension MM4ForceField {
         start: baseAddress + Int(range.lowerBound),
         count: Int(range.upperBound - range.lowerBound))
       rigidBody.getVelocities(pointer)
-    }
-    
-    // Assert that the level of theory has not changed.
-    guard _levelOfTheory[index] == rigidBody.parameters.levelOfTheory else {
-      fatalError("Level of theory cannot change when importing a rigid body.")
     }
     
     // Check whether anchors have changed. If so, update the force field.
