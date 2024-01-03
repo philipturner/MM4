@@ -108,5 +108,3 @@ extension MM4ForceField {
     }
   }
 }
-
-

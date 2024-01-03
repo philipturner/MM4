@@ -52,25 +52,29 @@ extension MM4ForceField {
     for rigidBody in rigidBodies {
       parameters.append(contentsOf: rigidBody.parameters)
     }
-    self.init(parameters: parameters, rigidBodyRanges: ranges)
-    for (index, rigidBody) in rigidBodies.enumerated() {
-      self.import(from: rigidBody, index: index)
+    self.init(parameters: parameters)
+    for (rigidBody, range) in zip(rigidBodies, ranges) {
+      self.import(from: rigidBody, range: range)
     }
   }
   
   /// Write the force field's internal state to the specified rigid body.
-  public func export(to rigidBody: inout MM4RigidBody, index: Int) {
+  /// - parameter rigidBody: The rigid body to update.
+  /// - parameter range: The range of atoms in the force field that the rigid
+  ///   body covers.
+  public func export(to rigidBody: inout MM4RigidBody, range: Range<UInt32>) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     if updateRecord.active() {
       flushUpdateRecord()
     }
     ensurePositionsAndVelocitiesCached()
-    guard index >= 0 && index < _rigidBodyRanges.count else {
-      fatalError("Rigid body index out of bounds.")
+    guard range.startIndex >= 0,
+          range.endIndex < system.parameters.atoms.count,
+          range.count == rigidBody.parameters.atoms.count else {
+      fatalError("Atom range was invalid.")
     }
     
     // Change the rigid body's external forces, positions, velocities.
-    let range = _rigidBodyRanges[index]
     _externalForces.withUnsafeBufferPointer { buffer in
       let baseAddress = buffer.baseAddress.unsafelyUnwrapped
       let pointer = UnsafeBufferPointer(
@@ -95,21 +99,26 @@ extension MM4ForceField {
   }
   
   /// Change the force field's internal state to match the specified rigid body.
-  public func `import`(from rigidBody: MM4RigidBody, index: Int) {
+  /// - parameter rigidBody: The rigid body to update the force field's state
+  ///   with.
+  /// - parameter range: The range of atoms in the forcefield that the rigid
+  ///   body covers.
+  public func `import`(from rigidBody: MM4RigidBody, range: Range<UInt32>) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     ensurePositionsAndVelocitiesCached()
     updateRecord.externalForces = true
     updateRecord.positions = true
     updateRecord.velocities = true
-    guard index >= 0 && index < _rigidBodyRanges.count else {
-      fatalError("Rigid body index out of bounds.")
+    guard range.startIndex >= 0,
+          range.endIndex < system.parameters.atoms.count,
+          range.count == rigidBody.parameters.atoms.count else {
+      fatalError("Atom range was invalid.")
     }
     
     // Assert that the imported anchor velocities are valid.
     rigidBody.storage.ensureAnchorVelocitiesValid()
     
     // Change the force field's external forces, positions, and velocities.
-    let range = _rigidBodyRanges[index]
     _externalForces.withUnsafeMutableBufferPointer { buffer in
       let baseAddress = buffer.baseAddress.unsafelyUnwrapped
       let pointer = UnsafeMutableBufferPointer(
@@ -130,19 +139,6 @@ extension MM4ForceField {
         start: baseAddress + Int(range.lowerBound),
         count: Int(range.upperBound - range.lowerBound))
       rigidBody.getVelocities(pointer)
-    }
-    
-    // Check whether anchors have changed. If so, update the force field.
-    let previousAnchors = _rigidBodyAnchors[index]
-    if previousAnchors != rigidBody.anchors {
-      updateRecord.anchors = true
-      for anchor in previousAnchors {
-        _anchors.remove(range.lowerBound + anchor)
-      }
-      for anchor in rigidBody.anchors {
-        _anchors.insert(range.lowerBound + anchor)
-      }
-      _rigidBodyAnchors[index] = rigidBody.anchors
     }
   }
 }

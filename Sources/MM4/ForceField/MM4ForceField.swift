@@ -37,9 +37,6 @@ public class MM4ForceField {
   /// Caches I/O to OpenMM prevent `MM4RigidBody` exports from being O(n^2).
   var updateRecord: MM4UpdateRecord
   
-  /// Stores the anchor IDs before reordering.
-  var _anchors: Set<UInt32> = []
-  
   /// Stores the system's energy.
   var _energy: MM4ForceFieldEnergy!
   
@@ -49,17 +46,8 @@ public class MM4ForceField {
   /// Stores the time step, in picoseconds.
   var _timeStep: Double = 100 / 23 * OpenMM_PsPerFs
   
-  // MARK: - Properties for Rigid Bodies
-  
-  /// Stores the anchor IDs separately for each rigid body.
-  var _rigidBodyAnchors: [Set<UInt32>] = []
-  
-  /// Stores the atom range for each rigid body.
-  var _rigidBodyRanges: [Range<UInt32>] = []
-  
-  /// Create a simulator using the specified parameters and division into rigid
-  /// bodies.
-  public init(parameters: MM4Parameters, rigidBodyRanges: [Range<UInt32>]) {
+  /// Create a simulator using the specified parameters.
+  public init(parameters: MM4Parameters) {
     MM4Plugins.global.load()
     system = MM4System(parameters: parameters)
     context = MM4Context(system: system)
@@ -69,9 +57,5 @@ public class MM4ForceField {
     _energy = MM4ForceFieldEnergy(forceField: self)
     _externalForces = Array(
       repeating: .zero, count: system.parameters.atoms.count)
-    
-    let rigidBodyCount = rigidBodyRanges.count
-    _rigidBodyAnchors = Array(repeating: [], count: rigidBodyCount)
-    _rigidBodyRanges = rigidBodyRanges
   }
 }

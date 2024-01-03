@@ -8,17 +8,15 @@
 import OpenMM
 
 struct MM4UpdateRecord {
-  var anchors: Bool = false
   var externalForces: Bool = false
   var positions: Bool = false
   var velocities: Bool = false
   
   func active() -> Bool {
-    anchors || externalForces || positions || velocities
+    externalForces || positions || velocities
   }
   
   mutating func erase() {
-    anchors = false
     externalForces = false
     positions = false
     velocities = false
@@ -82,22 +80,6 @@ extension MM4ForceField {
       }
       context.context.positions = arrayP
       context.context.velocities = arrayV
-    }
-    
-    if updateRecord.anchors {
-      // Reset every atom's mass to the one provided by the parameters. Then,
-      // selectively set the anchors to zero.
-      let masses = system.parameters.atoms.masses
-      for (original, reordered) in system.reorderedIndices.enumerated() {
-        // Units: yg -> amu
-        var mass = masses[Int(original)]
-        mass *= Float(MM4AmuPerYg)
-        system.system.setParticleMass(Double(mass), index: Int(reordered))
-      }
-      _anchors.forEach { originalID in
-        let reorderedID = system.reorderedIndices[Int(originalID)]
-        system.system.setParticleMass(0, index: Int(reorderedID))
-      }
     }
     
     if updateRecord.externalForces {

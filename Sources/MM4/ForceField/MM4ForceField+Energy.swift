@@ -7,6 +7,11 @@
 
 import OpenMM
 
+// Energy explosion detection is a necessary feature. It is tedious and
+// potentially sub-optimal to do this manually. It ought to be an error that is
+// always thrown. However, it cannot be enabled by default due to the
+// performance overhead.
+
 /// A data structure wrapping a system's energy.
 public struct MM4ForceFieldEnergy {
   var forceField: MM4ForceField

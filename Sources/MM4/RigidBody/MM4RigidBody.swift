@@ -9,6 +9,9 @@
 // mark such atoms as having 0 mass in MM4Parameters. The user defines what to
 // do with energy in edge cases. They can compute it manually if they want to.
 // Anchors have 0 contribution to energy and their thermal velocity is zero.
+//
+// Removing anchors from the rigid body requires a little more care. There may
+// be some functions that check the edge case where mass is zero.
 
 /// A descriptor for a rigid body.
 public struct MM4RigidBodyDescriptor {
