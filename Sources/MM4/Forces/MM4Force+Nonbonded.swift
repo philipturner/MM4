@@ -8,7 +8,7 @@
 import Foundation
 import OpenMM
 
-class MM4NonbondedForce: MM4Force {
+class MM4NonbondedForce: MM4ForceGroup {
   /// Use a common cutoff for both forces in the nonbonded force group.
   static var cutoff: Double {
     // Since germanium will rarely be used, use the cutoff for silicon. The
@@ -109,7 +109,7 @@ class MM4NonbondedForce: MM4Force {
 /// on the diagonal. It also wouldn't change the compute cost due to divergence.
 /// The version here may actually decrease compute cost a little, as the
 /// exp(-12) term is omitted.
-class MM4NonbondedExceptionForce: MM4Force {
+class MM4NonbondedExceptionForce: MM4ForceGroup {
   required init(system: MM4System) {
     // It seems like "disfac" was the dispersion factor, similar to the DISP-14
     // keyword in Tinker. Keep the Pauli repulsion force the same though.

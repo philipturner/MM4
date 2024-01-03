@@ -7,8 +7,41 @@
 
 import OpenMM
 
-class MM4Force {
-  /// The OpenMM object containing the force.
+public enum MM4Force: CaseIterable, Hashable {
+  /// Angle bending with a sextic Taylor expansion.
+  case bend
+  
+  /// Coupling of vibrational frequencies of two angles with the same center.
+  case bendBend
+  
+  /// Unchanging potential gradient imposed by something outside the system.
+  case external
+  
+  /// London dispersion, overlap repulsion, and coulomb repulsion forces.
+  case nonbonded
+  
+  /// Morse bond stretching potential.
+  case stretch
+  
+  /// Increase in covalent bond length as bond angle shrinks.
+  case stretchBend
+  
+  /// Coupling of adjacent covalent bonds invoked by electronegative atoms.
+  case stretchStretch
+  
+  /// Torsion and 1-4 nonbonded exception forces.
+  case torsion
+  
+  /// Torsion-bend and bend-torsion-bend for electronegative atoms.
+  case torsionBend
+  
+  /// Decrease in covalent bond length as a torsion reaches the eclipsing
+  /// position.
+  case torsionStretch
+}
+
+class MM4ForceGroup {
+  /// The OpenMM objects containing the forces.
   var forces: [OpenMM_Force]
   
   /// Whether each force contains any particles.

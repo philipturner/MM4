@@ -5,6 +5,18 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
+// There shouldn't need to be a force field descriptor. It should be possible
+// to define its state entirely through the parameters. To have a simple
+// implementation with just stretch/bend/nonbonded. Either the MM4Parameters
+// was configured without torsions (motivating nonbonded exceptions to never be
+// generated) or the user removed nonbondedExceptions14 manually.
+//
+// The user should specify the range where a rigid body's state is exported to.
+// They can keep track of the ranges. In some cases, they might never need to
+// preserve that information. Or they can decide that different atoms are
+// classified as a single rigid body. The range they enter into the import/
+// export functions must be self-consistent with the rigid body's atom count.
+
 /// A force field simulator.
 ///
 /// See the

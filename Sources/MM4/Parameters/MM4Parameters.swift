@@ -10,6 +10,9 @@ public struct MM4ParametersDescriptor {
   /// Required. The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8]?
   
+  // TODO: Remove rigid body mechanics and 'MM4LevelOfTheory'.
+  // TODO: Remove the documentation comment about rigid body mechanics.
+  
   /// Required. Pairs of atom indices representing sigma bonds.
   ///
   /// If the level of theory is `.rigidBodyMechanics`, then `bonds` must contain
@@ -32,6 +35,26 @@ public struct MM4ParametersDescriptor {
   /// [`.atoms.parameters`](<doc:MM4Atoms/parameters>). Or, run the structure
   /// through the xTB program and record the partial charges.
   public var bonds: [SIMD2<UInt32>]?
+  
+  /// Required. The forces to assign parameters for.
+  ///
+  /// The default is `MM4Force.allCases`, excluding `.external`.
+  ///
+  /// Disabling certain forces may reduce the execution time required to
+  /// generate parameters. For example, if torsion forces are excluded, the
+  /// array of torsion parameters will be empty. `nonbondedExceptions14` will
+  /// also be an empty array.
+  public var forces: Set<MM4Force> = [
+    .bend,
+    .bendBend,
+    .nonbonded,
+    .stretch,
+    .stretchBend,
+    .stretchStretch,
+    .torsion,
+    .torsionBend,
+    .torsionStretch,
+  ]
   
   /// Required. The factor to multiply hydrogen mass by.
   ///
@@ -98,6 +121,10 @@ public struct MM4Parameters {
     guard let descriptorAtomicNumbers = descriptor.atomicNumbers,
           let descriptorBonds = descriptor.bonds else {
       fatalError("Descriptor did not have the required properties.")
+    }
+    // TODO: Actually reflect the choice of forces in the parameters descriptor.
+    guard !descriptor.forces.contains(.external) else {
+      fatalError("External forces do not use fixed parameters.")
     }
     guard case .molecularMechanics = descriptor.levelOfTheory else {
       fatalError("Rigid body mechanics is not supported yet.")

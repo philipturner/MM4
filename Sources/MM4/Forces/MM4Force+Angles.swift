@@ -9,7 +9,7 @@ import Foundation
 import OpenMM
 
 /// Angle bend and stretch-bend force.
-class MM4BendForce: MM4Force {
+class MM4BendForce: MM4ForceGroup {
   required init(system: MM4System) {
     // https://www.desmos.com/calculator/shl9ovintw
     //
@@ -143,7 +143,7 @@ class MM4BendForce: MM4Force {
 /// Angle bend-bend force.
 ///
 /// This object may be deleted during a future optimization.
-class MM4BendBendForce: MM4Force {
+class MM4BendBendForce: MM4ForceGroup {
   required init(system: MM4System) {
     // Sequence of indices for both generating energy expressions and fetching
     // angles during per-atom iteration.
@@ -269,7 +269,7 @@ class MM4BendBendForce: MM4Force {
 }
 
 /// Type 2 stretch-bend and stretch-stretch force.
-class MM4BendExtendedForce: MM4Force {
+class MM4BendExtendedForce: MM4ForceGroup {
   required init(system: MM4System) {
     // In the future, create a separate force, only for fluorines that have a
     // stretch-stretch interaction.

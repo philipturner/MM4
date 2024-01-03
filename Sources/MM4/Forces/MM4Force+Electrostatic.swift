@@ -10,7 +10,7 @@ import OpenMM
 
 /// To isolate the electrostatic force from the switching function, we create
 /// two forces that end up fused into the same group.
-class MM4ElectrostaticForce: MM4Force {
+class MM4ElectrostaticForce: MM4ForceGroup {
   static var prefactor: Double {
     let vacuumPermittivity: Double = 8.8541878128e-12
     let coulombConstant = 1 / (4 * Double.pi * vacuumPermittivity)
@@ -186,7 +186,7 @@ class MM4ElectrostaticForce: MM4Force {
 /// In the future, an optimization could fuse the O(bonds^2) interactions into a
 /// single kernel invocation. This would also pre-compute the O(bonds^2) partial
 /// charge interactions to "undo" the regular electrostatic force.
-class MM4ElectrostaticExceptionForce: MM4Force {
+class MM4ElectrostaticExceptionForce: MM4ForceGroup {
   required init(system: MM4System) {
     // Equation for dipole-dipole interaction:
     // https://janheyda.files.wordpress.com/2015/08/electrostatics-multipoles.pdf
