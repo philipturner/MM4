@@ -53,6 +53,14 @@ extension MM4RigidBody {
     }
   }
   
+  public mutating func setPositions<T: BinaryFloatingPoint, U: Collection>(
+    _ buffer: U
+  ) where U.Element == SIMD3<T> {
+    buffer.withContiguousStorageIfAvailable {
+      setPositions($0)
+    }
+  }
+  
   @_specialize(where T == Double)
   @_specialize(where T == Float)
   public mutating func setPositions<T: BinaryFloatingPoint>(
