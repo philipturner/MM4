@@ -38,11 +38,19 @@ extension MM4RigidBody {
   
   @_specialize(where T == Double)
   @_specialize(where T == Float)
-  public mutating func setVelocities<T: BinaryFloatingPoint>(
-    _ array: Array<SIMD3<T>>
+  public func getVelocities<T: BinaryFloatingPoint>(
+    _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
   ) {
-    array.withUnsafeBufferPointer {
-      setVelocities($0)
+    guard buffer.count == storage.atoms.count else {
+      fatalError("Velocity buffer was not the correct size.")
+    }
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+    
+    for vID in 0..<storage.atoms.vectorCount {
+      let x = storage.vVelocities[vID &* 3 &+ 0]
+      let y = storage.vVelocities[vID &* 3 &+ 1]
+      let z = storage.vVelocities[vID &* 3 &+ 2]
+      storage.swizzleFromVectorWidth((x, y, z), vID, baseAddress)
     }
   }
   
@@ -66,25 +74,6 @@ extension MM4RigidBody {
       storage.vVelocities[vID &* 3 &+ 1] = y
       storage.vVelocities[vID &* 3 &+ 2] = z
     }
-    storage.ensureAnchorVelocitiesValid()
-  }
-  
-  @_specialize(where T == Double)
-  @_specialize(where T == Float)
-  public func getVelocities<T: BinaryFloatingPoint>(
-    _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
-  ) {
-    guard buffer.count == storage.atoms.count else {
-      fatalError("Velocity buffer was not the correct size.")
-    }
-    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-    
-    for vID in 0..<storage.atoms.vectorCount {
-      let x = storage.vVelocities[vID &* 3 &+ 0]
-      let y = storage.vVelocities[vID &* 3 &+ 1]
-      let z = storage.vVelocities[vID &* 3 &+ 2]
-      storage.swizzleFromVectorWidth((x, y, z), vID, baseAddress)
-    }
   }
 }
 
@@ -104,36 +93,11 @@ extension MM4RigidBodyStorage {
     return output
   }
   
-  // WARNING: Call this every time the velocities change.
-  func ensureAnchorVelocitiesValid() {
-    let epsilon: Float = 1e-4
-    var firstVelocity: SIMD3<Float>?
-    var valid = true
-    
-    for anchor in anchors {
-      let velocity = extractScalar(Int(anchor), vVelocities)
-      if let firstVelocity {
-        var deviation = velocity - firstVelocity
-        var accepted = epsilon * firstVelocity
-        deviation.replace(with: -deviation, where: deviation .< 0)
-        accepted.replace(with: -accepted, where: accepted .< 0)
-        if any(deviation .> accepted) {
-          valid = false
-        }
-      } else {
-        firstVelocity = velocity
-      }
-    }
-    guard valid else {
-      fatalError("Anchor velocities are invalid.")
-    }
-  }
-  
   // WARNING: When there are anchors, this returns something besides the bulk
   // velocity. It is the linear velocity of non-anchors.
   func createLinearVelocity() -> SIMD3<Float> {
     var momentum: SIMD3<Double> = .zero
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vMomentumX: MM4FloatVector = .zero
         var vMomentumY: MM4FloatVector = .zero
@@ -152,7 +116,7 @@ extension MM4RigidBodyStorage {
         momentum.z += MM4DoubleVector(vMomentumZ).sum()
       }
     }
-    return SIMD3<Float>(momentum / nonAnchorMass)
+    return SIMD3<Float>(momentum / mass)
   }
   
   // WARNING: This returns a nonzero angular velocity, even when we should store
@@ -163,7 +127,7 @@ extension MM4RigidBodyStorage {
     guard let centerOfMass else {
       fatalError("This should never happen.")
     }
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vMomentumX: MM4FloatVector = .zero
         var vMomentumY: MM4FloatVector = .zero
@@ -239,7 +203,7 @@ extension MM4RigidBody {
       
       let previousW = quaternionToVector(previous)
       let nextW = quaternionToVector(next)
-      storage.withMasses(storage.nonAnchorMasses) { vMasses in
+      storage.withMasses { vMasses in
         for vID in 0..<storage.atoms.vectorCount {
           let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
           let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
@@ -281,7 +245,6 @@ extension MM4RigidBody {
       // side of simplicity for debugging.
       storage.eraseRarelyCachedProperties()
       storage.velocities = nil
-      storage.ensureAnchorVelocitiesValid()
     }
   }
   
@@ -318,7 +281,6 @@ extension MM4RigidBody {
       // side of simplicity for debugging.
       storage.eraseRarelyCachedProperties()
       storage.velocities = nil
-      storage.ensureAnchorVelocitiesValid()
     }
   }
 }

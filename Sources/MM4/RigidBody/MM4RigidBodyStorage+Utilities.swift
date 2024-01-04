@@ -128,7 +128,6 @@ extension MM4RigidBodyStorage {
   
   @inline(__always)
   func withMasses<T>(
-    _ masses: [Float],
     _ closure: (UnsafePointer<MM4FloatVector>) -> T
   ) -> T {
     return masses.withUnsafeBufferPointer {

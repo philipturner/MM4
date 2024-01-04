@@ -56,7 +56,7 @@ extension MM4RigidBodyStorage {
     }
     
     let v = SIMD3<Double>(linearVelocity)
-    return nonAnchorMass * (v * v).sum() / 2
+    return mass * (v * v).sum() / 2
   }
   
   // Angular kinetic energy about an angular mass defined by non-anchor atoms.
@@ -87,7 +87,7 @@ extension MM4RigidBodyStorage {
     // contribute zero to the total energy. This should let velocity rescaling
     // work properly.
     var kinetic: Double = .zero
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vKineticX: MM4FloatVector = .zero
         var vKineticY: MM4FloatVector = .zero

@@ -18,9 +18,9 @@ extension MM4ForceField {
     var exception13Capacity: Int = 0
     var exception14Capacity: Int = 0
     
-    var ranges: [Range<UInt32>] = []
+    var ranges: [Range<Int>] = []
     for rigidBody in rigidBodies {
-      let oldAtomCapacity = UInt32(atomCapacity)
+      let oldAtomCapacity = atomCapacity
       
       let parameters = rigidBody.parameters
       atomCapacity += parameters.atoms.count
@@ -31,7 +31,7 @@ extension MM4ForceField {
       exception13Capacity += parameters.nonbondedExceptions13.count
       exception14Capacity += parameters.nonbondedExceptions14.count
       
-      ranges.append(oldAtomCapacity..<UInt32(atomCapacity))
+      ranges.append(oldAtomCapacity..<atomCapacity)
     }
     
     // Elegantly handle the case where there are zero rigid bodies.
@@ -62,7 +62,7 @@ extension MM4ForceField {
   /// - parameter rigidBody: The rigid body to update.
   /// - parameter range: The range of atoms in the force field that the rigid
   ///   body covers.
-  public func export(to rigidBody: inout MM4RigidBody, range: Range<UInt32>) {
+  public func export(to rigidBody: inout MM4RigidBody, range: Range<Int>) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     if updateRecord.active() {
       flushUpdateRecord()
@@ -75,26 +75,12 @@ extension MM4ForceField {
     }
     
     // Change the rigid body's external forces, positions, velocities.
-    _externalForces.withUnsafeBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      let pointer = UnsafeBufferPointer(
-        start: baseAddress + Int(range.lowerBound),
-        count: Int(range.upperBound - range.lowerBound))
-      rigidBody.setExternalForces(pointer)
+    rigidBody.externalForces = Array(_externalForces[range])
+    cachedState.positions![range].withContiguousStorageIfAvailable {
+      rigidBody.setPositions($0)
     }
-    cachedState.positions!.withUnsafeBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      let pointer = UnsafeBufferPointer(
-        start: baseAddress + Int(range.lowerBound),
-        count: Int(range.upperBound - range.lowerBound))
-      rigidBody.setPositions(pointer)
-    }
-    cachedState.velocities!.withUnsafeBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      let pointer = UnsafeBufferPointer(
-        start: baseAddress + Int(range.lowerBound),
-        count: Int(range.upperBound - range.lowerBound))
-      rigidBody.setVelocities(pointer)
+    cachedState.velocities![range].withContiguousStorageIfAvailable {
+      rigidBody.setVelocities($0)
     }
   }
   
@@ -103,7 +89,7 @@ extension MM4ForceField {
   ///   with.
   /// - parameter range: The range of atoms in the forcefield that the rigid
   ///   body covers.
-  public func `import`(from rigidBody: MM4RigidBody, range: Range<UInt32>) {
+  public func `import`(from rigidBody: MM4RigidBody, range: Range<Int>) {
     // Cache the I/O accesses into OpenMM, otherwise this is O(n^2).
     ensurePositionsAndVelocitiesCached()
     updateRecord.externalForces = true
@@ -115,30 +101,9 @@ extension MM4ForceField {
       fatalError("Atom range was invalid.")
     }
     
-    // Assert that the imported anchor velocities are valid.
-    rigidBody.storage.ensureAnchorVelocitiesValid()
-    
     // Change the force field's external forces, positions, and velocities.
-    _externalForces.withUnsafeMutableBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      let pointer = UnsafeMutableBufferPointer(
-        start: baseAddress + Int(range.lowerBound),
-        count: Int(range.upperBound - range.lowerBound))
-      rigidBody.getExternalForces(pointer)
-    }
-    cachedState.positions!.withUnsafeMutableBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      let pointer = UnsafeMutableBufferPointer(
-        start: baseAddress + Int(range.lowerBound),
-        count: Int(range.upperBound - range.lowerBound))
-      rigidBody.getPositions(pointer)
-    }
-    cachedState.velocities!.withUnsafeMutableBufferPointer { buffer in
-      let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-      let pointer = UnsafeMutableBufferPointer(
-        start: baseAddress + Int(range.lowerBound),
-        count: Int(range.upperBound - range.lowerBound))
-      rigidBody.getVelocities(pointer)
-    }
+    _externalForces.replaceSubrange(range, with: externalForces)
+    cachedState.positions!.replaceSubrange(range, with: rigidBody.positions)
+    cachedState.velocities!.replaceSubrange(range, with: rigidBody.velocities)
   }
 }

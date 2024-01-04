@@ -8,10 +8,12 @@
 // TODO: Remove anchors from the forcefield, have the user simply
 // mark such atoms as having 0 mass in MM4Parameters. The user defines what to
 // do with energy in edge cases. They can compute it manually if they want to.
-// Anchors have 0 contribution to energy and their thermal velocity is zero.
-//
-// Removing anchors from the rigid body requires a little more care. There may
-// be some functions that check the edge case where mass is zero.
+// - You can just not export data into rigid bodies that contain anchors.
+//   Use only the raw simulation capability - initializing from 'MM4Parameters'
+//   and fetching data from 'MM4State'.
+// - Removing anchors from the rigid body requires a little more care. There
+//   may be some functions that check the edge case where mass is zero.
+// - Anchors have 0 contribution to energy and their thermal velocity is zero.
 
 /// An enclosed group of covalently bonded atoms.
 ///
@@ -64,14 +66,5 @@ public struct MM4RigidBody {
     
     // Prepare computed properties for access through the public API.
     _ensureReferencesUpdated()
-  }
-}
-
-// MARK: - Properties
-
-extension MM4RigidBody {
-  /// The total mass (in yoctograms) of all atoms, excluding anchors.
-  public var mass: Double {
-    storage.nonAnchorMass
   }
 }
