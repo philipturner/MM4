@@ -45,8 +45,6 @@ extension MM4RigidBody {
   ) {
     ensureUniquelyReferenced()
     
-    // TODO: What to do about anchor atoms? Do they decrease the value of N?
-    
     // E = thermal energy
     // C = heat capacity
     // N = number of atoms

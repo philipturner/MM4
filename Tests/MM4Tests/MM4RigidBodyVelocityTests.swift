@@ -50,9 +50,8 @@ private func testLinearVelocity(_ descriptor: MM4RigidBodyDescriptor) {
     let originalVelocities = [SIMD3<Float>](
       repeating: bulkVelocity, count: parameters.atoms.count)
     
-    var desc = descriptor
-    desc.velocities = originalVelocities
-    let rigidBody = MM4RigidBody(descriptor: desc)
+    var rigidBody = MM4RigidBody(descriptor: descriptor)
+    rigidBody.setVelocities(originalVelocities)
     let computedVelocity = rigidBody.linearVelocity
     let expectedVelocity = (parameters.atoms.count > 0) ? bulkVelocity : .zero
     XCTAssertEqual(computedVelocity, expectedVelocity, accuracy: 1e-5)
@@ -78,10 +77,9 @@ private func testLinearVelocity(_ descriptor: MM4RigidBodyDescriptor) {
   }
   
   // Test what happens when you change a rigid body's velocity multiple times.
-  var desc = descriptor
-  desc.velocities = Array(
-    repeating: bulkVelocities[1], count: parameters.atoms.count)
-  var rigidBody = MM4RigidBody(descriptor: desc)
+  var rigidBody = MM4RigidBody(descriptor: descriptor)
+  rigidBody.setVelocities(
+    Array(repeating: bulkVelocities[1], count: parameters.atoms.count))
   
   XCTAssertEqual(
     rigidBody.linearVelocity,
@@ -174,9 +172,9 @@ private func testAngularVelocity(_ descriptor: MM4RigidBodyDescriptor) {
   for bulkVelocity in bulkVelocities {
     let originalVelocities = createVelocities(bulkVelocity)
     
-    var desc = descriptor
-    desc.velocities = originalVelocities
-    let rigidBody = MM4RigidBody(descriptor: desc)
+    var rigidBody = MM4RigidBody(descriptor: descriptor)
+    rigidBody.setVelocities(originalVelocities)
+    
     let quaternion = rigidBody.angularVelocity
     let computedVelocity = createRotationVector(quaternion)
     XCTAssertEqual(
@@ -193,9 +191,9 @@ private func testAngularVelocity(_ descriptor: MM4RigidBodyDescriptor) {
       originalVelocities[i] += linearVelocity
     }
     
-    var desc = descriptor
-    desc.velocities = originalVelocities
-    let rigidBody = MM4RigidBody(descriptor: desc)
+    var rigidBody = MM4RigidBody(descriptor: descriptor)
+    rigidBody.setVelocities(originalVelocities)
+    
     let quaternion = rigidBody.angularVelocity
     let computedVelocity = createRotationVector(quaternion)
     XCTAssertEqual(

@@ -11,7 +11,9 @@
 // like with parameters.
 //
 // This is effectively a forcefield parameter; it just doesn't belong as a
-// property of 'MM4Parameters'.
+// property of 'MM4Parameters'. There could be improvements in the future that
+// provide every more accurate heat capacity estimates. Theoretically, according
+// to this API design coice.
 
 extension MM4RigidBody {
   /// Estimate of the heat capacity in kT.
@@ -44,6 +46,7 @@ extension MM4RigidBody {
     
     var vNumCarbons: MM4UInt32Vector = .zero
     var vNumSilicons: MM4UInt32Vector = .zero
+    let atomicNumbers = parameters.atoms.atomicNumbers
     atomicNumbers.withUnsafeBufferPointer { buffer in
       let rawBaseAddress = OpaquePointer(buffer.baseAddress)
       let vBaseAddress = UnsafeRawPointer(rawBaseAddress)!

@@ -14,9 +14,6 @@ extension MM4RigidBody {
     // changed to something invalid. Implementing this in an ergonomic way would
     // result in an O(n^2) implementation, as the atom that was changed during
     // _modify is unknown.
-    //
-    // Workaround: use the externalForces property of the descriptor.
-    // Workaround: use the exposed setExternalForces function.
     _read {
       yield storage.externalForces
     }

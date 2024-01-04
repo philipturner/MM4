@@ -7,12 +7,31 @@
 
 extension MM4RigidBody {
   /// The position (in nanometers) of each atom's nucleus.
+  ///
+  /// This is an ergonomic getter for positions. Behind the scenes, it
+  /// automatically caches the results of swizzling all velocities into the
+  /// non-vectorized representation.
   public var positions: [SIMD3<Float>] {
-    // _modify not supported b/c it requires very complex caching logic.
-    // Workaround: use the exposed setPositions function.
     _read {
       storage.ensurePositionsCached()
       yield storage.positions!
+    }
+  }
+  
+  public var vectorizedPositions: [MM4FloatVector] {
+    _read {
+      yield storage.vPositions
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.eraseRarelyCachedProperties()
+      storage.centerOfMass = nil
+      storage.positions = nil
+      
+      yield &storage.vPositions
+      guard storage.vPositions.count == 3 * storage.atoms.vectorCount else {
+        fatalError("Position buffer was not the correct size.")
+      }
     }
   }
   

@@ -9,14 +9,30 @@ import Numerics
 
 extension MM4RigidBody {
   /// The velocity (in nanometers per picosecond) of each atom.
+  ///
+  /// This is an ergonomic getter for velocities. Behind the scenes, it
+  /// automatically caches the results of swizzling all velocities into the
+  /// non-vectorized representation.
   public var velocities: [SIMD3<Float>] {
-    // _modify not supported b/c it requires very complex caching logic.
-    //
-    // Workaround: use the velocities property of the descriptor.
-    // Workaround: use the exposed setVelocities function.
     _read {
       storage.ensureVelocitiesCached()
       yield storage.velocities!
+    }
+  }
+  
+  public var vectorizedVelocities: [MM4FloatVector] {
+    _read {
+      yield storage.vVelocities
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.eraseRarelyCachedProperties()
+      storage.velocities = nil
+      
+      yield &storage.vVelocities
+      guard storage.vVelocities.count == 3 * storage.atoms.vectorCount else {
+        fatalError("Position buffer was not the correct size.")
+      }
     }
   }
   
