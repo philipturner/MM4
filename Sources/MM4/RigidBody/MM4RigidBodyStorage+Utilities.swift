@@ -127,18 +127,6 @@ extension MM4RigidBodyStorage {
   }
   
   @inline(__always)
-  func withMasses<T>(
-    _ closure: (UnsafePointer<MM4FloatVector>) -> T
-  ) -> T {
-    return masses.withUnsafeBufferPointer {
-      let rawMasses = OpaquePointer($0.baseAddress)
-      let vMasses = UnsafeRawPointer(rawMasses)!
-        .assumingMemoryBound(to: MM4FloatVector.self)
-      return closure(vMasses)
-    }
-  }
-  
-  @inline(__always)
   func withSegmentedLoop(chunk: Int, _ closure: (Range<Int>) -> Void) {
     var loopEnd = 0
     while loopEnd < atoms.vectorCount {

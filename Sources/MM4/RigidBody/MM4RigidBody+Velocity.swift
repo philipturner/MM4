@@ -105,24 +105,22 @@ extension MM4RigidBodyStorage {
   // velocity. It is the linear velocity of non-anchors.
   func createLinearVelocity() -> SIMD3<Float> {
     var momentum: SIMD3<Double> = .zero
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vMomentumX: MM4FloatVector = .zero
-        var vMomentumY: MM4FloatVector = .zero
-        var vMomentumZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let x = vVelocities[vID &* 3 &+ 0]
-          let y = vVelocities[vID &* 3 &+ 1]
-          let z = vVelocities[vID &* 3 &+ 2]
-          let mass = vMasses[vID]
-          vMomentumX.addProduct(mass, x)
-          vMomentumY.addProduct(mass, y)
-          vMomentumZ.addProduct(mass, z)
-        }
-        momentum.x += MM4DoubleVector(vMomentumX).sum()
-        momentum.y += MM4DoubleVector(vMomentumY).sum()
-        momentum.z += MM4DoubleVector(vMomentumZ).sum()
+    withSegmentedLoop(chunk: 256) {
+      var vMomentumX: MM4FloatVector = .zero
+      var vMomentumY: MM4FloatVector = .zero
+      var vMomentumZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = vVelocities[vID &* 3 &+ 0]
+        let y = vVelocities[vID &* 3 &+ 1]
+        let z = vVelocities[vID &* 3 &+ 2]
+        let mass = vMasses[vID]
+        vMomentumX.addProduct(mass, x)
+        vMomentumY.addProduct(mass, y)
+        vMomentumZ.addProduct(mass, z)
       }
+      momentum.x += MM4DoubleVector(vMomentumX).sum()
+      momentum.y += MM4DoubleVector(vMomentumY).sum()
+      momentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
     return SIMD3<Float>(momentum / mass)
   }
@@ -135,27 +133,25 @@ extension MM4RigidBodyStorage {
     guard let centerOfMass else {
       fatalError("This should never happen.")
     }
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vMomentumX: MM4FloatVector = .zero
-        var vMomentumY: MM4FloatVector = .zero
-        var vMomentumZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
-          let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
-          let rZ = vPositions[vID &* 3 &+ 2] - centerOfMass.z
-          let vX = vVelocities[vID &* 3 &+ 0]
-          let vY = vVelocities[vID &* 3 &+ 1]
-          let vZ = vVelocities[vID &* 3 &+ 2]
-          let mass = vMasses[vID]
-          vMomentumX.addProduct(mass, rY * vZ - rZ * vY)
-          vMomentumY.addProduct(mass, rZ * vX - rX * vZ)
-          vMomentumZ.addProduct(mass, rX * vY - rY * vX)
-        }
-        momentum.x += MM4DoubleVector(vMomentumX).sum()
-        momentum.y += MM4DoubleVector(vMomentumY).sum()
-        momentum.z += MM4DoubleVector(vMomentumZ).sum()
+    withSegmentedLoop(chunk: 256) {
+      var vMomentumX: MM4FloatVector = .zero
+      var vMomentumY: MM4FloatVector = .zero
+      var vMomentumZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+        let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+        let rZ = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        let vX = vVelocities[vID &* 3 &+ 0]
+        let vY = vVelocities[vID &* 3 &+ 1]
+        let vZ = vVelocities[vID &* 3 &+ 2]
+        let mass = vMasses[vID]
+        vMomentumX.addProduct(mass, rY * vZ - rZ * vY)
+        vMomentumY.addProduct(mass, rZ * vX - rX * vZ)
+        vMomentumZ.addProduct(mass, rX * vY - rY * vX)
       }
+      momentum.x += MM4DoubleVector(vMomentumX).sum()
+      momentum.y += MM4DoubleVector(vMomentumY).sum()
+      momentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
     
     ensureMomentOfInertiaCached()
@@ -211,42 +207,40 @@ extension MM4RigidBody {
       
       let previousW = quaternionToVector(previous)
       let nextW = quaternionToVector(next)
-      storage.withMasses { vMasses in
-        for vID in 0..<storage.atoms.vectorCount {
-          let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
-          let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
-          let rZ = storage.vPositions[vID &* 3 &+ 2] - centerOfMass.z
-          var vX: MM4FloatVector = .zero
-          var vY: MM4FloatVector = .zero
-          var vZ: MM4FloatVector = .zero
-          
-          // Un-apply the previous bulk angular velocity.
-          do {
-            let w = previousW
-            vX -= w.y * rZ - w.z * rY
-            vY -= w.z * rX - w.x * rZ
-            vZ -= w.x * rY - w.y * rX
-          }
-          
-          // Apply the next bulk angular velocity.
-          do {
-            let w = nextW
-            vX += w.y * rZ - w.z * rY
-            vY += w.z * rX - w.x * rZ
-            vZ += w.x * rY - w.y * rX
-          }
-          
-          // Mask out the changes to velocity for anchors.
-          let mass = vMasses[vID]
-          vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
-          vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
-          vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
-          
-          // Write the new velocities as offsets relative to the existing ones.
-          storage.vVelocities[vID &* 3 &+ 0] += vX
-          storage.vVelocities[vID &* 3 &+ 1] += vY
-          storage.vVelocities[vID &* 3 &+ 2] += vZ
+      for vID in 0..<storage.atoms.vectorCount {
+        let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
+        let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
+        let rZ = storage.vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        var vX: MM4FloatVector = .zero
+        var vY: MM4FloatVector = .zero
+        var vZ: MM4FloatVector = .zero
+        
+        // Un-apply the previous bulk angular velocity.
+        do {
+          let w = previousW
+          vX -= w.y * rZ - w.z * rY
+          vY -= w.z * rX - w.x * rZ
+          vZ -= w.x * rY - w.y * rX
         }
+        
+        // Apply the next bulk angular velocity.
+        do {
+          let w = nextW
+          vX += w.y * rZ - w.z * rY
+          vY += w.z * rX - w.x * rZ
+          vZ += w.x * rY - w.y * rX
+        }
+        
+        // Mask out the changes to velocity for anchors.
+        let mass = storage.vMasses[vID]
+        vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
+        
+        // Write the new velocities as offsets relative to the existing ones.
+        storage.vVelocities[vID &* 3 &+ 0] += vX
+        storage.vVelocities[vID &* 3 &+ 1] += vY
+        storage.vVelocities[vID &* 3 &+ 2] += vZ
       }
       
       // Invalidate cached properties. Some could be restored, but err on the

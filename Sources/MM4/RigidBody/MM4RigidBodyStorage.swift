@@ -12,7 +12,7 @@ final class MM4RigidBodyStorage {
   var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
   var externalForces: [SIMD3<Float>]
   var mass: Double
-  var masses: [Float]
+  var vMasses: [MM4FloatVector]
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
   
@@ -33,24 +33,25 @@ final class MM4RigidBodyStorage {
     anchors: Set<UInt32>,
     parameters: MM4Parameters
   ) {
-    self.masses = parameters.atoms.masses
-    self.mass = masses.reduce(Double(0)) {
-      $0 + Double($1)
-    }
-    
     let atomCount = parameters.atoms.count
     let vectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     var nonAnchorCount = 0
-    for mass in masses {
+    for mass in parameters.atoms.masses {
       if mass > 0 {
         nonAnchorCount &+= 1
       } else if mass < 0 {
         fatalError("Mass cannot be negative.")
       }
     }
-    
     self.atoms = (atomCount, vectorCount, nonAnchorCount)
     self.externalForces = Array(repeating: .zero, count: atomCount)
+    
+    // Pad the arrays of masses, positions, and velocities, so the out-of-bounds
+    // vector lanes aren't NAN.
+    self.vMasses = Array(unsafeUninitializedCapacity: vectorCount) {
+      $0.initialize(repeating: .zero)
+      $1 = vectorCount
+    }
     self.vPositions = Array(unsafeUninitializedCapacity: 3 * vectorCount) {
       $0.initialize(repeating: .zero)
       $1 = 3 * vectorCount
@@ -60,7 +61,36 @@ final class MM4RigidBodyStorage {
       $1 = 3 * vectorCount
     }
     
-    
+    // Copy the masses from 'MM4Parameters' into the special memory allocation
+    // for vectorized masses.
+    self.mass = .zero
+    initializeMasses(parameters.atoms.masses)
+  }
+  
+  private func initializeMasses(_ masses: [Float]) {
+    masses.withContiguousStorageIfAvailable {
+      let opaque = OpaquePointer($0.baseAddress!)
+      let casted = UnsafePointer<MM4FloatVector>(opaque)
+      
+      var vMassAccumulator: MM4DoubleVector = .zero
+      for vID in 0..<atoms.vectorCount {
+        var vMass: MM4FloatVector = .zero
+        
+        if vID < atoms.vectorCount &- 1 {
+          vMass = casted[vID]
+        } else {
+          let maxLanes = atoms.count - vID * MM4VectorWidth
+          for laneID in 0..<maxLanes {
+            let mass = masses[vID &* MM4VectorWidth &+ laneID]
+            vMass[laneID] = mass
+          }
+        }
+        
+        vMassAccumulator += MM4DoubleVector(vMass)
+        self.vMasses[vID] = vMass
+      }
+      self.mass = vMassAccumulator.sum()
+    }
   }
   
   init(copying other: MM4RigidBodyStorage) {
@@ -68,7 +98,7 @@ final class MM4RigidBodyStorage {
     atoms = other.atoms
     externalForces = other.externalForces
     mass = other.mass
-    masses = other.masses
+    vMasses = other.vMasses
     vPositions = other.vPositions
     vVelocities = other.vVelocities
   }

@@ -100,30 +100,38 @@ extension MM4RigidBodyStorage {
     }
     return output
   }
-    
+  
   func createCenterOfMass() -> SIMD3<Float> {
     guard atoms.count > 0 else {
       return .zero
     }
+    guard mass > 0 else {
+      // I'm not sure any of the other properties can be computed in this
+      // situation, so it is reasonable to throw a fatal error. It is better
+      // than making up some behavior for the edge case, which require extensive
+      // unit testing and complicate the code. The user can always use a custom
+      // alternative to MM4RigidBody for parts that have every atom position
+      // constrained.
+      fatalError(
+        "Could not create center of mass because all atoms had zero mass.")
+    }
     var center: SIMD3<Double> = .zero
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vCenterX: MM4FloatVector = .zero
-        var vCenterY: MM4FloatVector = .zero
-        var vCenterZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let x = vPositions[vID &* 3 &+ 0]
-          let y = vPositions[vID &* 3 &+ 1]
-          let z = vPositions[vID &* 3 &+ 2]
-          let mass = vMasses[vID]
-          vCenterX.addProduct(mass, x)
-          vCenterY.addProduct(mass, y)
-          vCenterZ.addProduct(mass, z)
-        }
-        center.x += MM4DoubleVector(vCenterX).sum()
-        center.y += MM4DoubleVector(vCenterY).sum()
-        center.z += MM4DoubleVector(vCenterZ).sum()
+    withSegmentedLoop(chunk: 256) {
+      var vCenterX: MM4FloatVector = .zero
+      var vCenterY: MM4FloatVector = .zero
+      var vCenterZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = vPositions[vID &* 3 &+ 0]
+        let y = vPositions[vID &* 3 &+ 1]
+        let z = vPositions[vID &* 3 &+ 2]
+        let mass = vMasses[vID]
+        vCenterX.addProduct(mass, x)
+        vCenterY.addProduct(mass, y)
+        vCenterZ.addProduct(mass, z)
       }
+      center.x += MM4DoubleVector(vCenterX).sum()
+      center.y += MM4DoubleVector(vCenterY).sum()
+      center.z += MM4DoubleVector(vCenterZ).sum()
     }
     return SIMD3<Float>(center / mass)
   }
@@ -137,38 +145,41 @@ extension MM4RigidBodyStorage {
       return MM4MomentOfInertia()
     }
     
+    // TODO: Remove the MM4MomentOfInertia API; just create a helper function
+    // that inverts a 3x3 matrix. This is similar to helper functions that
+    // convert a quaternion to a vector. Users should be expected to create
+    // basic math processing utilities on their own. You are not constrained by
+    // any need to provide moment-of-inertia inverting functionality.
     var momentOfInertia = MM4MomentOfInertia()
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vXX: MM4FloatVector = .zero
-        var vYY: MM4FloatVector = .zero
-        var vZZ: MM4FloatVector = .zero
-        var vXY: MM4FloatVector = .zero
-        var vXZ: MM4FloatVector = .zero
-        var vYZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let x = vPositions[vID &* 3 &+ 0] - centerOfMass.x
-          let y = vPositions[vID &* 3 &+ 1] - centerOfMass.y
-          let z = vPositions[vID &* 3 &+ 2] - centerOfMass.z
-          let mass = vMasses[vID]
-          vXX.addProduct(mass, x * x)
-          vYY.addProduct(mass, y * y)
-          vZZ.addProduct(mass, z * z)
-          vXY.addProduct(mass, x * y)
-          vXZ.addProduct(mass, x * z)
-          vYZ.addProduct(mass, y * z)
-        }
-        
-        let XX = MM4DoubleVector(vXX).sum()
-        let YY = MM4DoubleVector(vYY).sum()
-        let ZZ = MM4DoubleVector(vZZ).sum()
-        let XY = MM4DoubleVector(vXY).sum()
-        let XZ = MM4DoubleVector(vXZ).sum()
-        let YZ = MM4DoubleVector(vYZ).sum()
-        momentOfInertia.columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
-        momentOfInertia.columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
-        momentOfInertia.columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
+    withSegmentedLoop(chunk: 256) {
+      var vXX: MM4FloatVector = .zero
+      var vYY: MM4FloatVector = .zero
+      var vZZ: MM4FloatVector = .zero
+      var vXY: MM4FloatVector = .zero
+      var vXZ: MM4FloatVector = .zero
+      var vYZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+        let y = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+        let z = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        let mass = vMasses[vID]
+        vXX.addProduct(mass, x * x)
+        vYY.addProduct(mass, y * y)
+        vZZ.addProduct(mass, z * z)
+        vXY.addProduct(mass, x * y)
+        vXZ.addProduct(mass, x * z)
+        vYZ.addProduct(mass, y * z)
       }
+      
+      let XX = MM4DoubleVector(vXX).sum()
+      let YY = MM4DoubleVector(vYY).sum()
+      let ZZ = MM4DoubleVector(vZZ).sum()
+      let XY = MM4DoubleVector(vXY).sum()
+      let XZ = MM4DoubleVector(vXZ).sum()
+      let YZ = MM4DoubleVector(vYZ).sum()
+      momentOfInertia.columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
+      momentOfInertia.columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
+      momentOfInertia.columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
     }
     return momentOfInertia
   }
