@@ -87,24 +87,22 @@ extension MM4RigidBodyStorage {
     // contribute zero to the total energy. This should let velocity rescaling
     // work properly.
     var kinetic: Double = .zero
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vKineticX: MM4FloatVector = .zero
-        var vKineticY: MM4FloatVector = .zero
-        var vKineticZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let x = vVelocities[vID &* 3 &+ 0]
-          let y = vVelocities[vID &* 3 &+ 1]
-          let z = vVelocities[vID &* 3 &+ 2]
-          let mass = vMasses[vID]
-          vKineticX.addProduct(mass, x * x)
-          vKineticY.addProduct(mass, y * y)
-          vKineticZ.addProduct(mass, z * z)
-        }
-        kinetic += MM4DoubleVector(vKineticX).sum()
-        kinetic += MM4DoubleVector(vKineticY).sum()
-        kinetic += MM4DoubleVector(vKineticZ).sum()
+    withSegmentedLoop(chunk: 256) {
+      var vKineticX: MM4FloatVector = .zero
+      var vKineticY: MM4FloatVector = .zero
+      var vKineticZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = vVelocities[vID &* 3 &+ 0]
+        let y = vVelocities[vID &* 3 &+ 1]
+        let z = vVelocities[vID &* 3 &+ 2]
+        let mass = vMasses[vID]
+        vKineticX.addProduct(mass, x * x)
+        vKineticY.addProduct(mass, y * y)
+        vKineticZ.addProduct(mass, z * z)
       }
+      kinetic += MM4DoubleVector(vKineticX).sum()
+      kinetic += MM4DoubleVector(vKineticY).sum()
+      kinetic += MM4DoubleVector(vKineticZ).sum()
     }
     return kinetic / 2
   }

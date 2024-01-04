@@ -106,36 +106,37 @@ extension MM4RigidBodyStorage {
       return .zero
     }
     var center: SIMD3<Double> = .zero
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vCenterX: MM4FloatVector = .zero
-        var vCenterY: MM4FloatVector = .zero
-        var vCenterZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let x = vPositions[vID &* 3 &+ 0]
-          let y = vPositions[vID &* 3 &+ 1]
-          let z = vPositions[vID &* 3 &+ 2]
-          let mass = vMasses[vID]
-          vCenterX.addProduct(mass, x)
-          vCenterY.addProduct(mass, y)
-          vCenterZ.addProduct(mass, z)
-        }
-        center.x += MM4DoubleVector(vCenterX).sum()
-        center.y += MM4DoubleVector(vCenterY).sum()
-        center.z += MM4DoubleVector(vCenterZ).sum()
+    withSegmentedLoop(chunk: 256) {
+      var vCenterX: MM4FloatVector = .zero
+      var vCenterY: MM4FloatVector = .zero
+      var vCenterZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = vPositions[vID &* 3 &+ 0]
+        let y = vPositions[vID &* 3 &+ 1]
+        let z = vPositions[vID &* 3 &+ 2]
+        let mass = vMasses[vID]
+        vCenterX.addProduct(mass, x)
+        vCenterY.addProduct(mass, y)
+        vCenterZ.addProduct(mass, z)
       }
-      guard mass > 0 else {
-        fatalError("Mass was zero or NAN. vPositions: \(vPositions), masses: \(vMasses)")
-      }
-      if center.x.isNaN || center.y.isNaN || center.z.isNaN {
-        fatalError("Center was NAN. vPositions: \(vPositions), masses: \(vMasses)")
-      }
-      let output = SIMD3<Float>(center / mass)
-      if output.x.isNaN || output.y.isNaN || output.z.isNaN {
-        fatalError("Output was NAN. vPositions: \(vPositions), masses: \(vMasses)")
+      center.x += MM4DoubleVector(vCenterX).sum()
+      center.y += MM4DoubleVector(vCenterY).sum()
+      center.z += MM4DoubleVector(vCenterZ).sum()
+    }
+    guard mass > 0 else {
+      if mass == 0 {
+        fatalError("Mass was zero.")
+      } else {
+        fatalError("Mass was NAN.")
       }
     }
-    
+    if center.x.isNaN || center.y.isNaN || center.z.isNaN {
+      fatalError("Center was NAN.")
+    }
+    let output = SIMD3<Float>(center / mass)
+    if output.x.isNaN || output.y.isNaN || output.z.isNaN {
+      fatalError("Output was NAN.")
+    }
     return SIMD3<Float>(center / mass)
   }
   
@@ -148,38 +149,41 @@ extension MM4RigidBodyStorage {
       return MM4MomentOfInertia()
     }
     
+    // TODO: Remove the MM4MomentOfInertia API; just create a helper function
+    // that inverts a 3x3 matrix. This is similar to helper functions that
+    // convert a quaternion to a vector. Users should be expected to create
+    // basic math processing utilities on their own. You are not constrained by
+    // any need to provide moment-of-inertia inverting functionality.
     var momentOfInertia = MM4MomentOfInertia()
-    withMasses { vMasses in
-      withSegmentedLoop(chunk: 256) {
-        var vXX: MM4FloatVector = .zero
-        var vYY: MM4FloatVector = .zero
-        var vZZ: MM4FloatVector = .zero
-        var vXY: MM4FloatVector = .zero
-        var vXZ: MM4FloatVector = .zero
-        var vYZ: MM4FloatVector = .zero
-        for vID in $0 {
-          let x = vPositions[vID &* 3 &+ 0] - centerOfMass.x
-          let y = vPositions[vID &* 3 &+ 1] - centerOfMass.y
-          let z = vPositions[vID &* 3 &+ 2] - centerOfMass.z
-          let mass = vMasses[vID]
-          vXX.addProduct(mass, x * x)
-          vYY.addProduct(mass, y * y)
-          vZZ.addProduct(mass, z * z)
-          vXY.addProduct(mass, x * y)
-          vXZ.addProduct(mass, x * z)
-          vYZ.addProduct(mass, y * z)
-        }
-        
-        let XX = MM4DoubleVector(vXX).sum()
-        let YY = MM4DoubleVector(vYY).sum()
-        let ZZ = MM4DoubleVector(vZZ).sum()
-        let XY = MM4DoubleVector(vXY).sum()
-        let XZ = MM4DoubleVector(vXZ).sum()
-        let YZ = MM4DoubleVector(vYZ).sum()
-        momentOfInertia.columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
-        momentOfInertia.columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
-        momentOfInertia.columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
+    withSegmentedLoop(chunk: 256) {
+      var vXX: MM4FloatVector = .zero
+      var vYY: MM4FloatVector = .zero
+      var vZZ: MM4FloatVector = .zero
+      var vXY: MM4FloatVector = .zero
+      var vXZ: MM4FloatVector = .zero
+      var vYZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let x = vPositions[vID &* 3 &+ 0] - centerOfMass.x
+        let y = vPositions[vID &* 3 &+ 1] - centerOfMass.y
+        let z = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        let mass = vMasses[vID]
+        vXX.addProduct(mass, x * x)
+        vYY.addProduct(mass, y * y)
+        vZZ.addProduct(mass, z * z)
+        vXY.addProduct(mass, x * y)
+        vXZ.addProduct(mass, x * z)
+        vYZ.addProduct(mass, y * z)
       }
+      
+      let XX = MM4DoubleVector(vXX).sum()
+      let YY = MM4DoubleVector(vYY).sum()
+      let ZZ = MM4DoubleVector(vZZ).sum()
+      let XY = MM4DoubleVector(vXY).sum()
+      let XZ = MM4DoubleVector(vXZ).sum()
+      let YZ = MM4DoubleVector(vYZ).sum()
+      momentOfInertia.columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
+      momentOfInertia.columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
+      momentOfInertia.columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
     }
     return momentOfInertia
   }
