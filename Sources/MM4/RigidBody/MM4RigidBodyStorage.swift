@@ -45,7 +45,6 @@ final class MM4RigidBodyStorage {
     }
     self.atoms = (atomCount, vectorCount, nonAnchorCount)
     self.externalForces = Array(repeating: .zero, count: atomCount)
-    print("checkpoint 0")
     
     // Pad the arrays of masses, positions, and velocities, so the out-of-bounds
     // vector lanes aren't NAN.

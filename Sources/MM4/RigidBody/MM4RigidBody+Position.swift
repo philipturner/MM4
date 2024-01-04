@@ -100,10 +100,20 @@ extension MM4RigidBodyStorage {
     }
     return output
   }
-    
+  
   func createCenterOfMass() -> SIMD3<Float> {
     guard atoms.count > 0 else {
       return .zero
+    }
+    guard mass > 0 else {
+      // I'm not sure any of the other properties can be computed in this
+      // situation, so it is reasonable to throw a fatal error. It is better
+      // than making up some behavior for the edge case, which require extensive
+      // unit testing and complicate the code. The user can always use a custom
+      // alternative to MM4RigidBody for parts that have every atom position
+      // constrained.
+      fatalError(
+        "Could not create center of mass because all atoms had zero mass.")
     }
     var center: SIMD3<Double> = .zero
     withSegmentedLoop(chunk: 256) {
@@ -122,20 +132,6 @@ extension MM4RigidBodyStorage {
       center.x += MM4DoubleVector(vCenterX).sum()
       center.y += MM4DoubleVector(vCenterY).sum()
       center.z += MM4DoubleVector(vCenterZ).sum()
-    }
-    guard mass > 0 else {
-      if mass == 0 {
-        fatalError("Mass was zero.")
-      } else {
-        fatalError("Mass was NAN.")
-      }
-    }
-    if center.x.isNaN || center.y.isNaN || center.z.isNaN {
-      fatalError("Center was NAN.")
-    }
-    let output = SIMD3<Float>(center / mass)
-    if output.x.isNaN || output.y.isNaN || output.z.isNaN {
-      fatalError("Output was NAN.")
     }
     return SIMD3<Float>(center / mass)
   }
