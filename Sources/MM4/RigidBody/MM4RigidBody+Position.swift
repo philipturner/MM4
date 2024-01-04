@@ -124,7 +124,18 @@ extension MM4RigidBodyStorage {
         center.y += MM4DoubleVector(vCenterY).sum()
         center.z += MM4DoubleVector(vCenterZ).sum()
       }
+      guard mass > 0 else {
+        fatalError("Mass was zero or NAN. vPositions: \(vPositions), masses: \(vMasses)")
+      }
+      if center.x.isNaN || center.y.isNaN || center.z.isNaN {
+        fatalError("Center was NAN. vPositions: \(vPositions), masses: \(vMasses)")
+      }
+      let output = SIMD3<Float>(center / mass)
+      if output.x.isNaN || output.y.isNaN || output.z.isNaN {
+        fatalError("Output was NAN. vPositions: \(vPositions), masses: \(vMasses)")
+      }
     }
+    
     return SIMD3<Float>(center / mass)
   }
   
