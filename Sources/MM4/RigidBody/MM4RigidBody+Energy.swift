@@ -7,13 +7,13 @@
 
 /// The energy of a rigid body.
 public struct MM4RigidBodyEnergy {
-  /// The kinetic energy of the rigid body's non-anchor atoms.
+  /// The kinetic energy of the rigid body.
   public var kinetic: MM4RigidBodyKineticEnergy = .init()
   
   init() { }
 }
 
-/// The kinetic energy of a rigid body's non-anchor atoms.
+/// The kinetic energy of a rigid body.
 public struct MM4RigidBodyKineticEnergy {
   weak var storage: MM4RigidBodyStorage!
   
@@ -21,11 +21,6 @@ public struct MM4RigidBodyKineticEnergy {
   
   /// Kinetic energy contribution from organized mechanical energy, present in
   /// the bulk angular velocity.
-  ///
-  /// If there are more than one anchors, the free kinetic energy from
-  /// angular momentum should ideally be zero. However, the system can
-  /// experience angular displacements from the orientation strictly enforced by
-  /// anchors.
   public var angular: Double {
     storage.ensureKineticEnergyCached()
     return storage.angularKineticEnergy!
@@ -33,42 +28,22 @@ public struct MM4RigidBodyKineticEnergy {
   
   /// Kinetic energy contribution from organized mechanical energy, present in
   /// the bulk linear velocity.
-  ///
-  /// If there are any anchors, the free kinetic energy from the linear
-  /// velocity is treated specially. It equals the total mass of non-anchor
-  /// atoms, combined with the anchors' linear velocity.
   public var linear: Double {
     storage.ensureKineticEnergyCached()
     return storage.linearKineticEnergy!
   }
   
   /// Kinetic energy contribution from disorganized thermal energy.
-  ///
-  /// Contributions from anchors are omitted.
   public var thermal: Double {
-    _read {
-      storage.ensureKineticEnergyCached()
-      yield storage.thermalKineticEnergy!
-    }
-    _modify {
-      storage.ensureKineticEnergyCached()
-      var energy = storage.thermalKineticEnergy!
-      yield &energy
-      storage.setThermalKineticEnergy(energy)
-    }
+    storage.ensureKineticEnergyCached()
+    return storage.thermalKineticEnergy!
   }
 }
 
 extension MM4RigidBody {
   /// The rigid body's energy.
   public var energy: MM4RigidBodyEnergy {
-    _read {
-      yield _energy
-    }
-    _modify {
-      ensureUniquelyReferenced()
-      yield &_energy
-    }
+    return _energy
   }
 }
 
@@ -81,7 +56,7 @@ extension MM4RigidBodyStorage {
     }
     
     let v = SIMD3<Double>(linearVelocity)
-    return nonAnchorMass * (v * v).sum() / 2
+    return mass * (v * v).sum() / 2
   }
   
   // Angular kinetic energy about an angular mass defined by non-anchor atoms.
@@ -112,7 +87,7 @@ extension MM4RigidBodyStorage {
     // contribute zero to the total energy. This should let velocity rescaling
     // work properly.
     var kinetic: Double = .zero
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vKineticX: MM4FloatVector = .zero
         var vKineticY: MM4FloatVector = .zero

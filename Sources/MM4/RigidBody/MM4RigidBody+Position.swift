@@ -7,21 +7,56 @@
 
 extension MM4RigidBody {
   /// The position (in nanometers) of each atom's nucleus.
+  ///
+  /// This is an ergonomic getter for positions. Behind the scenes, it
+  /// automatically caches the results of swizzling all velocities into the
+  /// non-vectorized representation.
   public var positions: [SIMD3<Float>] {
-    // _modify not supported b/c it requires very complex caching logic.
-    // Workaround: use the exposed setPositions function.
     _read {
       storage.ensurePositionsCached()
       yield storage.positions!
     }
   }
   
+  public var vectorizedPositions: [MM4FloatVector] {
+    _read {
+      yield storage.vPositions
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.eraseRarelyCachedProperties()
+      storage.centerOfMass = nil
+      storage.positions = nil
+      
+      yield &storage.vPositions
+      guard storage.vPositions.count == 3 * storage.atoms.vectorCount else {
+        fatalError("Position buffer was not the correct size.")
+      }
+    }
+  }
+  
   @_specialize(where T == Double)
   @_specialize(where T == Float)
-  public mutating func setPositions<T: BinaryFloatingPoint>(
-    _ array: Array<SIMD3<T>>
+  public func getPositions<T: BinaryFloatingPoint>(
+    _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
   ) {
-    array.withUnsafeBufferPointer {
+    guard buffer.count == storage.atoms.count else {
+      fatalError("Position buffer was not the correct size.")
+    }
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+    
+    for vID in 0..<storage.atoms.vectorCount {
+      let x = storage.vPositions[vID &* 3 &+ 0]
+      let y = storage.vPositions[vID &* 3 &+ 1]
+      let z = storage.vPositions[vID &* 3 &+ 2]
+      storage.swizzleFromVectorWidth((x, y, z), vID, baseAddress)
+    }
+  }
+  
+  public mutating func setPositions<T: BinaryFloatingPoint, U: Collection>(
+    _ buffer: U
+  ) where U.Element == SIMD3<T> {
+    buffer.withContiguousStorageIfAvailable {
       setPositions($0)
     }
   }
@@ -48,24 +83,6 @@ extension MM4RigidBody {
       storage.vPositions[vID &* 3 &+ 2] = z
     }
   }
-  
-  @_specialize(where T == Double)
-  @_specialize(where T == Float)
-  public func getPositions<T: BinaryFloatingPoint>(
-    _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
-  ) {
-    guard buffer.count == storage.atoms.count else {
-      fatalError("Position buffer was not the correct size.")
-    }
-    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-    
-    for vID in 0..<storage.atoms.vectorCount {
-      let x = storage.vPositions[vID &* 3 &+ 0]
-      let y = storage.vPositions[vID &* 3 &+ 1]
-      let z = storage.vPositions[vID &* 3 &+ 2]
-      storage.swizzleFromVectorWidth((x, y, z), vID, baseAddress)
-    }
-  }
 }
 
 extension MM4RigidBodyStorage {
@@ -83,42 +100,32 @@ extension MM4RigidBodyStorage {
     }
     return output
   }
-  
-  func createCenter(
-    _ vMasses: UnsafePointer<MM4FloatVector>
-  ) -> SIMD3<Double> {
-    var center: SIMD3<Double> = .zero
-    withSegmentedLoop(chunk: 256) {
-      var vCenterX: MM4FloatVector = .zero
-      var vCenterY: MM4FloatVector = .zero
-      var vCenterZ: MM4FloatVector = .zero
-      for vID in $0 {
-        let x = vPositions[vID &* 3 &+ 0]
-        let y = vPositions[vID &* 3 &+ 1]
-        let z = vPositions[vID &* 3 &+ 2]
-        let mass = vMasses[vID]
-        vCenterX.addProduct(mass, x)
-        vCenterY.addProduct(mass, y)
-        vCenterZ.addProduct(mass, z)
-      }
-      center.x += MM4DoubleVector(vCenterX).sum()
-      center.y += MM4DoubleVector(vCenterY).sum()
-      center.z += MM4DoubleVector(vCenterZ).sum()
-    }
-    return center
-  }
-  
+    
   func createCenterOfMass() -> SIMD3<Float> {
     guard atoms.count > 0 else {
       return .zero
     }
-    if anchors.count == 0 {
-      let center = withMasses(nonAnchorMasses, createCenter)
-      return SIMD3<Float>(center / nonAnchorMass)
-    } else {
-      let center = withMasses(anchorMasses, createCenter)
-      return SIMD3<Float>(center / anchorMass)
+    var center: SIMD3<Double> = .zero
+    withMasses { vMasses in
+      withSegmentedLoop(chunk: 256) {
+        var vCenterX: MM4FloatVector = .zero
+        var vCenterY: MM4FloatVector = .zero
+        var vCenterZ: MM4FloatVector = .zero
+        for vID in $0 {
+          let x = vPositions[vID &* 3 &+ 0]
+          let y = vPositions[vID &* 3 &+ 1]
+          let z = vPositions[vID &* 3 &+ 2]
+          let mass = vMasses[vID]
+          vCenterX.addProduct(mass, x)
+          vCenterY.addProduct(mass, y)
+          vCenterZ.addProduct(mass, z)
+        }
+        center.x += MM4DoubleVector(vCenterX).sum()
+        center.y += MM4DoubleVector(vCenterY).sum()
+        center.z += MM4DoubleVector(vCenterZ).sum()
+      }
     }
+    return SIMD3<Float>(center / mass)
   }
   
   func createMomentOfInertia() -> MM4MomentOfInertia {
@@ -131,7 +138,7 @@ extension MM4RigidBodyStorage {
     }
     
     var momentOfInertia = MM4MomentOfInertia()
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vXX: MM4FloatVector = .zero
         var vYY: MM4FloatVector = .zero
@@ -170,23 +177,6 @@ extension MM4RigidBodyStorage {
 // MARK: - Properties
 
 extension MM4RigidBody {
-  /// Symmetric matrix specifying the rigid body's moment of inertia.
-  ///
-  /// If there is more than one anchor, this is the inertia of non-anchor atoms
-  /// around the center of mass defined by anchors.
-  public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
-    // no setter; instead use rotate()
-    get {
-      storage.ensureMomentOfInertiaCached()
-      let momentOfInertia = storage.momentOfInertia!
-      return (
-        SIMD3<Float>(momentOfInertia.columns.0),
-        SIMD3<Float>(momentOfInertia.columns.1),
-        SIMD3<Float>(momentOfInertia.columns.2)
-      )
-    }
-  }
-  
   /// Center of mass, treating anchors as astronomically larger than
   /// non-anchors.
   ///
@@ -221,5 +211,19 @@ extension MM4RigidBody {
       storage.eraseRarelyCachedProperties()
       storage.positions = nil
     }
+  }
+  
+  /// Symmetric matrix specifying the rigid body's moment of inertia.
+  ///
+  /// If there is more than one anchor, this is the inertia of non-anchor atoms
+  /// around the center of mass defined by anchors.
+  public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
+    storage.ensureMomentOfInertiaCached()
+    let momentOfInertia = storage.momentOfInertia!
+    return (
+      SIMD3<Float>(momentOfInertia.columns.0),
+      SIMD3<Float>(momentOfInertia.columns.1),
+      SIMD3<Float>(momentOfInertia.columns.2)
+    )
   }
 }

@@ -20,8 +20,6 @@ Forces:
 
 ### Supported Atoms
 
-Rigid body mechanics supports any bonding topology. The following restrictions apply molecular mechanics.
-
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
 | H             | 5   | n/a | n/a           | n/a           |
@@ -43,8 +41,6 @@ The following are officially supported in the current release. Other atoms are u
 | Si            | 19  | 19  | n/a           | n/a           |
 
 ### Supported Bonds
-
-Rigid body mechanics supports any bonding topology. The following restrictions apply molecular mechanics.
 
 | Element | H | C | N | O | F | Si | P | S | Ge |
 | ------- | - | - | - | - | - | - | - | - | - |
@@ -72,10 +68,10 @@ Key:
 
 ### Forced Motions
 
-|         | Velocity             | Force           |
-| ------- | -------------------- | --------------- |
-| Linear  | anchor with velocity | external force  |
-| Angular | flywheel             | lever           |
+|         | Velocity | Force |
+| ------- | -------- | ------|
+| Linear  | zero-mass atom with nonzero velocity | external force |
+| Angular | flywheel | lever |
 
 ### Units
 
@@ -113,10 +109,9 @@ force = dU / dx = (10^-21) / (10^-9) = 10^-12
 v1.0.0
 - Accurate simulation of 5-ring carbons
 - External forces
+- Heat capacity estimation
 - Support for hydrocarbons and hydrosilicons
 
 Future versions:
-- Energy minimization
-- Heat capacity estimation
 - High-precision energy measurements
 - Support for non-carbon elements

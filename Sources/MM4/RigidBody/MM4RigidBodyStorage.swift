@@ -9,17 +9,12 @@ import Numerics
 
 final class MM4RigidBodyStorage {
   // Sources of truth.
-  var anchors: Set<UInt32>
-  var atoms: (count: Int, vectorCount: Int)
+  var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
   var externalForces: [SIMD3<Float>]
+  var mass: Double
+  var masses: [Float]
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
-  
-  // Cached constants.
-  var anchorMass: Double
-  var anchorMasses: [Float]
-  var nonAnchorMass: Double
-  var nonAnchorMasses: [Float]
   
   // Frequently cached (special handling).
   var centerOfMass: SIMD3<Float>?
@@ -38,68 +33,44 @@ final class MM4RigidBodyStorage {
     anchors: Set<UInt32>,
     parameters: MM4Parameters
   ) {
-    // Initialize stored properties.
-    let atomCount = parameters.atoms.count
-    let atomVectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
-    self.anchors = anchors
-    self.atoms = (atomCount, atomVectorCount)
-    self.externalForces = Array(repeating: .zero, count: atomCount)
-    self.vPositions = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
-      $0.initialize(repeating: .zero)
-      $1 = 3 * atomVectorCount
-    }
-    self.vVelocities = Array(unsafeUninitializedCapacity: 3 * atomVectorCount) {
-      $0.initialize(repeating: .zero)
-      $1 = 3 * atomVectorCount
-    }
-    
-    self.anchorMass = .zero
-    self.anchorMasses = []
-    
-    func generateArray() -> [Float] {
-      let arraySize = atomVectorCount * MM4VectorWidth
-      return Array(unsafeUninitializedCapacity: arraySize) {
-        $0.initialize(repeating: .zero)
-        $1 = atomCount
-      }
-    }
-    
-    // We can't be 100% sure the backing array for masses will still
-    // be padded to the vector width. In addition, it could be modified if any
-    // anchors exist. The copy may not have the same capacity as the previous
-    // array.
-    nonAnchorMasses = generateArray()
-    for atomID in 0..<atoms.count {
-      nonAnchorMasses[atomID] = parameters.atoms.masses[atomID]
-    }
-    
-    if anchors.count > .zero {
-      anchorMasses = generateArray()
-      for anchor in self.anchors {
-        let mass = parameters.atoms.masses[Int(anchor)]
-        anchorMass += Double(mass)
-        anchorMasses[Int(anchor)] = mass
-        nonAnchorMasses[Int(anchor)] = .zero
-      }
-    }
-    self.nonAnchorMass = parameters.atoms.masses.reduce(Double(0)) {
+    self.masses = parameters.atoms.masses
+    self.mass = masses.reduce(Double(0)) {
       $0 + Double($1)
     }
-    self.nonAnchorMass -= Double(anchorMass)
+    
+    let atomCount = parameters.atoms.count
+    let vectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
+    var nonAnchorCount = 0
+    for mass in masses {
+      if mass > 0 {
+        nonAnchorCount &+= 1
+      } else if mass < 0 {
+        fatalError("Mass cannot be negative.")
+      }
+    }
+    
+    self.atoms = (atomCount, vectorCount, nonAnchorCount)
+    self.externalForces = Array(repeating: .zero, count: atomCount)
+    self.vPositions = Array(unsafeUninitializedCapacity: 3 * vectorCount) {
+      $0.initialize(repeating: .zero)
+      $1 = 3 * vectorCount
+    }
+    self.vVelocities = Array(unsafeUninitializedCapacity: 3 * vectorCount) {
+      $0.initialize(repeating: .zero)
+      $1 = 3 * vectorCount
+    }
+    
+    
   }
   
   init(copying other: MM4RigidBodyStorage) {
     // Initialize stored properties, without copying cached ones.
     atoms = other.atoms
-    anchors = other.anchors
     externalForces = other.externalForces
+    mass = other.mass
+    masses = other.masses
     vPositions = other.vPositions
     vVelocities = other.vVelocities
-    
-    anchorMass = other.anchorMass
-    anchorMasses = other.anchorMasses
-    nonAnchorMass = other.nonAnchorMass
-    nonAnchorMasses = other.nonAnchorMasses
   }
   
   func eraseFrequentlyCachedProperties() {
@@ -155,12 +126,7 @@ extension MM4RigidBodyStorage {
   
   func ensureLinearVelocityCached() {
     if linearVelocity == nil {
-      ensureAnchorVelocitiesValid()
-      if anchors.count > 0 {
-        let anchor = anchors.first!
-        let velocity = extractScalar(Int(anchor), vVelocities)
-        linearVelocity = velocity
-      } else if atoms.count > 0 {
+      if atoms.count > 0 {
         linearVelocity = createLinearVelocity()
       } else {
         linearVelocity = .zero
@@ -174,8 +140,7 @@ extension MM4RigidBodyStorage {
   
   func ensureAngularVelocityCached() {
     if angularVelocity == nil {
-      ensureAnchorVelocitiesValid()
-      if anchors.count <= 1, atoms.count > 0 {
+      if atoms.count > 0 {
         angularVelocity = createAngularVelocity()
       } else {
         angularVelocity = .zero
@@ -200,13 +165,13 @@ extension MM4RigidBodyStorage {
       self.thermalKineticEnergy = thermal
       
       let epsilon: Double = 1e-4
-      if angular < epsilon * Double(atoms.count) {
+      if angular < -epsilon * Double(atoms.count) {
         fatalError("Angular kinetic energy was too negative.")
       }
-      if linear < epsilon * Double(atoms.count) {
+      if linear < -epsilon * Double(atoms.count) {
         fatalError("Linear kinetic energy was too negative.")
       }
-      if thermal < epsilon * Double(atoms.count) {
+      if thermal < -epsilon * Double(atoms.count) {
         fatalError("Thermal kinetic energy was too negative.")
       }
     } else if self.angularVelocity == nil ||
@@ -214,17 +179,6 @@ extension MM4RigidBodyStorage {
                 self.thermalKineticEnergy == nil {
       fatalError(
         "Either all or none of the kinetic energies must be cached.")
-    }
-  }
-  
-  func setThermalKineticEnergy(_ energy: Double) {
-    ensureKineticEnergyCached()
-    
-    // Don't change the velocities unless thermal kinetic energy has changed.
-    if energy != thermalKineticEnergy! {
-      velocities = nil
-      thermalKineticEnergy = energy
-      createThermalVelocities()
     }
   }
 }
@@ -245,5 +199,25 @@ extension MM4RigidBody {
       storage = MM4RigidBodyStorage(copying: storage)
       _ensureReferencesUpdated()
     }
+  }
+}
+
+// MARK: - Properties
+
+extension MM4RigidBody {
+  /// The constant force (in piconewtons) exerted on each atom.
+  public var externalForces: [SIMD3<Float>] {
+    _read {
+      yield storage.externalForces
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      yield &storage.externalForces
+    }
+  }
+  
+  /// The total mass (in yoctograms) of all atoms, excluding anchors.
+  public var mass: Double {
+    storage.mass
   }
 }

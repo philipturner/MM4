@@ -45,31 +45,31 @@ extension MM4RigidBody {
   ) {
     ensureUniquelyReferenced()
     
-    // TODO: What to do about anchor atoms? Do they decrease the value of N?
-    
     // E = thermal energy
     // C = heat capacity
-    // N = number of atoms
+    // N = number of **non-anchor** atoms
     // k = Boltzmann constant
     // T = temperature
     //
     // E = C N kT
-    let N = Double(storage.atoms.count)
+    let N = Double(storage.atoms.nonAnchorCount)
     let kT = MM4BoltzInZJPerK * temperature
-    storage.setThermalKineticEnergy(heatCapacity * N * kT)
+    
+    // Change the thermal velocities regardless of whether the previous thermal
+    // energy was the same as the new value. This design choice reduces the
+    // number of edge cases that must be tested.
+    storage.ensureKineticEnergyCached()
+    storage.velocities = nil
+    storage.thermalKineticEnergy = heatCapacity * N * kT
+    storage.createThermalVelocities(particleEnergy: heatCapacity * kT)
   }
 }
 
 extension MM4RigidBodyStorage {
-  func createThermalVelocities() {
+  func createThermalVelocities(particleEnergy: Double) {
     ensureCenterOfMassCached()
     ensureLinearVelocityCached()
     ensureAngularVelocityCached()
-    defer {
-      // There are multiple exit points for this function, so it's simplest to
-      // check anchor velocities in a 'defer' statement.
-      ensureAnchorVelocitiesValid()
-    }
     
     // Express that every bulk quantity, except thermal kinetic energy, is the
     // same as before thermalization.
@@ -80,15 +80,14 @@ extension MM4RigidBodyStorage {
       fatalError("This should never happen.")
     }
     
-    // Handle the special case where velocity rescaling would cause division by
-    // zero.
-    if anchors.count == atoms.count {
-      guard newThermalKineticEnergy == 0 else {
-        fatalError(
-          "Cannot create thermal velocities when all atoms are anchors.")
-      }
+    // Handle the special case where velocity rescaling will certainly cause
+    // division by zero.
+    if atoms.nonAnchorCount == 0 {
       return
     }
+    
+    // Preserve the velocities of anchor atoms.
+    let preservedVelocities = vVelocities
     
     // Reference implementation from OpenMM.
     /*
@@ -97,26 +96,26 @@ extension MM4RigidBodyStorage {
      init_gen_rand(randomSeed, sfmt);
      std::vector<double> randoms;
      while (randoms.size() < system.getNumParticles()*3) {
-         double x, y, r2;
-         do {
-             x = 2.0*genrand_real2(sfmt)-1.0;
-             y = 2.0*genrand_real2(sfmt)-1.0;
-             r2 = x*x + y*y;
-         } while (r2 >= 1.0 || r2 == 0.0);
-         double multiplier = sqrt((-2.0*std::log(r2))/r2);
-         randoms.push_back(x*multiplier);
-         randoms.push_back(y*multiplier);
+     double x, y, r2;
+     do {
+     x = 2.0*genrand_real2(sfmt)-1.0;
+     y = 2.0*genrand_real2(sfmt)-1.0;
+     r2 = x*x + y*y;
+     } while (r2 >= 1.0 || r2 == 0.0);
+     double multiplier = sqrt((-2.0*std::log(r2))/r2);
+     randoms.push_back(x*multiplier);
+     randoms.push_back(y*multiplier);
      }
-
+     
      // Assign the velocities.
      std::vector<Vec3> velocities(system.getNumParticles(), Vec3());
      int nextRandom = 0;
      for (int i = 0; i < system.getNumParticles(); i++) {
-         double mass = system.getParticleMass(i);
-         if (mass != 0) {
-             double velocityScale = sqrt(BOLTZ*temperature/mass);
-             velocities[i] = Vec3(randoms[nextRandom++], randoms[nextRandom++], randoms[nextRandom++])*velocityScale;
-         }
+     double mass = system.getParticleMass(i);
+     if (mass != 0) {
+     double velocityScale = sqrt(BOLTZ*temperature/mass);
+     velocities[i] = Vec3(randoms[nextRandom++], randoms[nextRandom++], randoms[nextRandom++])*velocityScale;
+     }
      }
      return velocities;
      */
@@ -190,14 +189,13 @@ extension MM4RigidBodyStorage {
       OpaquePointer(scalarsPointer))
     let zPointer: UnsafePointer<MM4UInt16Vector> = .init(
       OpaquePointer(scalarsPointer + 2 * MM4VectorWidth * atoms.vectorCount))
-    let particleCount = Double(atoms.count - anchors.count)
-    let particleEnergy = newThermalKineticEnergy / particleCount
+    let particleEnergy = newThermalKineticEnergy / Double(atoms.nonAnchorCount)
     
     // Units: zJ -> kJ/mol
     let particleEnergyTerm = Float(
       Double(2.0 / 3) * MM4KJPerMolPerZJ * particleEnergy)
     
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       for vID in 0..<atoms.vectorCount {
         var xGaussian: MM4FloatVector
         var yGaussian: MM4FloatVector
@@ -249,7 +247,7 @@ extension MM4RigidBodyStorage {
     
     // Set momentum to zero and calculate the modified thermal energy.
     var correctedThermalKineticEnergy: Double = .zero
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       withSegmentedLoop(chunk: 256) {
         var vKineticX: MM4FloatVector = .zero
         var vKineticY: MM4FloatVector = .zero
@@ -292,11 +290,14 @@ extension MM4RigidBodyStorage {
     }
     
     // Rescale thermal velocities and superimpose over bulk velocities.
+    precondition(
+      correctedThermalKineticEnergy > .leastNormalMagnitude,
+      "Corrected thermal kinetic energy was too small to perform velocity rescaling.")
     let velocityScale = Float((
       newThermalKineticEnergy / correctedThermalKineticEnergy).squareRoot())
     let w = quaternionToVector(constantAngularVelocity)
     
-    withMasses(nonAnchorMasses) { vMasses in
+    withMasses { vMasses in
       for vID in 0..<atoms.vectorCount {
         let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x
         let rY = vPositions[vID &* 3 &+ 1] - centerOfMass.y
@@ -315,17 +316,19 @@ extension MM4RigidBodyStorage {
         vY += w.z * rX - w.x * rZ
         vZ += w.x * rY - w.y * rX
         
-        // Mask out the changes to angular velocity for anchors.
-        let mass = vMasses[vID]
-        vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
-        vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
-        vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
-        
         // Apply the bulk linear velocity.
         vX += constantLinearVelocity.x
         vY += constantLinearVelocity.y
         vZ += constantLinearVelocity.z
         
+        // Mask out the changes to angular velocity for anchors.
+        let mass = vMasses[vID]
+        let anchorX = preservedVelocities[vID &* 3 &+ 0]
+        let anchorY = preservedVelocities[vID &* 3 &+ 1]
+        let anchorZ = preservedVelocities[vID &* 3 &+ 2]
+        vX.replace(with: anchorX, where: mass .== 0)
+        vY.replace(with: anchorY, where: mass .== 0)
+        vZ.replace(with: anchorZ, where: mass .== 0)
         vVelocities[vID &* 3 &+ 0] = vX
         vVelocities[vID &* 3 &+ 1] = vY
         vVelocities[vID &* 3 &+ 2] = vZ

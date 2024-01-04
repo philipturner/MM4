@@ -17,14 +17,15 @@ import Numerics
 
 final class MM4RigidBodyTests: XCTestCase {
   func testRigidBody() throws {
-    let descriptors = try MM4RigidBodyTests.createRigidBodyDescriptors()
-    for descriptor in descriptors {
+    let references = try MM4RigidBodyTests.createRigidBodyReferences()
+    for reference in references {
       // Test whether the initial velocities are zero. Also, test whether the
       // positions and velocities are different after the rigid body is changed
       // with 'setPositions' and 'setVelocities'.
-      var rigidBody = MM4RigidBody(descriptor: descriptor)
-      XCTAssertEqual(rigidBody.positions, descriptor.positions!)
-      XCTAssertEqual(rigidBody.velocities.count, descriptor.positions!.count)
+      var rigidBody = MM4RigidBody(parameters: reference.parameters)
+      rigidBody.setPositions(reference.positions)
+      XCTAssertEqual(rigidBody.positions, reference.positions)
+      XCTAssertEqual(rigidBody.velocities.count, reference.positions.count)
       XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
       testInertia(rigidBody)
       
@@ -52,11 +53,9 @@ final class MM4RigidBodyTests: XCTestCase {
       func setExternalForces(_ array: [SIMD3<Float>]) {
         setMethodCounter += 1
         if setMethodCounter % 5 == 0 {
-          rigidBody.setExternalForces(array)
+          rigidBody.externalForces = array
         } else {
-          array.withUnsafeBufferPointer {
-            rigidBody.setExternalForces($0)
-          }
+          rigidBody.externalForces = array
         }
       }
       func setPositions(_ array: [SIMD3<Float>]) {
@@ -125,9 +124,7 @@ final class MM4RigidBodyTests: XCTestCase {
             var outputExternalForces = zeroExternalForces
             var outputPositions = zeroPositions
             var outputVelocities = zeroVelocities
-            outputExternalForces.withUnsafeMutableBufferPointer {
-              rigidBody.getExternalForces($0)
-            }
+            outputExternalForces = rigidBody.externalForces
             outputPositions.withUnsafeMutableBufferPointer {
               rigidBody.getPositions($0)
             }
@@ -150,36 +147,36 @@ final class MM4RigidBodyTests: XCTestCase {
           "tests did not cover functionality")
       }
       testInertia(rigidBody)
-      testCoW(descriptor)
+      testCoW(reference)
     }
   }
 }
 
 extension MM4RigidBodyTests {
-  static func createRigidBodyDescriptors() throws -> [MM4RigidBodyDescriptor] {
-    var output: [MM4RigidBodyDescriptor] = []
+  static func createRigidBodyReferences() throws -> [MM4RigidBody] {
+    var output: [MM4RigidBody] = []
     for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
       let adamantane = Adamantane(atomCode: atomCode)
       
       var paramsDesc = MM4ParametersDescriptor()
       paramsDesc.atomicNumbers = adamantane.atomicNumbers
       paramsDesc.bonds = adamantane.bonds
+      let params = try MM4Parameters(descriptor: paramsDesc)
       
-      var rigidBodyDesc = MM4RigidBodyDescriptor()
-      rigidBodyDesc.parameters = try MM4Parameters(descriptor: paramsDesc)
-      rigidBodyDesc.positions = adamantane.positions
-      output.append(rigidBodyDesc)
+      var rigidBody = MM4RigidBody(parameters: params)
+      rigidBody.setPositions(adamantane.positions)
+      output.append(rigidBody)
     }
     
     do {
       var paramsDesc = MM4ParametersDescriptor()
       paramsDesc.atomicNumbers = []
       paramsDesc.bonds = []
+      let params = try MM4Parameters(descriptor: paramsDesc)
       
-      var rigidBodyDesc = MM4RigidBodyDescriptor()
-      rigidBodyDesc.parameters = try MM4Parameters(descriptor: paramsDesc)
-      rigidBodyDesc.positions = []
-      output.append(rigidBodyDesc)
+      var rigidBody = MM4RigidBody(parameters: params)
+      rigidBody.setPositions(Array<SIMD3<Float>>())
+      output.append(rigidBody)
     }
     return output
   }
@@ -211,11 +208,11 @@ private func testInertia(_ rigidBody: MM4RigidBody) {
 
 // MARK: - Copy on Write
 
-private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
-  let parameters = descriptor.parameters!
-  
-  var rigidBody1 = MM4RigidBody(descriptor: descriptor)
+private func testCoW(_ reference: MM4RigidBody) {
+  var rigidBody1 = MM4RigidBody(parameters: reference.parameters)
+  rigidBody1.setPositions(reference.positions)
   var rigidBody2 = rigidBody1
+  let parameters = rigidBody1.parameters
   
   let centerOfMass1 = rigidBody1.centerOfMass
   XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
@@ -255,7 +252,7 @@ private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
     XCTAssertNotEqual(rigidBody2.centerOfMass, rigidBody3.centerOfMass)
   }
   for i in parameters.atoms.indices {
-    let original = descriptor.positions![i]
+    let original = reference.positions[i]
     let modified = original + delta2
     XCTAssertEqual(rigidBody1.positions[i], original, accuracy: 1e-3)
     XCTAssertEqual(rigidBody2.positions[i], modified, accuracy: 1e-3)
