@@ -9,7 +9,9 @@ extension MM4ForceField {
   /// Create a simulator using the specified rigid bodies.
   public convenience init(rigidBodies: [MM4RigidBody]) {
     // Avoid a costly O(nlogn) series of reallocations while combining each
-    // rigid body's parameters.
+    // rigid body's parameters. If you're copying over the source code because
+    // you need to use 'MM4ForceFieldDescriptor', you can exclude 90% of the
+    // code here.
     var atomCapacity: Int = 0
     var bondCapacity: Int = 0
     var angleCapacity: Int = 0
@@ -35,10 +37,10 @@ extension MM4ForceField {
     }
     
     // Elegantly handle the case where there are zero rigid bodies.
-    var descriptor = MM4ParametersDescriptor()
-    descriptor.atomicNumbers = []
-    descriptor.bonds = []
-    var parameters = try! MM4Parameters(descriptor: descriptor)
+    var paramsDesc = MM4ParametersDescriptor()
+    paramsDesc.atomicNumbers = []
+    paramsDesc.bonds = []
+    var parameters = try! MM4Parameters(descriptor: paramsDesc)
     parameters.atoms.reserveCapacity(atomCapacity)
     parameters.bonds.reserveCapacity(bondCapacity)
     parameters.angles.reserveCapacity(angleCapacity)
@@ -48,11 +50,14 @@ extension MM4ForceField {
     parameters.nonbondedExceptions14.reserveCapacity(exception14Capacity)
     parameters.atomsToBondsMap.reserveCapacity(bondCapacity)
     parameters.atomsToAtomsMap.reserveCapacity(atomCapacity)
-    
     for rigidBody in rigidBodies {
       parameters.append(contentsOf: rigidBody.parameters)
     }
-    self.init(parameters: parameters)
+    
+    var descriptor = MM4ForceFieldDescriptor()
+    descriptor.parameters = parameters
+    
+    self.init(descriptor: descriptor)
     for (rigidBody, range) in zip(rigidBodies, ranges) {
       self.import(from: rigidBody, range: range)
     }

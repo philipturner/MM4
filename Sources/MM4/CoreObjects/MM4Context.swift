@@ -13,7 +13,7 @@ class MM4Context {
   var context: OpenMM_Context
   var integrators: [MM4IntegratorDescriptor: Int] = [:]
   
-  init(system: MM4System) {
+  init(system: MM4System, platform: OpenMM_Platform?) {
     self.compoundIntegrator = OpenMM_CompoundIntegrator()
     
     for start in [false, true] {
@@ -29,8 +29,17 @@ class MM4Context {
       }
     }
     
-    self.context = OpenMM_Context(
-      system: system.system, integrator: compoundIntegrator)
+    if let platform {
+      self.context = OpenMM_Context(
+        system: system.system,
+        integrator: compoundIntegrator,
+        platform: platform)
+    } else {
+      self.context = OpenMM_Context(
+        system: system.system,
+        integrator: compoundIntegrator)
+    }
+    
   }
   
   var currentIntegrator: MM4IntegratorDescriptor {

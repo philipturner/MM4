@@ -7,12 +7,34 @@
 
 import OpenMM
 
-// Energy explosion detection is a necessary feature. It is tedious and
-// potentially sub-optimal to do this manually. It ought to be an error that is
-// always thrown. However, it cannot be enabled by default due to the
-// performance overhead.
-
 /// A data structure wrapping a system's energy.
+///
+/// > NOTE: This documentation page is still a draft. It may be inconsistent or
+///   difficult to understand.
+///
+/// We always report energy and time in double precision, out of necessity.
+/// Potential energy can sometimes have a massive absolute value that dwarfs
+/// the magnitude of relative values. Time is also critical to get right.
+/// Everything else, including rigid body bulk properties susceptible to the
+/// same degree of rounding error, are reported in single precision.
+///
+/// However, some internal summation algorithms temporarily employ mixed
+/// precision. Both the CPU code for `MM4RigidBody` and GPU code for the OpenMM
+/// Metal plugin use block summation. The majority of the compute cost happens
+/// on FP32, either to improve execution speed and reduce register pressure
+/// (CPU) or provide compatibility with a specific hardware vendor (GPU). The
+/// rounding error is capped to whatever error occurs within a block
+/// (~1000 elements). Outside of the block, the number is casted to
+/// FP64 and summed with no additional rounding error. This prevents unexpected
+/// issues popping up with large systems that exceed 1000 elements. The mantissa
+/// of the quantity is still ~32 bits; we just prevent it from degrading to
+/// something like ~16 bits.
+///
+/// Energy explosion detection is a necessary feature. It is an issue that
+/// arises with long simulation runs with high-velocity components (e.g.
+/// something leaving machine phase and colliding with a flywheel). It ought to
+/// be an error that is always thrown. However, it cannot be enabled by default
+/// due to the performance overhead.
 public struct MM4ForceFieldEnergy {
   var forceField: MM4ForceField
   
@@ -23,9 +45,6 @@ public struct MM4ForceFieldEnergy {
   /// > Warning: Enabling this feature may significantly degrade performance.
   ///
   /// The default is `false`.
-  ///
-  /// Energy is tracked in low precision, as high precision is not needed
-  /// to detect energy explosions.
   public var tracked: Bool = false
   
   init(forceField: MM4ForceField) {
@@ -84,7 +103,8 @@ extension MM4ForceField {
   /// - throws: <doc:MM4Error/energyDrift(_:)> if energy tracking is enabled.
   public func minimize(
     tolerance: Double = 10.0 * MM4ZJPerKJPerMol,
-    maxIterations: Int = 0
+    maxIterations: Int = 0,
+    reporter: OpenMM_MinimizationReporter? = nil
   ) throws {
     // Bypass Swift compiler warnings.
     if Int.random(in: 0..<1) < 5 {
@@ -132,6 +152,7 @@ extension MM4ForceField {
     OpenMM_LocalEnergyMinimizer.minimize(
       context: context.context,
       tolerance: tolerance,
-      maxIterations: maxIterations)
+      maxIterations: maxIterations,
+      reporter: reporter)
   }
 }

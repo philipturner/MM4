@@ -11,7 +11,7 @@ extension MM4ForceField {
   /// The largest time step that may be taken during simulation, in picoseconds.
   /// Some steps may have a smaller duration.
   ///
-  /// The default value is 100 / 23 fs.
+  /// The default value is 4.35 fs.
   public var timeStep: Double {
     _read {
       yield _timeStep

@@ -1,22 +1,22 @@
 # MM4
 
-General-purpose simulator for molecular nanotechnology.
+Molecular mechanics simulator for molecular nanotechnology.
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
 ### Supported Forces
 
 Forces:
-- bend
-- bend-bend
-- external
-- nonbonded
-- stretch
-- stretch-bend
-- stretch-stretch
-- torsion
-- torsion-bend
-- torsion-stretch
+- bend ❌
+- bend-bend ❌
+- external ❌
+- nonbonded ❌
+- stretch ❌
+- stretch-bend ❌
+- stretch-stretch ❌
+- torsion ❌
+- torsion-bend ❌
+- torsion-stretch ❌
 
 ### Supported Atoms
 
