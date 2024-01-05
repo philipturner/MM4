@@ -7,8 +7,6 @@
 
 import MM4
 
-// MARK: - Geometry
-
 // An adamantane-like cage with one sidewall carbon replaced with a sigma bond,
 // forming two 5-membered rings.
 struct Adamantane {
@@ -76,6 +74,8 @@ struct Adamantane {
     }
   }
 }
+
+// MARK: - Geometry
 
 private let carbonAtoms: [SIMD4<Float>] = [
   SIMD4<Float>(0.000, 0.000, -0.178, 6),
