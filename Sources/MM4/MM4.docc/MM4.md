@@ -25,8 +25,8 @@ The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
  well-tested framework for easily porting molecular simulation algorithms to
  multiple vendors. OpenMM avoids any O(n^3) algorithms and provides the
  flexibility to opt out of O(n^2) algorithms. For example, the
- [minimizer](<doc:MM4ForceField/minimize(tolerance:maxIterations:)>) uses
- limited-memory BFGS with O(n) complexity.
+ [minimizer](<doc:MM4ForceField/minimize(tolerance:maxIterations:)>) 
+ uses limited-memory BFGS with O(n) complexity.
 
  > Note: Throughout the entire software stack, from setup to minimization to
    simulation, this simulator is O(n). Linear scaling exists at every system
@@ -35,7 +35,7 @@ The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
    [employ sparse O(n^2) matrix factorizations](https://xtb-docs.readthedocs.io/en/latest/gfnff.html).
    MM4 is one of the few simulation techniques that can simulate
    supermassive million-atom nanosystems on affordable hardware. There are
-   hypotheses about O(n) game physics-like simulators employing static
+   ideas about O(n) game physics-like simulators employing static
    analysis, which can significantly reduce the constant factor to linear
    scaling. However, there are not yet any verified implementations that
    project the inherently digital nanoscale onto a macroscale continuous

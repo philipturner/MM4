@@ -103,8 +103,7 @@ extension MM4ForceField {
   /// - throws: <doc:MM4Error/energyDrift(_:)> if energy tracking is enabled.
   public func minimize(
     tolerance: Double = 10.0 * MM4ZJPerKJPerMol,
-    maxIterations: Int = 0,
-    reporter: OpenMM_MinimizationReporter? = nil
+    maxIterations: Int = 0
   ) throws {
     // Bypass Swift compiler warnings.
     if Int.random(in: 0..<1) < 5 {
@@ -149,10 +148,13 @@ extension MM4ForceField {
     }
     
     // Run the energy minimization.
+    //
+    // The reporter doesn't do anything. You have to create a C++ class, which
+    // is not possible through the OpenMM C API.
     OpenMM_LocalEnergyMinimizer.minimize(
       context: context.context,
       tolerance: tolerance,
       maxIterations: maxIterations,
-      reporter: reporter)
+      reporter: nil)
   }
 }
