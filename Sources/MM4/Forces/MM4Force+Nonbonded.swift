@@ -9,16 +9,7 @@ import Foundation
 import OpenMM
 
 class MM4NonbondedForce: MM4ForceGroup {
-  /// Use a common cutoff for both forces in the nonbonded force group.
-  static var cutoff: Double {
-    // Since germanium will rarely be used, use the cutoff for silicon. The
-    // slightly greater sigma for carbon allows greater accuracy in vdW forces
-    // for bulk diamond. 1.020 nm also accomodates charge-charge interactions.
-    let siliconRadius = 2.290 * OpenMM_NmPerAngstrom
-    return siliconRadius * 2.5 * OpenMM_SigmaPerVdwRadius
-  }
-  
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // WARNING
     //
     // The hydrogens needs to be shifted toward C/Si/Ge by a factor of 0.94.
@@ -76,10 +67,11 @@ class MM4NonbondedForce: MM4ForceGroup {
     
     force.nonbondedMethod = .cutoffNonPeriodic
     force.useSwitchingFunction = true
-    force.cutoffDistance = MM4NonbondedForce.cutoff
-    force.switchingDistance = MM4NonbondedForce.cutoff * pow(1.0 / 3, 1.0 / 6)
-    var forceActive = false
+    force.cutoffDistance = Double(descriptor.cutoffDistance)
+    force.switchingDistance = Double(
+      descriptor.cutoffDistance * pow(1.0 / 3, 1.0 / 6))
     
+    var forceActive = false
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
     for atomID in system.originalIndices {
@@ -110,7 +102,7 @@ class MM4NonbondedForce: MM4ForceGroup {
 /// The version here may actually decrease compute cost a little, as the
 /// exp(-12) term is omitted.
 class MM4NonbondedExceptionForce: MM4ForceGroup {
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // It seems like "disfac" was the dispersion factor, similar to the DISP-14
     // keyword in Tinker. Keep the Pauli repulsion force the same though.
     let dispersionFactor: Double = 0.550

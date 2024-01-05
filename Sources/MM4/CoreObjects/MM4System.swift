@@ -32,7 +32,7 @@ class MM4System {
   /// Whether each atom is a virtual site.
   var virtualSiteMask: [Bool] = []
   
-  init(parameters: MM4Parameters) {
+  init(parameters: MM4Parameters, descriptor: MM4ForceFieldDescriptor) {
     // Initialize base properties.
     self.system = OpenMM_System()
     self.parameters = parameters
@@ -44,7 +44,7 @@ class MM4System {
     self.createVirtualSiteMask()
     
     // Create force objects.
-    self.forces = MM4Forces(system: self)
+    self.forces = MM4Forces(system: self, descriptor: descriptor)
     forces.addForces(to: system)
   }
 }

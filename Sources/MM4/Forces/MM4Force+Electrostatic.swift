@@ -28,19 +28,15 @@ class MM4ElectrostaticForce: MM4ForceGroup {
     return prefactor
   }
   
-  static var reactionFieldConstants: (K: Double, C: Double) {
-    // The dielectric constant is 5.7, the same as solid diamond. The actual
-    // dielectric may fluctuate between 0 (vacuum) and greater than 10.0, for
-    // random patches of moissanite or heteroatoms.
-    //
+  static func reactionFieldConstants(
+    cutoffDistance: Float, dielectricConstant: Float
+  ) -> (K: Float, C: Float) {
     // Testing whether there's a sharp cutoff as stated on Wikipedia:
     // https://www.desmos.com/calculator/zgmywq7xui
     //
     // No; the function has an exact minimum at the cutoff distance. Force acts
     // just like if energy were conserved. OpenMM adds a correction term (C) to
     // make the potential energy be zero at the cutoff.
-    let dielectricConstant: Double = 5.7
-    let cutoff = MM4NonbondedForce.cutoff
     
     // Source (from OpenMM C++ code):
     //
@@ -51,16 +47,16 @@ class MM4ElectrostaticForce: MM4ForceGroup {
     // double reactionFieldC = (1.0 / force.getCutoffDistance())
     // * (3.0*force.getReactionFieldDielectric())
     // / (2.0*force.getReactionFieldDielectric()+1.0);
-    let reactionFieldK = pow(cutoff, -3) * (dielectricConstant - 1)
-    /**/                                 / (2 * dielectricConstant + 1)
-    let reactionFieldC = (1 / cutoff) * (3 * dielectricConstant)
-    /**/                               / (2 * dielectricConstant + 1)
+    let reactionFieldK = pow(cutoffDistance, -3) * (dielectricConstant - 1)
+    /**/               / (2 * dielectricConstant + 1)
+    let reactionFieldC = (1 / cutoffDistance) * (3 * dielectricConstant)
+    /**/               / (2 * dielectricConstant + 1)
     return (reactionFieldK, reactionFieldC)
   }
   
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Minimized code from OpenMM reaction field kernel. Note that the r^-3
-    // scaling force is corrected to r^-2 in the calling kernel.
+    // scaling force term becomes r^-2 in the calling kernel.
     /*
     {
     #ifdef USE_CUTOFF
@@ -74,7 +70,10 @@ class MM4ElectrostaticForce: MM4ForceGroup {
      */
     
     let prefactor = MM4ElectrostaticForce.prefactor
-    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants
+    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
+      cutoffDistance: descriptor.cutoffDistance,
+      dielectricConstant: descriptor.dielectricConstant)
+    
     let force = OpenMM_CustomNonbondedForce(energy: """
       \(prefactor) * charge1 * charge2 * (
         1 / r + \(K) * r^2 - \(C)
@@ -82,9 +81,9 @@ class MM4ElectrostaticForce: MM4ForceGroup {
       """)
     force.addPerParticleParameter(name: "charge")
     force.nonbondedMethod = .cutoffNonPeriodic
-    force.cutoffDistance = MM4NonbondedForce.cutoff
-    var forceActive = false
+    force.cutoffDistance = Double(descriptor.cutoffDistance)
     
+    var forceActive = false
     let array = OpenMM_DoubleArray(size: 1)
     let atoms = system.parameters.atoms
     for atomID in system.originalIndices {
@@ -187,7 +186,7 @@ class MM4ElectrostaticForce: MM4ForceGroup {
 /// single kernel invocation. This would also pre-compute the O(bonds^2) partial
 /// charge interactions to "undo" the regular electrostatic force.
 class MM4ElectrostaticExceptionForce: MM4ForceGroup {
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Equation for dipole-dipole interaction:
     // https://janheyda.files.wordpress.com/2015/08/electrostatics-multipoles.pdf
     //
@@ -199,7 +198,9 @@ class MM4ElectrostaticExceptionForce: MM4ForceGroup {
     // For each bond-bond interaction, compute the projected charge onto each
     // 1,4 atom and undo it.
     let prefactor = MM4ElectrostaticForce.prefactor
-    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants
+    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
+      cutoffDistance: descriptor.cutoffDistance,
+      dielectricConstant: descriptor.dielectricConstant)
     
     // It is currently unknown whether MM4 includes the 1-2,3-4 dipole-dipole
     // interaction. This must be resolved through testing.

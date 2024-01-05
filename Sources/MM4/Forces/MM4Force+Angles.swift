@@ -10,7 +10,7 @@ import OpenMM
 
 /// Angle bend and stretch-bend force.
 class MM4BendForce: MM4ForceGroup {
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // https://www.desmos.com/calculator/shl9ovintw
     //
     // Leaving the formula as-is doesn't create a monotonically increasing
@@ -144,7 +144,7 @@ class MM4BendForce: MM4ForceGroup {
 ///
 /// This object may be deleted during a future optimization.
 class MM4BendBendForce: MM4ForceGroup {
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Sequence of indices for both generating energy expressions and fetching
     // angles during per-atom iteration.
     let indexSequence: [SIMD2<Int>] = [
@@ -270,7 +270,7 @@ class MM4BendBendForce: MM4ForceGroup {
 
 /// Type 2 stretch-bend and stretch-stretch force.
 class MM4BendExtendedForce: MM4ForceGroup {
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // In the future, create a separate force, only for fluorines that have a
     // stretch-stretch interaction.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 5, energy: """

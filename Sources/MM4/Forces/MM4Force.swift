@@ -17,7 +17,7 @@ public enum MM4Force: CaseIterable, Hashable {
   /// Unchanging potential gradient imposed by something outside the system.
   case external
   
-  /// London dispersion, overlap repulsion, and coulomb repulsion forces.
+  /// London dispersion, overlap repulsion, and Coulomb forces.
   case nonbonded
   
   /// Morse bond stretching potential.
@@ -59,7 +59,7 @@ class MM4ForceGroup {
     self.forceGroup = forceGroup
   }
   
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     fatalError("Not implemented.")
   }
   
@@ -87,26 +87,21 @@ class MM4Forces {
   var bendExtended: MM4BendExtendedForce
   var stretch: MM4StretchForce
   
-  // Force Group 3
-  // var rigidBodyElectrostatic: MM4ElectrostaticForce
-  // var rigidBodyExternal: MM4ExternalForce
-  // var rigidBodyNonbonded: MM4NonbondedForce
-  
-  init(system: MM4System) {
+  init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Force Group 1
-    self.electrostatic = .init(system: system)
-    self.electrostaticException = .init(system: system)
-    self.external = .init(system: system)
-    self.nonbonded = .init(system: system)
-    self.nonbondedException = .init(system: system)
-    self.torsion = .init(system: system)
-    self.torsionExtended = .init(system: system)
+    self.electrostatic = .init(system: system, descriptor: descriptor)
+    self.electrostaticException = .init(system: system, descriptor: descriptor)
+    self.external = .init(system: system, descriptor: descriptor)
+    self.nonbonded = .init(system: system, descriptor: descriptor)
+    self.nonbondedException = .init(system: system, descriptor: descriptor)
+    self.torsion = .init(system: system, descriptor: descriptor)
+    self.torsionExtended = .init(system: system, descriptor: descriptor)
     
     // Force Group 2
-    self.bend = .init(system: system)
-    self.bendBend = .init(system: system)
-    self.bendExtended = .init(system: system)
-    self.stretch = .init(system: system)
+    self.bend = .init(system: system, descriptor: descriptor)
+    self.bendBend = .init(system: system, descriptor: descriptor)
+    self.bendExtended = .init(system: system, descriptor: descriptor)
+    self.stretch = .init(system: system, descriptor: descriptor)
   }
   
   // Make this act explicit instead of performing it in the initializer. This

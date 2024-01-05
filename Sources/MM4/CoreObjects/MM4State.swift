@@ -20,16 +20,6 @@ public struct MM4StateDescriptor {
   /// The default is `false`.
   public var forces: Bool = false
   
-  /// Required. Whether to report energy and potentially force in higher
-  /// precision.
-  ///
-  /// The default is `false`.
-  ///
-  /// Precise measurements occur on the CPU, even when the GPU hardware may
-  /// have native mixed precision support. This choice provides fair, consistent
-  /// performance across different hardware vendors.
-  public var highPrecision: Bool = false
-  
   /// Required. Whether to report each atom's position.
   ///
   /// The default is `false`.
@@ -76,14 +66,6 @@ extension MM4ForceField {
   /// `positions`, `velocities`, or either of the energies in isolation.
   /// However, the API is less expressive.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
-    if descriptor.highPrecision {
-      // High precision requires a separate context that has a CPU platform.
-      // It must follow updates to the external force's parameters
-      // ('updateParametersInContext()'). This functionality is not a
-      // priority at the moment.
-      fatalError("High-precision energy not implemented.")
-    }
-    
     var dataTypes: OpenMM_State.DataType = []
     if descriptor.energy {
       dataTypes = [dataTypes, .energy]

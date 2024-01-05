@@ -9,15 +9,21 @@ import OpenMM
 
 /// Morse bond stretch force.
 class MM4StretchForce: MM4ForceGroup {
-  required init(system: MM4System) {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Using "beta" instead of "alpha", as it's the character used in
     // Nanosystems 3.3.3(a).
     //
     // beta = sqrt(ks / 2De)
+    //
+    // Shifting the potential to it's zero at equilibrium, not r = ∞. This
+    // vastly improves the precision of energy measurements with FP32. It
+    // decreases the absolute value of total potential energy by multiple orders
+    // of magnitude. Relative differences between different energies are
+    // unchanged.
     let force = OpenMM_CustomBondForce(energy: """
-      potentialWellDepth * ((
+      potentialWellDepth * (
         1 - exp(-beta * (r - equilibriumLength))
-      )^2 - 1);
+      )^2;
       """)
     force.addPerBondParameter(name: "potentialWellDepth")
     force.addPerBondParameter(name: "beta")

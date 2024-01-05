@@ -12,7 +12,7 @@ extension MM4RigidBody {
   /// - Parameter temperature: The temperature to match the thermal energy to,
   ///   in kelvin.
   /// - Parameter heatCapacity: The partitioning of overall thermal energy in
-  ///   thermodynamic units per atom (kT or R).
+  ///   thermodynamic units per atom (kT or R). The default value is 1.5.
   ///
   /// Some of the energy will be lost to thermal potential energy during a
   /// simulation. This information can technically be recovered from the atoms'
@@ -41,7 +41,7 @@ extension MM4RigidBody {
   /// ![Material Heat Capacities](MaterialHeatCapacities)
   public mutating func setThermalKineticEnergy(
     temperature: Double,
-    heatCapacity: Double
+    heatCapacity: Double = 1.5
   ) {
     ensureUniquelyReferenced()
     
