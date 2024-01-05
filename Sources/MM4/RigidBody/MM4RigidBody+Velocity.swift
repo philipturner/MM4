@@ -1,6 +1,6 @@
 //
 //  MM4RigidBody+Velocity.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 11/20/23.
 //
@@ -122,7 +122,7 @@ extension MM4RigidBodyStorage {
       momentum.y += MM4DoubleVector(vMomentumY).sum()
       momentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
-    return SIMD3<Float>(momentum / mass)
+    return SIMD3<Float>(momentum) / mass
   }
   
   // WARNING: This returns a nonzero angular velocity, even when we should store
@@ -158,10 +158,10 @@ extension MM4RigidBodyStorage {
     guard let momentOfInertia else {
       fatalError("This should never happen.")
     }
-    let inverse = momentOfInertia.inverse
-    let velocityX = inverse.0 * momentum.x
-    let velocityY = inverse.1 * momentum.y
-    let velocityZ = inverse.2 * momentum.z
+    let inverse = invertMatrix3x3(momentOfInertia)
+    let velocityX = inverse.0 * Float(momentum.x)
+    let velocityY = inverse.1 * Float(momentum.y)
+    let velocityZ = inverse.2 * Float(momentum.z)
     let velocity = velocityX + velocityY + velocityZ
     
     if all(velocity .< .leastNormalMagnitude .&

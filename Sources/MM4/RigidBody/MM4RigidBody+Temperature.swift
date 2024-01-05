@@ -1,6 +1,6 @@
 //
 //  MM4RigidBody+Temperature.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 11/20/23.
 //
@@ -40,10 +40,15 @@ extension MM4RigidBody {
   ///
   /// ![Material Heat Capacities](MaterialHeatCapacities)
   public mutating func setThermalKineticEnergy(
-    temperature: Double,
-    heatCapacity: Double = 1.5
+    temperature: Float,
+    heatCapacity: Float = 1.5
   ) {
+    // Change the thermal velocities regardless of whether the previous thermal
+    // energy was the same as the new value. This design choice reduces the
+    // number of edge cases that must be tested.
     ensureUniquelyReferenced()
+    storage.ensureKineticEnergyCached()
+    storage.velocities = nil
     
     // E = thermal energy
     // C = heat capacity
@@ -51,22 +56,18 @@ extension MM4RigidBody {
     // k = Boltzmann constant
     // T = temperature
     //
-    // E = C N kT
-    let N = Double(storage.atoms.nonAnchorCount)
-    let kT = MM4BoltzInZJPerK * temperature
+    // E = N C kT
     
-    // Change the thermal velocities regardless of whether the previous thermal
-    // energy was the same as the new value. This design choice reduces the
-    // number of edge cases that must be tested.
-    storage.ensureKineticEnergyCached()
-    storage.velocities = nil
-    storage.thermalKineticEnergy = heatCapacity * N * kT
-    storage.createThermalVelocities(particleEnergy: heatCapacity * kT)
+    let kT = Float(MM4BoltzInZJPerK) * temperature
+    let particleEnergy = heatCapacity * kT
+    let N = Double(storage.atoms.nonAnchorCount)
+    storage.thermalKineticEnergy = N * Double(particleEnergy)
+    storage.createThermalVelocities(particleEnergy: particleEnergy)
   }
 }
 
 extension MM4RigidBodyStorage {
-  func createThermalVelocities(particleEnergy: Double) {
+  func createThermalVelocities(particleEnergy: Float) {
     ensureCenterOfMassCached()
     ensureLinearVelocityCached()
     ensureAngularVelocityCached()
@@ -189,11 +190,10 @@ extension MM4RigidBodyStorage {
       OpaquePointer(scalarsPointer))
     let zPointer: UnsafePointer<MM4UInt16Vector> = .init(
       OpaquePointer(scalarsPointer + 2 * MM4VectorWidth * atoms.vectorCount))
-    let particleEnergy = newThermalKineticEnergy / Double(atoms.nonAnchorCount)
     
     // Units: zJ -> kJ/mol
-    let particleEnergyTerm = Float(
-      Double(2.0 / 3) * MM4KJPerMolPerZJ * particleEnergy)
+    let particleEnergyTerm =
+    (2.0 / 3) * Float(MM4KJPerMolPerZJ) * particleEnergy
     
     for vID in 0..<atoms.vectorCount {
       var xGaussian: MM4FloatVector

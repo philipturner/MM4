@@ -1,6 +1,6 @@
 //
 //  MM4RigidBody+Energy.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 12/22/23.
 //
@@ -54,9 +54,7 @@ extension MM4RigidBodyStorage {
     guard let linearVelocity else {
       fatalError("This should never happen.")
     }
-    
-    let v = SIMD3<Double>(linearVelocity)
-    return mass * (v * v).sum() / 2
+    return Double(mass * (linearVelocity * linearVelocity).sum() / 2)
   }
   
   // Angular kinetic energy about an angular mass defined by non-anchor atoms.
@@ -68,13 +66,12 @@ extension MM4RigidBodyStorage {
       fatalError("This should never happen.")
     }
     
-    let I = momentOfInertia
-    let w = SIMD3<Double>(quaternionToVector(angularVelocity))
-    let velocityX = I.columns.0 * w.x
-    let velocityY = I.columns.1 * w.y
-    let velocityZ = I.columns.2 * w.z
+    let w = quaternionToVector(angularVelocity)
+    let velocityX = momentOfInertia.0 * w.x
+    let velocityY = momentOfInertia.1 * w.y
+    let velocityZ = momentOfInertia.2 * w.z
     let Iw = velocityX + velocityY + velocityZ
-    return (w * Iw).sum() / 2
+    return Double((w * Iw).sum() / 2)
   }
   
   // Total translational kinetic energy from non-anchor atoms.

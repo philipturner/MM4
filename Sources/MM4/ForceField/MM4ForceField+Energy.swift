@@ -1,6 +1,6 @@
 //
 //  MM4ForceField+Energy.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 12/22/23.
 //
@@ -12,11 +12,13 @@ import OpenMM
 /// > NOTE: This documentation page is still a draft. It may be inconsistent or
 ///   difficult to understand.
 ///
-/// We always report energy and time in double precision, out of necessity.
-/// Potential energy can sometimes have a massive absolute value that dwarfs
-/// the magnitude of relative values. Time is also critical to get right.
+/// We always report energy, time, and unit conversion constants in double
+/// precision. Potential energy can sometimes have a massive absolute value
+/// that dwarfs the magnitude of relative values.
 /// Everything else, including rigid body bulk properties susceptible to the
-/// same degree of rounding error, are reported in single precision.
+/// same degree of rounding error, are reported in single precision. Force
+/// field parameters and similar quantities (heat capacity) are in single
+/// precision because we don't know their value with a lot of certainty.
 ///
 /// However, some internal summation algorithms temporarily employ mixed
 /// precision. Both the CPU code for `MM4RigidBody` and GPU code for the OpenMM

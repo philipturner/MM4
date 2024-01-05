@@ -1,6 +1,6 @@
 //
 //  MM4RigidBodyStorage.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 11/22/23.
 //
@@ -11,7 +11,7 @@ final class MM4RigidBodyStorage {
   // Sources of truth.
   var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
   var externalForces: [SIMD3<Float>]
-  var mass: Double
+  var mass: Float
   var vMasses: [MM4FloatVector]
   var vPositions: [MM4FloatVector]
   var vVelocities: [MM4FloatVector]
@@ -26,7 +26,7 @@ final class MM4RigidBodyStorage {
   var angularVelocity: Quaternion<Float>?
   var linearKineticEnergy: Double?
   var linearVelocity: SIMD3<Float>?
-  var momentOfInertia: MM4MomentOfInertia?
+  var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>)?
   var thermalKineticEnergy: Double?
   
   init(
@@ -89,7 +89,7 @@ final class MM4RigidBodyStorage {
         vMassAccumulator += MM4DoubleVector(vMass)
         self.vMasses[vID] = vMass
       }
-      self.mass = vMassAccumulator.sum()
+      self.mass = Float(vMassAccumulator.sum())
     }
   }
   
@@ -149,7 +149,7 @@ extension MM4RigidBodyStorage {
       self.momentOfInertia = createMomentOfInertia()
     } else if atoms.count == 0 {
       precondition(
-        momentOfInertia!.columns == (.zero, .zero, .zero),
+        momentOfInertia! == (.zero, .zero, .zero),
         "Nonzero moment of inertia for empty rigid body.")
     }
   }
@@ -247,7 +247,7 @@ extension MM4RigidBody {
   }
   
   /// The total mass (in yoctograms) of all atoms, excluding anchors.
-  public var mass: Double {
+  public var mass: Float {
     storage.mass
   }
 }

@@ -195,7 +195,7 @@ private func testInertia(_ rigidBody: MM4RigidBody) {
   // absolute errors enables use of more ergonomic testing functions.
   
   let mass = deriveMass(rigidBody)
-  XCTAssertEqual(mass, rigidBody.mass, accuracy: 1e-3)
+  XCTAssertEqual(Float(mass), rigidBody.mass, accuracy: 1e-3)
   
   let centerOfMass = deriveCenterOfMass(rigidBody)
   XCTAssertEqual(centerOfMass, rigidBody.centerOfMass, accuracy: 1e-3)

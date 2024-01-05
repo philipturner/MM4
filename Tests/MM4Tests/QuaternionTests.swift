@@ -6,8 +6,6 @@ import MM4
 #endif
 import Numerics
 
-
-
 final class QuaternionTests: XCTestCase {
   #if DEBUG
   func testQuaternionToVector() throws {

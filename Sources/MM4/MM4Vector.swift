@@ -1,17 +1,12 @@
 //
 //  MM4Vector.swift
-//  
+//  MM4  
 //
 //  Created by Philip Turner on 11/22/23.
 //
 
 // Public APIs for accessing vectorized contents (e.g. to perform custom rigid
 // body dynamics calculations on bulk torque).
-
-// TODO: Perhaps provide a public API for the internal vectorized data layout?
-// That would be brilliant. A smart user could write many positions in a
-// single function call. Therefore, we can invoke the same de-caching functions
-// as with setPositions/setVelocities.
 
 /// The vector width may be architecture-specific due to compiler macros.
 public let MM4VectorWidth: Int = 4

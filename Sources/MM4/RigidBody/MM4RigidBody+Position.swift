@@ -1,6 +1,6 @@
 //
 //  MM4RigidBody+Position.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 11/20/23.
 //
@@ -133,24 +133,21 @@ extension MM4RigidBodyStorage {
       center.y += MM4DoubleVector(vCenterY).sum()
       center.z += MM4DoubleVector(vCenterZ).sum()
     }
-    return SIMD3<Float>(center / mass)
+    return SIMD3<Float>(center) / mass
   }
   
-  func createMomentOfInertia() -> MM4MomentOfInertia {
+  func createMomentOfInertia() -> (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
     ensureCenterOfMassCached()
     guard let centerOfMass else {
       fatalError("This should never happen.")
     }
     guard atoms.count > 0 else {
-      return MM4MomentOfInertia()
+      return (.zero, .zero, .zero)
     }
     
-    // TODO: Remove the MM4MomentOfInertia API; just create a helper function
-    // that inverts a 3x3 matrix. This is similar to helper functions that
-    // convert a quaternion to a vector. Users should be expected to create
-    // basic math processing utilities on their own. You are not constrained by
-    // any need to provide moment-of-inertia inverting functionality.
-    var momentOfInertia = MM4MomentOfInertia()
+    var columns = (SIMD3<Double>.zero,
+                   SIMD3<Double>.zero,
+                   SIMD3<Double>.zero)
     withSegmentedLoop(chunk: 256) {
       var vXX: MM4FloatVector = .zero
       var vYY: MM4FloatVector = .zero
@@ -177,11 +174,13 @@ extension MM4RigidBodyStorage {
       let XY = MM4DoubleVector(vXY).sum()
       let XZ = MM4DoubleVector(vXZ).sum()
       let YZ = MM4DoubleVector(vYZ).sum()
-      momentOfInertia.columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
-      momentOfInertia.columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
-      momentOfInertia.columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
+      columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
+      columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
+      columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
     }
-    return momentOfInertia
+    return (SIMD3<Float>(columns.0),
+            SIMD3<Float>(columns.1),
+            SIMD3<Float>(columns.2))
   }
 }
 
@@ -230,11 +229,6 @@ extension MM4RigidBody {
   /// around the center of mass defined by anchors.
   public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
     storage.ensureMomentOfInertiaCached()
-    let momentOfInertia = storage.momentOfInertia!
-    return (
-      SIMD3<Float>(momentOfInertia.columns.0),
-      SIMD3<Float>(momentOfInertia.columns.1),
-      SIMD3<Float>(momentOfInertia.columns.2)
-    )
+    return storage.momentOfInertia!
   }
 }

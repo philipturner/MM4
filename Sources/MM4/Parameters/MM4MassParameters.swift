@@ -1,6 +1,6 @@
 //
 //  MM4MassParameters.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 9/11/23.
 //
@@ -21,7 +21,7 @@ class MM4MassParameters {
 }
 
 extension MM4MassParameters {
-  static let sourceData: [Double] = [
+  static let sourceData: [Float] = [
     0,
     1.008,
     4.0026022,

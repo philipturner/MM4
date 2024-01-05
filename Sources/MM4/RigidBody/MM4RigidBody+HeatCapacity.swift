@@ -1,6 +1,6 @@
 //
 //  MM4RigidBody+HeatCapacity.swift
-//
+//  MM4
 //
 //  Created by Philip Turner on 12/22/23.
 //
@@ -38,7 +38,7 @@ extension MM4RigidBody {
   /// - The elemental composition is mapped to a spectrum: 100% carbon to
   ///   100% silicon. Moissanite falls at the halfway point. The result is
   ///   interpolated between the two closest materials.
-  public func heatCapacity(temperature: Double) -> Double {
+  public func heatCapacity(temperature: Float) -> Float {
     var vNumCarbons: MM4UInt32Vector = .zero
     var vNumSilicons: MM4UInt32Vector = .zero
     let atomicNumbers = parameters.atoms.atomicNumbers
@@ -90,17 +90,17 @@ extension MM4RigidBody {
     guard numTotal > 0 else {
       fatalError("Zero non-hydrogen or non-halogen atoms.")
     }
-    let closenessC = Double(numCarbons) / Double(numTotal)
-    let closenessSi = Double(numSilicons) / Double(numTotal)
+    let closenessC = Float(numCarbons) / Float(numTotal)
+    let closenessSi = Float(numSilicons) / Float(numTotal)
     
-    func lookupCapacity(keys: [Double], values: [Double]) -> Double {
+    func lookupCapacity(keys: [Float], values: [Float]) -> Float {
       let key = binarySearch(keys, element: temperature)
       let value =
       values[key.lowerIndex] * key.lowerWeight +
       values[key.upperIndex] * key.upperWeight
       return value
     }
-    var capacity: Double = 0
+    var capacity: Float = 0
     
     if closenessC < 0.5 {
       capacity += 2 * (closenessC - 0.5) * lookupCapacity(
@@ -120,8 +120,8 @@ extension MM4RigidBody {
 // MARK: - Lookup Table
 
 fileprivate typealias BinaryReturn = (
-  lowerIndex: Int, lowerWeight: Double,
-  upperIndex: Int, upperWeight: Double
+  lowerIndex: Int, lowerWeight: Float,
+  upperIndex: Int, upperWeight: Float
 )
 
 /*
@@ -140,8 +140,8 @@ fileprivate typealias BinaryReturn = (
      return unsuccessful
  */
 fileprivate func binarySearch(
-  _ array: [Double],
-  element: Double
+  _ array: [Float],
+  element: Float
 ) -> BinaryReturn {
   func equalLower(_ lower: Int) -> BinaryReturn {
     return (lower, 1.000, lower + 1, 0.000)
@@ -203,7 +203,7 @@ fileprivate func binarySearch(
 }
 
 /// Units: kelvin.
-fileprivate let diamondLookupTemperatures: [Double] = [
+fileprivate let diamondLookupTemperatures: [Float] = [
   0,
   1,
   2,
@@ -252,7 +252,7 @@ fileprivate let diamondLookupTemperatures: [Double] = [
 ]
 
 /// Units: kelvin.
-fileprivate let moissaniteLookupTemperatures: [Double] = [
+fileprivate let moissaniteLookupTemperatures: [Float] = [
   0,
   1,
   2,
@@ -329,7 +329,7 @@ fileprivate let moissaniteLookupTemperatures: [Double] = [
 ]
 
 /// Units: kelvin.
-fileprivate let siliconLookupTemperatures: [Double] = [
+fileprivate let siliconLookupTemperatures: [Float] = [
   0,
   1,
   2,
@@ -404,7 +404,7 @@ fileprivate let siliconLookupTemperatures: [Double] = [
 ]
 
 /// Units: kT at the corresponding temperature.
-fileprivate let diamondLookupCapacities: [Double] = [
+fileprivate let diamondLookupCapacities: [Float] = [
   0,
   0.00000002087545327,
   0.0000001670036262,
@@ -453,7 +453,7 @@ fileprivate let diamondLookupCapacities: [Double] = [
 ]
 
 /// Units: kT at the corresponding temperature.
-fileprivate let moissaniteLookupCapacities: [Double] = [
+fileprivate let moissaniteLookupCapacities: [Float] = [
   0,
   0.000000283076738,
   0.000002264613904,
@@ -530,7 +530,7 @@ fileprivate let moissaniteLookupCapacities: [Double] = [
 ]
 
 /// Units: kT at the corresponding temperature.
-fileprivate let siliconLookupCapacities: [Double] = [
+fileprivate let siliconLookupCapacities: [Float] = [
   0,
   0.0000009309598268,
   0.000007447678614,
@@ -603,3 +603,4 @@ fileprivate let siliconLookupCapacities: [Double] = [
   3.448881405,
   3.479672841,
 ]
+
