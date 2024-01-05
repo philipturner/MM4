@@ -4,21 +4,7 @@ Molecular mechanics simulator for molecular nanotechnology.
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-### Supported Forces
-
-Forces:
-- bend ❌
-- bend-bend ❌
-- external ❌
-- nonbonded ❌
-- stretch ❌
-- stretch-bend ❌
-- stretch-stretch ❌
-- torsion ❌
-- torsion-bend ❌
-- torsion-stretch ❌
-
-### Supported Atoms
+### Atoms
 
 | MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
 | - | - | - | - | - |
@@ -40,7 +26,7 @@ The following are officially supported in the current release. Other atoms are u
 | C             | 1   | 123 | not supported | not supported |
 | Si            | 19  | 19  | n/a           | n/a           |
 
-### Supported Bonds
+### Bonds
 
 | Element | H | C | N | O | F | Si | P | S | Ge |
 | ------- | - | - | - | - | - | - | - | - | - |
@@ -66,12 +52,19 @@ Key:
 - X = nonpolar sigma bond
 - O = polar sigma bond
 
-### Forced Motions
+### Forces
 
-|         | Velocity | Force |
-| ------- | -------- | ------|
-| Linear  | zero-mass atom with nonzero velocity | external force |
-| Angular | flywheel | lever |
+Available forces:
+- bend ❌
+- bend-bend ❌
+- external ❌
+- nonbonded ❌
+- stretch ❌
+- stretch-bend ❌
+- stretch-stretch ❌
+- torsion ❌
+- torsion-bend ❌
+- torsion-stretch ❌
 
 ### Units
 
@@ -103,15 +96,3 @@ MM4's unit system is internally consistent. Units for force and energy are deriv
 energy = 0.5 * m * v^2 = (10^-27) (10^3)^2 = 10^-21
 force = dU / dx = (10^-21) / (10^-9) = 10^-12
 ```
-
-### Releases
-
-v1.0.0
-- Accurate simulation of 5-ring carbons
-- External forces
-- Heat capacity estimation
-- Support for hydrocarbons and hydrosilicons
-
-Future versions:
-- High-precision energy measurements
-- Support for non-carbon elements
