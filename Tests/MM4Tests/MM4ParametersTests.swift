@@ -47,6 +47,7 @@ final class MM4ParametersTests: XCTestCase {
     try _testParametersCombination(references)
   }
   
+  #if RELEASE
   func testParametersSpeed() throws {
     _ = NCFPart(forces: [
       .bend,
@@ -66,6 +67,7 @@ final class MM4ParametersTests: XCTestCase {
     ])
     _ = NCFPart(forces: [.nonbonded])
   }
+  #endif
   
   func testSilaAdamantane() throws {
     try testAdamantaneVariant(atomCode: .silicon)

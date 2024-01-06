@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 9/10/23.
 //
 
-import Foundation
-
 /// A configuration for a set of force field parameters.
 public struct MM4ParametersDescriptor {
   /// Required. The number of protons in each atom's nucleus.
@@ -96,7 +94,6 @@ public struct MM4Parameters {
     
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.
-    let checkpoint0 = Date() // 0.0 ms 0.0 ms
     atoms.atomicNumbers = descriptorAtomicNumbers
     atoms.count = descriptorAtomicNumbers.count
     atoms.indices = 0..<descriptorAtomicNumbers.count
@@ -105,52 +102,23 @@ public struct MM4Parameters {
     }
     
     // Topology
-    let checkpoint1 = Date() // 0.2 ms 0.2 ms
     try createAtomsToBondsMap()
     try createAtomsToAtomsMap()
-    let checkpoint2 = Date() // 2.4 ms 2.4 ms
     try createTopology(forces: descriptor.forces)
-    let checkpoint3 = Date() // 0.0 ms 0.0 ms
     try createCenterTypes()
     
     // Atom Parameters
-    let checkpoint4 = Date() // 0.0 ms 0.0 ms
     try createAtomCodes()
     createMasses(hydrogenMassScale: descriptor.hydrogenMassScale)
-    let checkpoint5 = Date() // 0.0 ms 0.0 ms
     createNonbondedParameters(descriptor: descriptor)
-    let checkpoint6 = Date() // 1.7 ms 2.2 ms
     createNonbondedExceptions(forces: descriptor.forces)
     
     // Bond Parameters
-    let checkpoint7 = Date() // 0.0 ms 0.7 ms
     try createBondParameters(forces: descriptor.forces)
-    let checkpoint8 = Date() // 0.5 ms 3.2 ms
     try createAngleParameters(forces: descriptor.forces)
-    let checkpoint9 = Date() // 1.0 ms 10.1 ms
     try createTorsionParameters(forces: descriptor.forces)
-    let checkpoint10 = Date() // 0.7 ms 1.0 ms
     createElectronegativityEffectCorrections()
-    let checkpoint11 = Date() //  0.0 ms 0.0 ms
     createPartialCharges()
-    let checkpoint12 = Date()
-    
-    if atoms.count == 1514 {
-      print("execution time:")
-      let checkpoints = [
-        checkpoint0, checkpoint1, checkpoint2, checkpoint3, checkpoint4,
-        checkpoint5, checkpoint6, checkpoint7, checkpoint8, checkpoint9,
-        checkpoint10, checkpoint11, checkpoint12
-      ]
-      let absoluteTimes = checkpoints.map { $0.timeIntervalSince1970 }
-      let relativeTimes = (0..<checkpoints.count - 1).map { i in
-        absoluteTimes[i + 1] - absoluteTimes[i]
-      }
-      for i in relativeTimes.indices {
-        let ms = String(format: "%.1f", relativeTimes[i] * 1e3)
-        print("- time interval \(i): \(ms) ms")
-      }
-    }
   }
   
   public mutating func append(contentsOf other: Self) {

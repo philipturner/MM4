@@ -175,8 +175,8 @@ extension MM4Parameters {
       (index + 5) % 5
     }
     
-    // Scope the rings map into a local dictionary per-thread. Merge the partial
-    // results on single-core after the loop is over.
+    // Scope the rings map into a local dictionary per-thread. Merge the
+    // partial results on single-core after the loop is over.
     let taskSize = 128
     let taskCount = (atoms.count + taskSize - 1) / taskSize
     var localRingsMaps = [[SIMD8<UInt32>: Bool]](
@@ -307,13 +307,13 @@ extension MM4Parameters {
                     }
                   }
                   
-                  let prev = array[wrap(minIndex - 1)]
-                  let next = array[wrap(minIndex + 1)]
+                  let prev = array[wrap(minIndex &- 1)]
+                  let next = array[wrap(minIndex &+ 1)]
                   let increment = (next > prev) ? +1 : -1
                   
                   var output: SIMD8<UInt32> = .init(repeating: .max)
                   for lane in 0..<5 {
-                    let index = wrap(minIndex + lane * increment)
+                    let index = wrap(minIndex &+ lane &* increment)
                     output[lane] = array[index]
                   }
                   ringsMap[output] = true
@@ -404,9 +404,9 @@ extension MM4Parameters {
       let ring = rings.indices[ringID]
       for lane in 0..<5 {
         let atomID = ring[lane]
-        let unsortedBond = SIMD2(atomID, ring[wrap(lane + 1)])
-        let unsortedAngle = SIMD3(unsortedBond, ring[wrap(lane + 2)])
-        let unsortedTorsion = SIMD4(unsortedAngle, ring[wrap(lane + 3)])
+        let unsortedBond = SIMD2(atomID, ring[wrap(lane &+ 1)])
+        let unsortedAngle = SIMD3(unsortedBond, ring[wrap(lane &+ 2)])
+        let unsortedTorsion = SIMD4(unsortedAngle, ring[wrap(lane &+ 3)])
         let bond = sortBond(unsortedBond)
         let angle = sortAngle(unsortedAngle)
         let torsion = sortTorsion(unsortedTorsion)
