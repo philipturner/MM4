@@ -74,7 +74,7 @@ public struct MM4BondExtendedParameters {
 
 extension MM4Parameters {
   /// - throws: `.missingParameter`
-  mutating func createBondParameters() throws {
+  mutating func createBondParameters(forces: MM4ForceOptions) throws {
     for bondID in bonds.indices.indices {
       let bond = bonds.indices[bondID]
       let ringType = bonds.ringTypes[bondID]
@@ -235,6 +235,14 @@ extension MM4Parameters {
           addresses.append(createAddress(bond[lane]))
         }
         throw MM4Error.missingParameter(addresses)
+      }
+      
+      if !forces.contains(.stretch) {
+        potentialWellDepth = 0
+        stretchingStiffness = 0
+      }
+      if !forces.contains(.nonbonded) {
+        dipoleMoment = nil
       }
       
       bonds.parameters.append(
@@ -447,7 +455,7 @@ extension MM4Parameters {
     }
   }
   
-  mutating func createPartialCharges() {
+  mutating func createElectronegativityEffectCorrections() {
     // Add electronegativity corrections to bond length.
     let electronegativeCorrections = electrostaticEffect(sign: -1)
     let electropositiveCorrections = electrostaticEffect(sign: +1)
@@ -468,7 +476,9 @@ extension MM4Parameters {
       correction += electropositiveCorrections[i]
       bonds.parameters[i].equilibriumLength += correction
     }
-    
+  }
+  
+  mutating func createPartialCharges() {
     // Compute partial charges.
     for (bondID, parameters) in bonds.extendedParameters.enumerated() {
       guard let parameters else { continue }

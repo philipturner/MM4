@@ -5,6 +5,10 @@ import XCTest
 import MM4
 #endif
 
+// TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
+// TODO: Add unit tests for omitting torsions and cross-terms
+// TODO: Add unit tests for omitting 100% of the parameters
+
 // Tests parameters for carbon-only molecules.
 final class MM4ParametersTests: XCTestCase {
   func testAdamantane() throws {

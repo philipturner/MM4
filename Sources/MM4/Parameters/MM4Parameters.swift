@@ -92,8 +92,6 @@ public struct MM4Parameters {
       fatalError("Descriptor did not have the required properties.")
     }
     
-    // TODO: Actually reflect the choice of forces in the parameters descriptor.
-    
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.
     atoms.atomicNumbers = descriptorAtomicNumbers
@@ -112,13 +110,14 @@ public struct MM4Parameters {
     // Atom Parameters
     try createAtomCodes()
     createMasses(hydrogenMassScale: descriptor.hydrogenMassScale)
-    createNonbondedParameters(hydrogenMassScale: descriptor.hydrogenMassScale)
-    createNonbondedExceptions()
+    createNonbondedParameters(descriptor: descriptor)
+    createNonbondedExceptions(forces: descriptor.forces)
     
     // Bond Parameters
-    try createBondParameters()
-    try createAngleParameters()
-    try createTorsionParameters()
+    try createBondParameters(forces: descriptor.forces)
+    try createAngleParameters(forces: descriptor.forces)
+    try createTorsionParameters(forces: descriptor.forces)
+    createElectronegativityEffectCorrections()
     createPartialCharges()
   }
   

@@ -270,7 +270,7 @@ extension MM4Parameters {
   // - Using the strange relationship that conflates the different vdW adjustments
   //   to create a single "R=0.85", I derived r=3.046 A, eps=0.0840.
   // - Si, P, S, Ge use the Hill function exactly instead of X/H vdW pairs.
-  mutating func createNonbondedParameters(hydrogenMassScale: Float) {
+  mutating func createNonbondedParameters(descriptor: MM4ParametersDescriptor) {
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var epsilon: (default: Float, hydrogen: Float)
@@ -291,7 +291,7 @@ extension MM4Parameters {
         // may not be 100% accurate, but seems like the most logical course of
         // action. Most often, people will use the same amount of HMR for each
         // rigid body.
-        let t = hydrogenMassScale - 1
+        let t = descriptor.hydrogenMassScale - 1
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (default: 0.037, hydrogen: 0.024)
         radius = (default: 1.960, hydrogen: hydrogenRadius)
@@ -334,6 +334,13 @@ extension MM4Parameters {
         hydrogenReductionFactor = 0.923
       }
       
+      // Zero out the effects of nonbonded forces, if the user requests that.
+      // To simplify the implementation, the compute cost for the nonbonded
+      // force is still incurred.
+      if !descriptor.forces.contains(.nonbonded) {
+        epsilon = (default: 0, hydrogen: 0)
+      }
+      
       atoms.parameters.append(
         MM4AtomParameters(
           charge: 0,
@@ -344,13 +351,15 @@ extension MM4Parameters {
     }
   }
   
-  mutating func createNonbondedExceptions() {
+  mutating func createNonbondedExceptions(forces: MM4ForceOptions) {
     // Create nonbonded exceptions.
     var nonbondedExceptions13Map: [SIMD2<UInt32>: Bool] = [:]
     var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
-    for torsion in torsions.indices {
-      let pair = sortBond(SIMD2(torsion[0], torsion[3]))
-      nonbondedExceptions14Map[pair] = true
+    if forces.contains(.torsion) {
+      for torsion in torsions.indices {
+        let pair = sortBond(SIMD2(torsion[0], torsion[3]))
+        nonbondedExceptions14Map[pair] = true
+      }
     }
     for angle in angles.indices {
       let pair = sortBond(SIMD2(angle[0], angle[2]))

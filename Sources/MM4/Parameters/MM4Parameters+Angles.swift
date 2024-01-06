@@ -84,7 +84,7 @@ public struct MM4AngleExtendedParameters {
 
 extension MM4Parameters {
   /// - throws: `.missingParameter`
-  mutating func createAngleParameters() throws {
+  mutating func createAngleParameters(forces: MM4ForceOptions) throws {
     for angleID in angles.indices.indices {
       let angle = angles.indices[angleID]
       let ringType = angles.ringTypes[angleID]
@@ -113,7 +113,8 @@ extension MM4Parameters {
         if attemptID == 0 {
           codes = sortedCodes
         } else if continueAttempt {
-          codes = sortedCodes.replacing(with: .one, where: sortedCodes .== 123)
+          codes = sortedCodes.replacing(
+            with: .one, where: sortedCodes .== 123)
           codes = sortAngle(codes)
         } else {
           continue
@@ -275,16 +276,17 @@ extension MM4Parameters {
             // implementation donated to Tinker. Quaternary sp3 carbon has the
             // parameters 109.5-112.7-111.5, while sp3 silicon *should* have
             // something similar: 109.5-110.8-111.2. I think 118.00 was a typo
-            // from the column four cells below: 19-22-22. Anything connected to
-            // the other side of a cyclopropane carbon (60°) should have an
-            // angle like 120°. This is not the first typo I have caught in one
-            // of Allinger's research papers, see the note about the MM4 formula
-            // for the Torsion-Stretch cross-term.
+            // from the column four cells below: 19-22-22. Anything connected
+            // to the other side of a cyclopropane carbon (60°) should have an
+            // angle like 120°. This is not the first typo I have caught in
+            // one of Allinger's research papers, see the note about the MM4
+            // formula for the Torsion-Stretch cross-term.
             //
-            // The stiffness does match up. Extrapolating the ratios of 1-1-19 :
-            // 19-19-19 and 1-19-1 : 19-19-19 from 5-membered ring variants, one
-            // gets 0.233 and 0.236 respectively for 19-19-19. That is very
-            // close to 0.25, so I don't think that was messed up.
+            // The stiffness does match up. Extrapolating the ratios of
+            // 1-1-19 : 19-19-19 and 1-19-1 : 19-19-19 from 5-membered ring
+            // variants, one gets 0.233 and 0.236 respectively for 19-19-19.
+            // That is very close to 0.25, so I don't think that was messed
+            // up.
             bendingStiffnesses = SIMD3(repeating: 0.250)
             equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
           } else {
@@ -353,9 +355,9 @@ extension MM4Parameters {
             equilibriumAngles = SIMD3(109.5, 109.8, 110.5)
           }
         case (31, 1, 31):
-          // There are no parameters for 31-1-31 in the MM3 forcefield. It looks
-          // like silicon is a good first-order approximation for the other
-          // angles. Therefore, I will use the silicon values here.
+          // There are no parameters for 31-1-31 in the MM3 forcefield. It
+          // looks like silicon is a good first-order approximation for the
+          // other angles. Therefore, I will use the silicon values here.
           bendingStiffnesses = SIMD3(repeating: 0.350)
           equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
         case (1, 31, 5):
@@ -372,18 +374,18 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 114.5)
         case (31, 31, 31):
           // Silicon has some numbers similar to 112.50 when not in the
-          // quaternary configuration: equilibriumAngles = SIMD3(109.50, 110.80,
-          // 111.20). The MM3 paper had an explicit parameter "111.3" for the
-          // quaternary case. I need to do some benchmarks of solid germanium,
-          // to see whether changing the type-1 interaction constant will
-          // improve accuracy.
+          // quaternary configuration: equilibriumAngles = SIMD3(109.50,
+          // 110.80, 111.20). The MM3 paper had an explicit parameter "111.3"
+          // for the quaternary case. I need to do some benchmarks of solid
+          // germanium, to see whether changing the type-1 interaction
+          // constant will improve accuracy.
           //
-          // The angle might need to be a variable of how many carbon atoms are
-          // connected to the germanium. For now, I will set the type-1 constant
-          // to 109.5, which follows the pattern of carbon, and some general
-          // trends in silicon parameters. I will primarily use this for solid
-          // germanium or germanium carbide, where the equilibrium is supposed
-          // to be at a tetrahedral conformation.
+          // The angle might need to be a variable of how many carbon atoms
+          // are connected to the germanium. For now, I will set the type-1
+          // constant to 109.5, which follows the pattern of carbon, and some
+          // general trends in silicon parameters. I will primarily use this
+          // for solid germanium or germanium carbide, where the equilibrium
+          // is supposed to be at a tetrahedral conformation.
           bendingStiffnesses = SIMD3(repeating: 0.300)
           equilibriumAngles = SIMD3(repeating: 112.50)
           
@@ -400,6 +402,9 @@ extension MM4Parameters {
         default:
           continueAttempt = true
         }
+      }
+      if !forces.contains(.bend) {
+        bendingStiffnesses = .zero
       }
       guard let bendingStiffnesses,
             let equilibriumAngles else {
@@ -442,164 +447,183 @@ extension MM4Parameters {
       var stretchBendStiffness2: Float?
       var stretchStretchStiffness: Float?
       
-      if sortedCodes[0] == 5, sortedCodes[2] == 5 {
-        bendBendStiffness = 0.000
-        stretchBendStiffness = 0.000
-      } else if any(sortedCodes .== 6) {
-        // Oxygen
-        if sortedCodes[1] == 1 {
-          if sortedCodes[0] == 5 && sortedCodes[2] == 6 {
-            bendBendStiffness = 0.20
-          } else if any(sortedCodes .== 5) {
-            bendBendStiffness = 0.24
+      if forces.contains(.bendBend) ||
+          forces.contains(.stretchBend) ||
+          forces.contains(.stretchStretch) {
+        if sortedCodes[0] == 5, sortedCodes[2] == 5 {
+          bendBendStiffness = 0.000
+          stretchBendStiffness = 0.000
+        } else if any(sortedCodes .== 6) {
+          // Oxygen
+          if sortedCodes[1] == 1 {
+            if sortedCodes[0] == 5 && sortedCodes[2] == 6 {
+              bendBendStiffness = 0.20
+            } else if any(sortedCodes .== 5) {
+              bendBendStiffness = 0.24
+            } else {
+              bendBendStiffness = 0.30
+            }
           } else {
-            bendBendStiffness = 0.30
+            // If oxygen is in the center, it's impossible to have a bend-bend
+            // interaction.
+            bendBendStiffness = 0.00
+          }
+          
+          switch (sortedCodes[0], sortedCodes[1], sortedCodes[2]) {
+          case (1, 1, 6):
+            if ringType == 5 && all(originalCodes .== SIMD3(6, 123, 123)) {
+              stretchBendStiffness = 0.50
+            } else {
+              stretchBendStiffness = 0.02
+            }
+          case (5, 1, 6):
+            stretchBendStiffness = 0.36
+          case (1, 6, 1):
+            if ringType == 5 && all(originalCodes .== SIMD3(123, 6, 123)) {
+              stretchBendStiffness = 0.50
+            } else {
+              stretchBendStiffness = -0.12
+            }
+          default:
+            throw createAngleError()
+          }
+        } else if any(sortedCodes .== 11) {
+          // Fluorine
+          guard sortedCodes[2] == 11 else {
+            throw createAngleError()
+          }
+          switch sortedCodes[0] {
+          case 1:
+            bendBendStiffness = -0.10
+            stretchBendStiffness = 0.160
+            stretchBendStiffness2 = 0.000
+            stretchStretchStiffness = 0.22
+          case 5:
+            bendBendStiffness = 0.00
+            stretchBendStiffness = 0.160
+            stretchBendStiffness2 = 0.000
+            stretchStretchStiffness = -0.45
+          case 11:
+            bendBendStiffness = 0.09
+            stretchBendStiffness = 0.140
+            stretchBendStiffness2 = 0.275
+            stretchStretchStiffness = 1.00
+          default:
+            throw createAngleError()
           }
         } else {
-          // If oxygen is in the center, it's impossible to have a bend-bend
-          // interaction.
-          bendBendStiffness = 0.00
-        }
-        
-        switch (sortedCodes[0], sortedCodes[1], sortedCodes[2]) {
-        case (1, 1, 6):
-          if ringType == 5 && all(originalCodes .== SIMD3(6, 123, 123)) {
-            stretchBendStiffness = 0.50
-          } else {
-            stretchBendStiffness = 0.02
+          switch sortedCodes[1] {
+            // Carbon
+          case 1:
+            // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
+            // H-C-Si/C-C-Si/Si-C-Si.
+            if any(sortedCodes .== 5) {
+              bendBendStiffness = 0.350
+              stretchBendStiffness = 0.100
+            } else {
+              bendBendStiffness = 0.204
+              stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
+              
+              // Exception for the nitrogen-containing bond C-C-N.
+              if sortedCodes[0] == 1, sortedCodes[2] == 8 {
+                stretchStretchStiffness = -0.10
+              }
+            }
+            
+            // Nitrogen
+          case 8:
+            bendBendStiffness = 0.204
+            if codes[0] == 1, codes[2] == 1 {
+              stretchBendStiffness = 0.04
+            } else if codes[0] == 1, codes[0] == 123 {
+              stretchBendStiffness = 0.30
+            } else if codes[0] == 123, codes[2] == 123 {
+              // The very large 0.30 parameter for 1-8-123 seems suspicious. I'm
+              // going to set the default to 123-8-123 outside of a 5-membered
+              // ring to that of 1-8-1. Often, the value inside the ring is
+              // larger than in typical bonds. Not an order of magnitude
+              // smaller.
+              //
+              // On second analysis, this parameter seems completely messed up.
+              // It provides zero information, as the fallback would be 1-8-1,
+              // not 1-8-123. Also, the table is malformatted there. Setting it
+              // to 0.04, the same as the fallback, would be the safest choice.
+              //
+              // Perhaps the purpose was to clear up any confusion, as the
+              // fallback rule was described in a different paper. In the
+              // bend-bend section, a 1-8-123 parameter doesn't exist, so no
+              // extra explanation is required to specify the 123-8-123 case.
+              // Still, the presence of the 5-ring restriction is very
+              // ambiguous.
+              stretchBendStiffness = (ringType == 5) ? 0.04 : 0.04
+            } else {
+              throw createAngleError()
+            }
+            
+            // Silicon
+          case 19:
+            if any(sortedCodes .== 5) {
+              bendBendStiffness = 0.24
+              stretchBendStiffness = 0.10
+            } else {
+              bendBendStiffness = 0.30
+              stretchBendStiffness = 0.06
+            }
+            
+            // Phosphorus
+          case 25:
+            // There's no stretch-bend or bend-bend parameters in the phosphines
+            // research paper. It seems some generic parameters were uniformly
+            // applied to Si, P, and PO4 in MM3. They were removed from the MM4
+            // paper, except a new bend-bend parameter for H-P-H. I don't allow
+            // H-P-H angles in this forcefield.
+            //
+            // I assume this omission was intentional. The creators knew the
+            // parameters existed, and they talked with Allinger about it. They
+            // made a decision that the parameters weren't necessary, which is
+            // generally good practice to avoid overfitting a forcefield.
+            bendBendStiffness = 0
+            stretchBendStiffness = 0
+            
+            // Sulfur
+          case 15:
+            // There cannot be a bend-bend interaction around a divalent sulfur.
+            bendBendStiffness = 0.000
+            if all(sortedCodes .== SIMD3(1, 15, 1)) {
+              stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
+            } else {
+              throw createAngleError()
+            }
+            
+            // Germanium
+          case 31:
+            // The parameters that Allinger created for MM3(2000) do not list
+            // germanium under bend-bend parameters. Like sulfur, it is almost
+            // certainly zero.
+            bendBendStiffness = 0.000
+            if any(sortedCodes .== 5) {
+              stretchBendStiffness = 0.000
+            } else {
+              stretchBendStiffness = 0.450
+            }
+            
+          default:
+            throw createAngleError()
           }
-        case (5, 1, 6):
-          stretchBendStiffness = 0.36
-        case (1, 6, 1):
-          if ringType == 5 && all(originalCodes .== SIMD3(123, 6, 123)) {
-            stretchBendStiffness = 0.50
-          } else {
-            stretchBendStiffness = -0.12
-          }
-        default:
-          throw createAngleError()
-        }
-      } else if any(sortedCodes .== 11) {
-        // Fluorine
-        guard sortedCodes[2] == 11 else {
-          throw createAngleError()
-        }
-        switch sortedCodes[0] {
-        case 1:
-          bendBendStiffness = -0.10
-          stretchBendStiffness = 0.160
-          stretchBendStiffness2 = 0.000
-          stretchStretchStiffness = 0.22
-        case 5:
-          bendBendStiffness = 0.00
-          stretchBendStiffness = 0.160
-          stretchBendStiffness2 = 0.000
-          stretchStretchStiffness = -0.45
-        case 11:
-          bendBendStiffness = 0.09
-          stretchBendStiffness = 0.140
-          stretchBendStiffness2 = 0.275
-          stretchStretchStiffness = 1.00
-        default:
-          throw createAngleError()
         }
       } else {
-        switch sortedCodes[1] {
-          // Carbon
-        case 1:
-          // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
-          // H-C-Si/C-C-Si/Si-C-Si.
-          if any(sortedCodes .== 5) {
-            bendBendStiffness = 0.350
-            stretchBendStiffness = 0.100
-          } else {
-            bendBendStiffness = 0.204
-            stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
-            
-            // Exception for the nitrogen-containing bond C-C-N.
-            if sortedCodes[0] == 1, sortedCodes[2] == 8 {
-              stretchStretchStiffness = -0.10
-            }
-          }
-          
-          // Nitrogen
-        case 8:
-          bendBendStiffness = 0.204
-          if codes[0] == 1, codes[2] == 1 {
-            stretchBendStiffness = 0.04
-          } else if codes[0] == 1, codes[0] == 123 {
-            stretchBendStiffness = 0.30
-          } else if codes[0] == 123, codes[2] == 123 {
-            // The very large 0.30 parameter for 1-8-123 seems suspicious. I'm
-            // going to set the default to 123-8-123 outside of a 5-membered
-            // ring to that of 1-8-1. Often, the value inside the ring is larger
-            // than in typical bonds. Not an order of magnitude smaller.
-            //
-            // On second analysis, this parameter seems completely messed up.
-            // It provides zero information, as the fallback would be 1-8-1, not
-            // 1-8-123. Also, the table is malformatted there. Setting it to
-            // 0.04, the same as the fallback, would be the safest choice.
-            //
-            // Perhaps the purpose was to clear up any confusion, as the
-            // fallback rule was described in a different paper. In the
-            // bend-bend section, a 1-8-123 parameter doesn't exist, so no
-            // extra explanation is required to specify the 123-8-123 case.
-            // Still, the presence of the 5-ring restriction is very ambiguous.
-            stretchBendStiffness = (ringType == 5) ? 0.04 : 0.04
-          } else {
-            throw createAngleError()
-          }
-          
-          // Silicon
-        case 19:
-          if any(sortedCodes .== 5) {
-            bendBendStiffness = 0.24
-            stretchBendStiffness = 0.10
-          } else {
-            bendBendStiffness = 0.30
-            stretchBendStiffness = 0.06
-          }
-          
-          // Phosphorus
-        case 25:
-          // There's no stretch-bend or bend-bend parameters in the phosphines
-          // research paper. It seems some generic parameters were uniformly
-          // applied to Si, P, and PO4 in MM3. They were removed from the MM4
-          // paper, except a new bend-bend parameter for H-P-H. I don't allow
-          // H-P-H angles in this forcefield.
-          //
-          // I assume this omission was intentional. The creators knew the
-          // parameters existed, and they talked with Allinger about it. They
-          // made a decision that the parameters weren't necessary, which is
-          // generally good practice to avoid overfitting a forcefield.
-          bendBendStiffness = 0
-          stretchBendStiffness = 0
-          
-          // Sulfur
-        case 15:
-          // There cannot be a bend-bend interaction around a divalent sulfur.
-          bendBendStiffness = 0.000
-          if all(sortedCodes .== SIMD3(1, 15, 1)) {
-            stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
-          } else {
-            throw createAngleError()
-          }
-          
-          // Germanium
-        case 31:
-          // The parameters that Allinger created for MM3(2000) do not list
-          // germanium under bend-bend parameters. Like sulfur, it is almost
-          // certainly zero.
-          bendBendStiffness = 0.000
-          if any(sortedCodes .== 5) {
-            stretchBendStiffness = 0.000
-          } else {
-            stretchBendStiffness = 0.450
-          }
-          
-        default:
-          throw createAngleError()
-        }
+        bendBendStiffness = 0
+        stretchBendStiffness = 0
+      }
+      if !forces.contains(.bendBend) {
+        bendBendStiffness = 0
+      }
+      if !forces.contains(.stretchBend) {
+        stretchBendStiffness = 0
+        stretchBendStiffness2 = nil
+      }
+      if !forces.contains(.stretchStretch) {
+        stretchStretchStiffness = nil
       }
       
       guard !bendingStiffnesses[angleType - 1].isNaN,
