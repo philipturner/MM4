@@ -185,6 +185,7 @@ extension MM4Parameters {
       ///   the first attempt succeeded.
       /// - Returns: Whether the sorted codes are different from the original
       ///   ones.
+      @_transparent
       @discardableResult
       func with5RingAttempt(_ closure: (SIMD4<UInt8>) -> Bool) throws -> Bool {
         var sortedCodes = sortTorsion(codes)

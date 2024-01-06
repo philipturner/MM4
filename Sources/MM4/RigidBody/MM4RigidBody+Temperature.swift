@@ -118,7 +118,7 @@ extension MM4RigidBodyStorage {
      }
      return velocities;
      */
-    @inline(__always)
+    @_transparent
     func gaussian(_ seed: MM4UInt32Vector) -> (
       x: MM4FloatVector, y: MM4FloatVector, r2: MM4FloatVector
     ) {

@@ -113,7 +113,7 @@ class MM4BendForce: MM4Force {
       let bondLeft = system.parameters.sortBond(SIMD2(angle[0], angle[1]))
       let bondRight = system.parameters.sortBond(SIMD2(angle[1], angle[2]))
       
-      @inline(__always)
+      @_transparent
       func createLength(_ bond: SIMD2<UInt32>) -> Double {
         guard let bondID = bonds.map[bond] else {
           fatalError("Invalid bond.")

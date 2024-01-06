@@ -117,12 +117,12 @@ extension MM4System {
     force.addInteractionGroup(set1: group, set2: group)
   }
   
-  @inline(__always)
+  @_transparent
   func virtualSiteReorder(_ index: Int) -> Int {
     return virtualSiteCount + index
   }
   
-  @inline(__always)
+  @_transparent
   func virtualSiteReorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
     var output: SIMD2<UInt32> = indices
     let virtualSiteCount = UInt32(truncatingIfNeeded: virtualSiteCount)
@@ -130,7 +130,7 @@ extension MM4System {
     return SIMD2<Int>(truncatingIfNeeded: output)
   }
   
-  @inline(__always)
+  @_transparent
   func virtualSiteReorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
     var output: SIMD4<UInt32> = indices
     let virtualSiteCount = UInt32(truncatingIfNeeded: virtualSiteCount)

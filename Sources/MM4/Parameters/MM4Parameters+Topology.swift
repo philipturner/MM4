@@ -99,7 +99,7 @@ extension MM4Parameters {
   }
   
   /// - throws: `.unsupportedRing`
-  mutating func createTopology() throws {
+  mutating func createTopology(forces: MM4ForceOptions) throws {
     // Map from atoms to connected atoms that can be efficiently traversed.
     var vAtomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
     vAtomsToAtomsMap = .allocate(capacity: atoms.count + 1)
@@ -110,6 +110,29 @@ extension MM4Parameters {
       (vAtomsToAtomsMap - 1).deallocate()
     }
     
+    let includeTorsions =
+    forces.contains(.torsion) ||
+    forces.contains(.torsionBend) ||
+    forces.contains(.torsionStretch)
+    
+    // Use a conservative metric to determine whether angles are included. If
+    // torsions are included but angles aren't, there's still some torsion
+    // cross-terms that depend on equilibrium angle.
+    let includeAngles =
+    forces.contains(.bend) ||
+    forces.contains(.bendBend) ||
+    forces.contains(.stretchBend) ||
+    forces.contains(.stretchStretch) ||
+    includeTorsions
+    
+    @_transparent
+    func wrap(_ index: Int) -> Int {
+      (index + 5) % 5
+    }
+    
+    // This loop could be optimized with multithreading, if it becomes a
+    // bottleneck in any workflow.
+    var ringsMap: [SIMD8<UInt32>: Bool] = [:]
     for atom1 in 0..<UInt32(atoms.count) {
       let map1 = vAtomsToAtomsMap[Int(atom1)]
       var ringType: UInt8 = 6
@@ -121,7 +144,7 @@ extension MM4Parameters {
         for lane3 in 0..<4 where map2[lane3] != -1 {
           let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
           if atom1 == atom3 { continue }
-          if atom1 < atom3 {
+          if includeAngles, atom1 < atom3 {
             angles.map[SIMD3(atom1, atom2, atom3)] = .max
           }
           let map3 = vAtomsToAtomsMap[Int(atom3)]
@@ -133,8 +156,6 @@ extension MM4Parameters {
             } else if atom1 == atom4 {
               ringType = min(3, ringType)
               continue
-            } else if atom2 < atom3 {
-              torsions.map[SIMD4(atom1, atom2, atom3, atom4)] = .max
             }
             
             let map4 = vAtomsToAtomsMap[Int(atom4)]
@@ -159,9 +180,55 @@ extension MM4Parameters {
             maskA.replace(with: maskC, where: maskC .< maskA)
             maskA.replace(with: .init(repeating: 4), where: atom .== map4)
             ringType = min(ringType, UInt8(truncatingIfNeeded: maskA.min()))
+            
+            if atom2 < atom3 {
+              if includeTorsions {
+                torsions.map[SIMD4(atom1, atom2, atom3, atom4)] = .max
+              }
+              
+              var match1: SIMD4<Int32> = .zero
+              var match2: SIMD4<Int32> = .zero
+              var match3: SIMD4<Int32> = .zero
+              var match4: SIMD4<Int32> = .zero
+              match1.replace(with: .one, where: map1[0] .== map4)
+              match2.replace(with: .one, where: map1[1] .== map4)
+              match3.replace(with: .one, where: map1[2] .== map4)
+              match4.replace(with: .one, where: map1[3] .== map4)
+              
+              match1 &+= match2
+              match3 &+= match4
+              match1 &+= match3
+              match1.replace(with: SIMD4.zero, where: map4 .== -1)
+              
+              // Atom indices within the angles and torsions are already sorted.
+              // Here, we initialize rings with correct ordering as well.
+              for lane in 0..<4 where match1[lane] > 0 {
+                let array = SIMD8<UInt32>(
+                  atom1, atom2, atom3, atom4,
+                  UInt32(truncatingIfNeeded: map4[lane]), 0, 0, 0)
+                
+                var minIndex = 0
+                for lane in 0..<5 {
+                  if array[lane] < array[minIndex] {
+                    minIndex = lane
+                  }
+                }
+                
+                let prev = array[wrap(minIndex - 1)]
+                let next = array[wrap(minIndex + 1)]
+                let increment = (next > prev) ? +1 : -1
+                
+                var output: SIMD8<UInt32> = .init(repeating: .max)
+                for lane in 0..<5 {
+                  let index = wrap(minIndex + lane * increment)
+                  output[lane] = array[index]
+                }
+                ringsMap[output] = true
+              }
+            }
           }
           
-          if _slowPath(ringType < 5) {
+          if ringType < 5 {
             var addresses: [MM4Address] = []
             addresses.append(createAddress(atom1))
             addresses.append(createAddress(atom2))
@@ -181,65 +248,19 @@ extension MM4Parameters {
                 throw MM4Error.unsupportedRing(addresses)
               }
             }
-            fatalError("Ring type was less than 5, but faulting atom group was not found.")
+            fatalError(
+              "Ring type was less than 5, but faulting atom group was not found.")
           }
         }
       }
     }
+ 
     angles.indices = angles.map.keys.map { $0 }
     angles.indices.sort(by: compareAngle)
+    
     torsions.indices = torsions.map.keys.map { $0 }
     torsions.indices.sort(by: compareTorsion)
     
-    @inline(__always)
-    func wrap(_ index: Int) -> Int {
-      (index + 5) % 5
-    }
-    var ringsMap: [SIMD8<UInt32>: Bool] = [:]
-    for torsion in torsions.indices {
-      // Mask out the -1 indices, then check whether any atoms from the first
-      // atom's map match the fourth atom's map.
-      let map1 = vAtomsToAtomsMap[Int(torsion[0])]
-      let map4 = vAtomsToAtomsMap[Int(torsion[3])]
-      
-      var match1: SIMD4<Int32> = .zero
-      var match2: SIMD4<Int32> = .zero
-      var match3: SIMD4<Int32> = .zero
-      var match4: SIMD4<Int32> = .zero
-      match1.replace(with: .one, where: map1[0] .== map4)
-      match2.replace(with: .one, where: map1[1] .== map4)
-      match3.replace(with: .one, where: map1[2] .== map4)
-      match4.replace(with: .one, where: map1[3] .== map4)
-      
-      match1 &+= match2
-      match3 &+= match4
-      match1 &+= match3
-      match1.replace(with: SIMD4.zero, where: map4 .== -1)
-      
-      // Atom indices within the angles and torsions are already sorted. Here,
-      // we initialize rings with correct ordering as well.
-      for lane in 0..<4 where match1[lane] > 0 {
-        var array: [UInt32] = []
-        array.reserveCapacity(5)
-        for i in 0..<4 {
-          array.append(torsion[i])
-        }
-        array.append(UInt32(truncatingIfNeeded: map4[lane]))
-        
-        // Create a sorted list of atom indices.
-        let minIndex = (0..<5).min(by: { array[$0] < array[$1] })!
-        let prev = array[wrap(minIndex - 1)]
-        let next = array[wrap(minIndex + 1)]
-        let increment = (next > prev) ? +1 : -1
-        
-        var output: SIMD8<UInt32> = .init(repeating: .max)
-        for lane in 0..<5 {
-          let index = wrap(minIndex + lane * increment)
-          output[lane] = array[index]
-        }
-        ringsMap[output] = true
-      }
-    }
     rings.indices = ringsMap.keys.map { $0 }
     rings.indices.sort(by: compareRing)
     
@@ -256,17 +277,15 @@ extension MM4Parameters {
       fatalError("Too many bonds, angles, torsions, or rings.")
     }
     for (index, angle) in bonds.indices.enumerated() {
-      bonds.map[angle]! = UInt32(truncatingIfNeeded: index)
+      bonds.map[angle] = UInt32(truncatingIfNeeded: index)
     }
     for (index, angle) in angles.indices.enumerated() {
-      angles.map[angle]! = UInt32(truncatingIfNeeded: index)
+      angles.map[angle] = UInt32(truncatingIfNeeded: index)
     }
     for (index, torsion) in torsions.indices.enumerated() {
-      torsions.map[torsion]! = UInt32(truncatingIfNeeded: index)
+      torsions.map[torsion] = UInt32(truncatingIfNeeded: index)
     }
     for (index, ring) in rings.indices.enumerated() {
-      // The rings map has not been initialized, and we avoid pre-initializing
-      // it for performance. The value of the subscript is not force-unwrapped.
       rings.map[ring] = UInt32(truncatingIfNeeded: index)
     }
     
@@ -281,16 +300,18 @@ extension MM4Parameters {
         let angle = sortAngle(unsortedAngle)
         let torsion = sortTorsion(unsortedTorsion)
         
-        guard atomID < .max,
-              let bondID = bonds.map[bond],
-              let angleID = angles.map[angle],
-              let torsionID = torsions.map[torsion] else {
-          fatalError("Invalid atom, bond, angle, or torsion in ring.")
+        guard atomID < .max, let bondID = bonds.map[bond] else {
+          fatalError("Invalid atom or bond in ring.")
         }
         atoms.ringTypes[Int(atomID)] = 5
         bonds.ringTypes[Int(bondID)] = 5
-        angles.ringTypes[Int(angleID)] = 5
-        torsions.ringTypes[Int(torsionID)] = 5
+        
+        if includeAngles, let angleID = angles.map[angle]  {
+          angles.ringTypes[Int(angleID)] = 5
+        }
+        if includeTorsions, let torsionID = torsions.map[torsion] {
+          torsions.ringTypes[Int(torsionID)] = 5
+        }
       }
       rings.ringTypes[ringID] = 5
     }

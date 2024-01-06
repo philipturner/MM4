@@ -39,7 +39,7 @@ func invertMatrix3x3(
 }
 
 extension MM4RigidBodyStorage {
-  @inline(__always)
+  @_transparent
   func extractScalar(
     _ scalarID: Int, _ array: [MM4FloatVector]
   ) -> SIMD3<Float> {
@@ -51,7 +51,7 @@ extension MM4RigidBodyStorage {
     return SIMD3(x, y, z)
   }
   
-  @inline(__always)
+  @_transparent
   func swizzleFromVectorWidth<T: BinaryFloatingPoint>(
     _ vectorized: (MM4FloatVector, MM4FloatVector, MM4FloatVector),
     _ vID: Int, _ baseAddress: UnsafeMutablePointer<SIMD3<T>>
@@ -77,7 +77,7 @@ extension MM4RigidBodyStorage {
     }
   }
   
-  @inline(__always)
+  @_transparent
   func swizzleToVectorWidth<T: BinaryFloatingPoint>(
     _ vID: Int, _ baseAddress: UnsafePointer<SIMD3<T>>
   ) -> (MM4FloatVector, MM4FloatVector, MM4FloatVector) {
@@ -104,7 +104,7 @@ extension MM4RigidBodyStorage {
     return (x, y, z)
   }
   
-  @inline(__always)
+  @_transparent
   func withSegmentedLoop(chunk: Int, _ closure: (Range<Int>) -> Void) {
     var loopEnd = 0
     while loopEnd < atoms.vectorCount {
