@@ -21,7 +21,7 @@ class MM4StretchForce: MM4ForceGroup {
     // of magnitude. Relative differences between different energies are
     // unchanged.
     let force = OpenMM_CustomBondForce(energy: """
-      potentialWellDepth * (
+      \(MM4ZJPerKJPerMol) * potentialWellDepth * (
         1 - exp(-beta * (r - equilibriumLength))
       )^2;
       """)

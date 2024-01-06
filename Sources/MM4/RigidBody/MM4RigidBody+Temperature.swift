@@ -47,7 +47,6 @@ extension MM4RigidBody {
     // energy was the same as the new value. This design choice reduces the
     // number of edge cases that must be tested.
     ensureUniquelyReferenced()
-    storage.ensureKineticEnergyCached()
     storage.velocities = nil
     
     // E = thermal energy
@@ -60,8 +59,6 @@ extension MM4RigidBody {
     
     let kT = Float(MM4BoltzInZJPerK) * temperature
     let particleEnergy = heatCapacity * kT
-    let N = Double(storage.atoms.nonAnchorCount)
-    storage.thermalKineticEnergy = N * Double(particleEnergy)
     storage.createThermalVelocities(particleEnergy: particleEnergy)
   }
 }
@@ -76,8 +73,7 @@ extension MM4RigidBodyStorage {
     // same as before thermalization.
     guard let centerOfMass,
           let constantLinearVelocity = linearVelocity,
-          let constantAngularVelocity = angularVelocity,
-          let newThermalKineticEnergy = thermalKineticEnergy else {
+          let constantAngularVelocity = angularVelocity else {
       fatalError("This should never happen.")
     }
     
@@ -190,10 +186,7 @@ extension MM4RigidBodyStorage {
       OpaquePointer(scalarsPointer))
     let zPointer: UnsafePointer<MM4UInt16Vector> = .init(
       OpaquePointer(scalarsPointer + 2 * MM4VectorWidth * atoms.vectorCount))
-    
-    // Units: zJ -> kJ/mol
-    let particleEnergyTerm =
-    (2.0 / 3) * Float(MM4KJPerMolPerZJ) * particleEnergy
+    let particleEnergyTerm = (2.0 / 3) * particleEnergy
     
     for vID in 0..<atoms.vectorCount {
       var xGaussian: MM4FloatVector
@@ -289,8 +282,11 @@ extension MM4RigidBodyStorage {
     precondition(
       correctedThermalKineticEnergy > .leastNormalMagnitude,
       "Corrected thermal kinetic energy was too small to perform velocity rescaling.")
-    let velocityScale = Float((
-      newThermalKineticEnergy / correctedThermalKineticEnergy).squareRoot())
+    
+    let velocityScale = (
+      Float(atoms.nonAnchorCount) * particleEnergy /
+      Float(correctedThermalKineticEnergy)
+    ).squareRoot()
     let w = quaternionToVector(constantAngularVelocity)
     
     for vID in 0..<atoms.vectorCount {

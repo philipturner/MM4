@@ -21,11 +21,6 @@ public struct MM4Address {
 
 /// An error thrown by the MM4 library.
 public enum MM4Error: Error {
-  /// The system's energy exploded.
-  ///
-  /// Includes the amount of energy drift during the time interval that failed.
-  case energyDrift(Double)
-  
   /// The force field did not have a parameter for a group of atoms.
   ///
   /// Includes the addresses of the atoms.

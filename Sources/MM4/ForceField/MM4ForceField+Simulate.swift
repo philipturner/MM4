@@ -26,22 +26,10 @@ extension MM4ForceField {
   /// Simulate the system's evolution for the specified time interval.
   ///
   /// - Parameter time: The time interval, in picoseconds.
-  /// - throws: <doc:MM4Error/energyDrift(_:)> if energy tracking is enabled.
-  public func simulate(time: Double) throws {
+  public func simulate(time: Double)  {
     if updateRecord.active() {
       flushUpdateRecord()
-      invalidatePositionsAndVelocities()
-      invalidateForcesAndEnergy()
     }
-    
-    func createEnergy() -> Double {
-      if energy.tracked {
-        return energy.kinetic + energy.potential
-      } else {
-        return 0
-      }
-    }
-    let startEnergy = createEnergy()
     invalidatePositionsAndVelocities()
     invalidateForcesAndEnergy()
     
@@ -100,11 +88,6 @@ extension MM4ForceField {
       descriptor.end = true
       context.currentIntegrator = descriptor
       context.step(1, timeStep: remainder)
-    }
-    
-    let endEnergy = createEnergy()
-    if abs(endEnergy - startEnergy) > energy.explosionThreshold {
-      throw MM4Error.energyDrift(endEnergy - startEnergy)
     }
   }
 }

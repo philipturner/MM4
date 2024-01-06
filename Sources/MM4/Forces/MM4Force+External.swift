@@ -9,12 +9,13 @@ import OpenMM
 
 class MM4ExternalForce: MM4ForceGroup {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    // There is no need to convert from kJ/mol to zJ here.
     let force = OpenMM_CustomExternalForce(energy: """
-      x * fx + y * fy + z * fz;
+      x * slope_x + y * slope_y + z * slope_z;
       """)
-    force.addPerParticleParameter(name: "fx")
-    force.addPerParticleParameter(name: "fy")
-    force.addPerParticleParameter(name: "fz")
+    force.addPerParticleParameter(name: "slope_x")
+    force.addPerParticleParameter(name: "slope_y")
+    force.addPerParticleParameter(name: "slope_z")
     var forceActive = false
     
     let array = OpenMM_DoubleArray(size: 3)
@@ -35,15 +36,10 @@ class MM4ExternalForce: MM4ForceGroup {
     let array = OpenMM_DoubleArray(size: 3)
     
     for (originalID, reorderedID) in system.reorderedIndices.enumerated() {
-      // Units: zJ/nm -> kJ/mol/nm
-      var force = SIMD3<Double>(forces[originalID])
-      force *= MM4KJPerMolPerZJ
-      
       // Force is the negative gradient of potential energy.
-      force = -force
-      
+      let slope = SIMD3<Double>(-forces[originalID])
       for lane in 0..<3 {
-        array[lane] = force[lane]
+        array[lane] = slope[lane]
       }
       forceObject.setParticleParameters(
         index: originalID, particle: Int(reorderedID), parameters: array)

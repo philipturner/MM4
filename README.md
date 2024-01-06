@@ -57,7 +57,6 @@ Key:
 Available forces:
 - bend ❌
 - bend-bend ❌
-- external ❌
 - nonbonded ❌
   - London dispersion ❌
   - overlap repulsion ❌

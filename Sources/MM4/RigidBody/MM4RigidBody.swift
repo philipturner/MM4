@@ -5,16 +5,6 @@
 //  Created by Philip Turner on 11/19/23.
 //
 
-// TODO: Remove anchors from the forcefield, have the user simply
-// mark such atoms as having 0 mass in MM4Parameters. The user defines what to
-// do with energy in edge cases. They can compute it manually if they want to.
-// - You can just not export data into rigid bodies that contain anchors.
-//   Use only the raw simulation capability - initializing from 'MM4Parameters'
-//   and fetching data from 'MM4State'.
-// - Removing anchors from the rigid body requires a little more care. There
-//   may be some functions that check the edge case where mass is zero.
-// - Anchors have 0 contribution to energy and their thermal velocity is zero.
-
 /// An enclosed group of covalently bonded atoms.
 ///
 /// `MM4RigidBody` is an API to efficiently compute basic properties in rigid
@@ -48,9 +38,6 @@
 ///   access the positions. Or not; set Vec3 into OpenMM directly if that for
 ///   some reason has greater performance.
 public struct MM4RigidBody {
-  /// The rigid body's energy.
-  var _energy: MM4RigidBodyEnergy
-  
   /// The force field parameters cached for this rigid body.
   public let parameters: MM4Parameters
   
@@ -59,12 +46,7 @@ public struct MM4RigidBody {
   
   /// Create a rigid body using the specified configuration.
   public init(parameters: MM4Parameters) {
-    self._energy = MM4RigidBodyEnergy()
     self.parameters = parameters
-    self.storage = MM4RigidBodyStorage(
-      anchors: [], parameters: parameters)
-    
-    // Prepare computed properties for access through the public API.
-    _ensureReferencesUpdated()
+    self.storage = MM4RigidBodyStorage(parameters: parameters)
   }
 }

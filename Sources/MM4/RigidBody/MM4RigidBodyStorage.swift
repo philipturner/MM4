@@ -22,17 +22,11 @@ final class MM4RigidBodyStorage {
   var velocities: [SIMD3<Float>]?
   
   // Rarely cached (frequently erased).
-  var angularKineticEnergy: Double?
   var angularVelocity: Quaternion<Float>?
-  var linearKineticEnergy: Double?
   var linearVelocity: SIMD3<Float>?
   var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>)?
-  var thermalKineticEnergy: Double?
   
-  init(
-    anchors: Set<UInt32>,
-    parameters: MM4Parameters
-  ) {
+  init(parameters: MM4Parameters) {
     let atomCount = parameters.atoms.count
     let vectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     var nonAnchorCount = 0
@@ -112,12 +106,9 @@ final class MM4RigidBodyStorage {
   
   func eraseRarelyCachedProperties() {
     // WARNING: Always ensure this reflects recently added properties.
-    angularKineticEnergy = nil
     angularVelocity = nil
-    linearKineticEnergy = nil
     linearVelocity = nil
     momentOfInertia = nil
-    thermalKineticEnergy = nil
   }
 }
 
@@ -181,53 +172,15 @@ extension MM4RigidBodyStorage {
         "Nonzero angular velocity for empty rigid body.")
     }
   }
-  
-  func ensureKineticEnergyCached() {
-    if self.angularKineticEnergy == nil,
-       self.linearKineticEnergy == nil,
-       self.thermalKineticEnergy == nil {
-      let angular = createAngularKineticEnergy()
-      let linear = createLinearKineticEnergy()
-      let total = createTotalKineticEnergy()
-      let thermal = total - angular - linear
-      self.angularKineticEnergy = angular
-      self.linearKineticEnergy = linear
-      self.thermalKineticEnergy = thermal
-      
-      let epsilon: Double = 1e-4
-      if angular < -epsilon * Double(atoms.count) {
-        fatalError("Angular kinetic energy was too negative.")
-      }
-      if linear < -epsilon * Double(atoms.count) {
-        fatalError("Linear kinetic energy was too negative.")
-      }
-      if thermal < -epsilon * Double(atoms.count) {
-        fatalError("Thermal kinetic energy was too negative.")
-      }
-    } else if self.angularVelocity == nil ||
-                self.linearKineticEnergy == nil ||
-                self.thermalKineticEnergy == nil {
-      fatalError(
-        "Either all or none of the kinetic energies must be cached.")
-    }
-  }
 }
 
 extension MM4RigidBody {
-  /// Ensure all weak references point to the current storage object.
-  ///
-  /// This function is underscored to prevent it from appearing in autocomplete.
-  mutating func _ensureReferencesUpdated() {
-    _energy.kinetic.storage = storage
-  }
-  
   /// Ensure copy-on-write semantics.
   ///
   /// > WARNING: Call this before every mutating function.
   mutating func ensureUniquelyReferenced() {
     if !isKnownUniquelyReferenced(&storage) {
       storage = MM4RigidBodyStorage(copying: storage)
-      _ensureReferencesUpdated()
     }
   }
 }

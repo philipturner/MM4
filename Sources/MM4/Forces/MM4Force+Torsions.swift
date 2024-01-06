@@ -18,7 +18,7 @@ class MM4TorsionForce: MM4ForceGroup {
     // introducing extra computation for highly mixed-element compounds. There
     // should be a separate force object for this.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      torsion + torsionStretch;
+      \(MM4ZJPerKJPerMol) * (torsion + torsionStretch);
       torsion = V1 * fourierExpansion1
               + Vn * fourierExpansionN
               + V3 * fourierExpansion3;
@@ -101,7 +101,9 @@ class MM4TorsionExtendedForce: MM4ForceGroup {
     // terms are very rare. There should be a separate force to handle only the
     // extended torsions with V4 or V6 terms.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      torsion + torsionStretch + torsionBend + bendTorsionBend;
+      \(MM4ZJPerKJPerMol) * (
+        torsion + torsionStretch + torsionBend + bendTorsionBend
+      );
       torsion = V1 * fourierExpansion1
               + V2 * fourierExpansion2
               + V3 * fourierExpansion3

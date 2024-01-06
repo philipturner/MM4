@@ -47,7 +47,7 @@ class MM4NonbondedForce: MM4ForceGroup {
     // occurs on the scale of attojoules. This can be seen by changing the 1000x
     // multiplier for every equation to 1x.
     let force = OpenMM_CustomNonbondedForce(energy: """
-      epsilon * (
+      \(MM4ZJPerKJPerMol) * epsilon * (
         -2.25 * (min(2, radius / r))^6 +
         1.84e5 * exp(-12.00 * (r / radius))
       );
@@ -108,7 +108,7 @@ class MM4NonbondedExceptionForce: MM4ForceGroup {
     let dispersionFactor: Double = 0.550
     let correction = dispersionFactor - 1
     let force = OpenMM_CustomBondForce(energy: """
-      epsilon * (
+      \(MM4ZJPerKJPerMol) * epsilon * (
         \(-2.25 * correction) * (min(2, radius / r))^6
       );
       """)
@@ -118,7 +118,8 @@ class MM4NonbondedExceptionForce: MM4ForceGroup {
     
     // Separate force for (Si, Ge) to (H, C, Si, Ge) interactions.
     let legacyForce = OpenMM_CustomBondForce(energy: """
-      legacyEpsilon * (
+      \(MM4ZJPerKJPerMol) * difference;
+      difference = legacyEpsilon * (
         -2.25 * (min(2, legacyRadius / r))^6 +
         1.84e5 * exp(-12.00 * (r / legacyRadius))
       ) - epsilon * (

@@ -61,7 +61,7 @@ class MM4BendForce: MM4ForceGroup {
     
     var forceActive = false
     let force = OpenMM_CustomCompoundBondForce(numParticles: 3, energy: """
-      bend + stretchBend;
+      \(MM4ZJPerKJPerMol) * (bend + stretchBend);
       bend = bendingStiffness * deltaTheta^2 * (
         1
         - \(cubicTerm) * deltaTheta
@@ -164,7 +164,7 @@ class MM4BendBendForce: MM4ForceGroup {
           interactions.append(SIMD2(i, j))
         }
       }
-      energy += "-("
+      energy += "\(MM4ZJPerKJPerMol) * -("
       for (index, interaction) in interactions.enumerated() {
         energy += "bendBend\(interaction[0])\(interaction[1])"
         if index < interactions.count - 1 {
@@ -274,7 +274,7 @@ class MM4BendExtendedForce: MM4ForceGroup {
     // In the future, create a separate force, only for fluorines that have a
     // stretch-stretch interaction.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 5, energy: """
-      stretchBend + stretchStretch;
+      \(MM4ZJPerKJPerMol) * (stretchBend + stretchStretch);
       stretchBend = stretchBendStiffness * deltaTheta * (
         deltaLength4 + deltaLength5
       );

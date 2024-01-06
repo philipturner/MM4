@@ -94,19 +94,11 @@ extension MM4ForceField {
     
     let state = MM4State()
     if descriptor.energy {
-      state.kineticEnergy = query.kineticEnergy * MM4ZJPerKJPerMol
-      state.potentialEnergy = query.potentialEnergy * MM4ZJPerKJPerMol
+      state.kineticEnergy = query.kineticEnergy
+      state.potentialEnergy = query.potentialEnergy
     }
     if descriptor.forces {
       state.forces = convertArray(query.forces)
-      
-      // This could be optimized to fuse the unit scaling with the conversion
-      // between indices. An alternative approach would scale all quantities -
-      // potential energy, atom mass, and therefore generated OpenMM forces -
-      // by the conversion factor between zJ and kJ/mol.
-      state.forces = state.forces!.map {
-        $0 * Float(MM4ZJPerKJPerMol)
-      }
     }
     if descriptor.positions {
       state.positions = convertArray(query.positions)
