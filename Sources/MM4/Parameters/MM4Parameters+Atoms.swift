@@ -234,8 +234,9 @@ extension MM4Parameters {
       atoms.masses[Int(atomID)] = scaledMass
       
       let map = atomsToBondsMap[Int(atomID)]
-      let substituentID = Int(other(atomID: atomID, bondID: map[0]))
-      atoms.masses[substituentID] -= scaledMass - previousMass
+      let bond = bonds.indices[Int(map[0])]
+      let substituentID = (bond[0] == atomID) ? bond[1] : bond[0]
+      atoms.masses[Int(substituentID)] -= scaledMass - previousMass
     }
   }
   

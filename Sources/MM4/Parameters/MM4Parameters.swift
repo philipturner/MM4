@@ -105,37 +105,35 @@ public struct MM4Parameters {
     }
     
     // Topology
-    let checkpoint1 = Date() // 0.2 ms 0.4 ms
+    let checkpoint1 = Date() // 0.2 ms 0.2 ms
     try createAtomsToBondsMap()
     try createAtomsToAtomsMap()
-    let checkpoint2 = Date() // 6.7 ms 34.7 ms
+    let checkpoint2 = Date() // 5.2 ms 8.2 ms
     try createTopology(forces: descriptor.forces)
     let checkpoint3 = Date() // 0.0 ms 0.0 ms
     try createCenterTypes()
     
     // Atom Parameters
-    let checkpoint4 = Date() // 0.0 ms 0.2 ms
+    let checkpoint4 = Date() // 0.0 ms 0.0 ms
     try createAtomCodes()
     createMasses(hydrogenMassScale: descriptor.hydrogenMassScale)
     let checkpoint5 = Date() // 0.0 ms 0.0 ms
     createNonbondedParameters(descriptor: descriptor)
-    let checkpoint6 = Date() // 1.8 ms 2.8 ms
+    let checkpoint6 = Date() // 1.7 ms 2.2 ms
     createNonbondedExceptions(forces: descriptor.forces)
     
     // Bond Parameters
-    let checkpoint7 = Date() // 0.4 ms 7.0 ms
+    let checkpoint7 = Date() // 0.0 ms 0.7 ms
     try createBondParameters(forces: descriptor.forces)
-    let checkpoint8 = Date() // 2.1 ms 65.6 ms
+    let checkpoint8 = Date() // 0.5 ms 3.2 ms
     try createAngleParameters(forces: descriptor.forces)
-    let checkpoint9 = Date() // 5.4 ms 208.7 ms
+    let checkpoint9 = Date() // 1.0 ms 10.1 ms
     try createTorsionParameters(forces: descriptor.forces)
-    let checkpoint10 = Date() // 4.0 ms 12.7 ms
+    let checkpoint10 = Date() // 0.7 ms 1.0 ms
     createElectronegativityEffectCorrections()
     let checkpoint11 = Date() //  0.0 ms 0.0 ms
     createPartialCharges()
     let checkpoint12 = Date()
-    
-    
     
     if atoms.count == 1514 {
       print("execution time:")

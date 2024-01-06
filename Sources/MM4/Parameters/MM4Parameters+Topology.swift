@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
+import Foundation
+
 /// Parameters for a group of 3 to 5 atoms.
 public struct MM4Rings {
   /// Groups of atom indices that form a ring.
@@ -67,9 +69,8 @@ extension MM4Parameters {
         if !succeeded {
           var neighbors: [MM4Address] = []
           for lane in 0..<4 where map[lane] != -1 {
-            let bondID = Int(map[lane])
             let bond = bonds.indices[Int(map[lane])]
-            let otherID = other(atomID: bond[j], bondID: bondID)
+            let otherID = (bond[0] == bond[j]) ? bond[1] : bond[0]
             neighbors.append(createAddress(otherID))
           }
           neighbors.append(createAddress(bond[1 - j]))
@@ -91,7 +92,8 @@ extension MM4Parameters {
       var atomsMap = SIMD4<Int32>(repeating: -1)
       
       for lane in 0..<4 where bondsMap[lane] != -1 {
-        let otherID = other(atomID: atomID, bondID: bondsMap[lane])
+        let bond = bonds.indices[Int(bondsMap[lane])]
+        let otherID = (bond[0] == atomID) ? bond[1] : bond[0]
         atomsMap[lane] = Int32(truncatingIfNeeded: otherID)
       }
       atomsToAtomsMap.append(atomsMap)
@@ -131,7 +133,8 @@ extension MM4Parameters {
     }
     
     // This loop could be optimized with multithreading, if it becomes a
-    // bottleneck in any workflow.
+    // bottleneck in any workflow. The sorting of torsion indices might also
+    // be possible to parallelize.
     var ringsMap: [SIMD8<UInt32>: Bool] = [:]
     for atom1 in 0..<UInt32(atoms.count) {
       let map1 = vAtomsToAtomsMap[Int(atom1)]
@@ -254,12 +257,57 @@ extension MM4Parameters {
         }
       }
     }
- 
+    
     angles.indices = angles.map.keys.map { $0 }
     angles.indices.sort(by: compareAngle)
     
-    torsions.indices = torsions.map.keys.map { $0 }
-    torsions.indices.sort(by: compareTorsion)
+    let start = Date()
+    
+    // TODO: Try reserving array capacity beforehand using
+    // torsions.count / atoms.count * 2. This might be a lower-effort
+    // optimization than parallelizing via atomics?
+    // - Check what the performance would be by timing a mark-sweep with a
+    //   boolean array.
+    //
+    // Even better: append to an array from the very beginning. Sort, then
+    // remove duplicates. Are there ever any duplicates? Assert that there are
+    // no duplicate bonds in the beginning of MM4Parameters initialization.
+    // - Removes the need to parallelize this part.
+    // - There's a maximum number of angles and torsions any atom can have.
+    // - Merge the results of different threads, removing the need to use
+    //   atomics **anywhere**.
+    // - Guarantee that only the buckets for atom 1 in the loop are touched.
+    // - Sort the atom's array at the end of the loop.
+    // - Keep the array in L1 cache during sorting.
+    var torsionBuckets: [[SIMD4<UInt32>]] = Array(
+      repeating: [], count: atoms.count)
+    for torsion in torsions.map.keys {
+      let atomID = Int(torsion[1])
+      torsionBuckets[atomID].append(torsion)
+    }
+    
+    let middle = Date()
+    
+    for atomID in atoms.indices {
+      torsionBuckets[atomID].sort(by: { x, y in
+        if x[2] != y[2] { return x[2] < y[2] }
+        if x[0] != y[0] { return x[0] < y[0] }
+        if x[3] != y[3] { return x[3] < y[3] }
+        return true
+      })
+      torsions.indices += torsionBuckets[atomID]
+    }
+    
+    let end = Date()
+    
+    if atoms.count == 1514 {
+      let elapsedTime0 = middle.timeIntervalSince(start)
+      let elapsedTime1 = end.timeIntervalSince(middle)
+      print("torsion sorting:")
+      print("- time interval 0: \(elapsedTime0 * 1e3)")
+      print("- time interval 1: \(elapsedTime1 * 1e3)")
+    }
+    
     
     rings.indices = ringsMap.keys.map { $0 }
     rings.indices.sort(by: compareRing)

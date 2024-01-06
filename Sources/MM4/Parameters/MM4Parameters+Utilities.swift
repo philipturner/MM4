@@ -8,15 +8,6 @@
 // MARK: - Locating Atoms
 
 extension MM4Parameters {
-  @_transparent
-  func other<T: FixedWidthInteger, U: FixedWidthInteger>(
-    atomID: T, bondID: U
-  ) -> UInt32 {
-    let bond = bonds.indices[Int(bondID)]
-    return (bond[0] == atomID) ? bond[1] : bond[0]
-  }
-  
-  @_transparent
   func createAddress<T: FixedWidthInteger>(_ atomID: T) -> MM4Address {
     MM4Address(
       rigidBodyIndex: 0,
@@ -109,6 +100,8 @@ extension MM4Parameters {
   /// `codes` could also contain atom indices, for sorting the bond while
   /// generating the bond topology.
   @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func sortBond<T>(_ codes: SIMD2<T>) -> SIMD2<T>
   where T: FixedWidthInteger {
     if codes[0] > codes[1] {
@@ -121,6 +114,8 @@ extension MM4Parameters {
   /// `codes` could also contain atom indices, for sorting the angle while
   /// generating the bond topology.
   @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func sortAngle<T>(_ codes: SIMD3<T>) -> SIMD3<T>
   where T: FixedWidthInteger {
     if codes[0] > codes[2] {
@@ -133,6 +128,8 @@ extension MM4Parameters {
   /// `codes` could also contain atom indices, for sorting the torsion while
   /// generating the bond topology.
   @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func sortTorsion<T>(_ codes: SIMD4<T>) -> SIMD4<T>
   where T: FixedWidthInteger {
     var reorder = false

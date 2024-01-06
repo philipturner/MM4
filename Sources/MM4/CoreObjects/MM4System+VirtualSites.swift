@@ -67,7 +67,8 @@ extension MM4System {
       }
       
       let bondID = map[0]
-      let otherID = parameters.other(atomID: originalID, bondID: bondID)
+      let bond = parameters.bonds.indices[Int(bondID)]
+      let otherID = (bond[0] == originalID) ? bond[1] : bond[0]
       
       let otherParameters = parameters.atoms.parameters[Int(otherID)]
       let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
