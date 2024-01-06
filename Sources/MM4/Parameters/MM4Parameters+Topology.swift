@@ -5,7 +5,8 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
-import Foundation
+import Atomics
+import Dispatch
 
 /// Parameters for a group of 3 to 5 atoms.
 public struct MM4Rings {
@@ -96,6 +97,25 @@ extension MM4Parameters {
         let otherID = (bond[0] == atomID) ? bond[1] : bond[0]
         atomsMap[lane] = Int32(truncatingIfNeeded: otherID)
       }
+      
+      var duplicates: Int32 = .zero
+      for lane in 0..<4 where atomsMap[lane] != -1 {
+        let zero = SIMD4<Int32>(repeating: 0)
+        let one = SIMD4<Int32>(repeating: 1)
+        
+        var matchMask = zero
+        matchMask.replace(with: one, where: atomsMap .== atomsMap[lane])
+        matchMask[lane] = 0
+        duplicates &+= matchMask.wrappedSum()
+      }
+      
+      // If the bonds are all unique, we can employ some interesting tricks
+      // during the topology search. We can pre-allocate a fixed amount of
+      // memory for each atom's list of angles and torsions.
+      if duplicates > 0 {
+        fatalError("The same bond was entered twice.")
+      }
+      
       atomsToAtomsMap.append(atomsMap)
     }
   }
@@ -127,6 +147,29 @@ extension MM4Parameters {
     forces.contains(.stretchStretch) ||
     includeTorsions
     
+    let angleAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
+      .allocate(capacity: atoms.count)
+    let angleCounts = UnsafeMutablePointer<UInt16>(
+      OpaquePointer(angleAtomics))
+    let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
+      .allocate(capacity: 6 * atoms.count)
+    
+    let torsionAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
+      .allocate(capacity: atoms.count)
+    let torsionCounts =  UnsafeMutablePointer<UInt16>(
+      OpaquePointer(torsionAtomics))
+    let torsionBuckets: UnsafeMutablePointer<SIMD4<UInt32>> =
+      .allocate(capacity: 36 * atoms.count)
+    
+    angleCounts.initialize(repeating: .zero, count: atoms.count)
+    torsionCounts.initialize(repeating: .zero, count: atoms.count)
+    defer {
+      angleAtomics.deallocate()
+      angleBuckets.deallocate()
+      torsionAtomics.deallocate()
+      torsionBuckets.deallocate()
+    }
+    
     @_transparent
     func wrap(_ index: Int) -> Int {
       (index + 5) % 5
@@ -148,7 +191,14 @@ extension MM4Parameters {
           let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
           if atom1 == atom3 { continue }
           if includeAngles, atom1 < atom3 {
-            angles.map[SIMD3(atom1, atom2, atom3)] = .max
+            let angle = SIMD3(atom1, atom2, atom3)
+            let atomID = Int(atom2)
+            let atomic = UnsafeAtomic<UInt16>(
+              at: angleAtomics.advanced(by: atomID))
+            
+            let count = atomic.loadThenWrappingIncrement(ordering: .relaxed)
+            angleCounts[atomID] = count &+ 1
+            angleBuckets[6 &* atomID &+ Int(count)] = angle
           }
           let map3 = vAtomsToAtomsMap[Int(atom3)]
           
@@ -186,7 +236,14 @@ extension MM4Parameters {
             
             if atom2 < atom3 {
               if includeTorsions {
-                torsions.map[SIMD4(atom1, atom2, atom3, atom4)] = .max
+                let torsion = SIMD4(atom1, atom2, atom3, atom4)
+                let atomID = Int(atom2)
+                let atomic = UnsafeAtomic<UInt16>(
+                  at: torsionAtomics.advanced(by: atomID))
+                
+                let count = atomic.loadThenWrappingIncrement(ordering: .relaxed)
+                torsionCounts[atomID] = count &+ 1
+                torsionBuckets[36 &* atomID &+ Int(count)] = torsion
               }
               
               var match1: SIMD4<Int32> = .zero
@@ -258,56 +315,28 @@ extension MM4Parameters {
       }
     }
     
-    angles.indices = angles.map.keys.map { $0 }
-    angles.indices.sort(by: compareAngle)
-    
-    let start = Date()
-    
-    // TODO: Try reserving array capacity beforehand using
-    // torsions.count / atoms.count * 2. This might be a lower-effort
-    // optimization than parallelizing via atomics?
-    // - Check what the performance would be by timing a mark-sweep with a
-    //   boolean array.
-    //
-    // Even better: append to an array from the very beginning. Sort, then
-    // remove duplicates. Are there ever any duplicates? Assert that there are
-    // no duplicate bonds in the beginning of MM4Parameters initialization.
-    // - Removes the need to parallelize this part.
-    // - There's a maximum number of angles and torsions any atom can have.
-    // - Merge the results of different threads, removing the need to use
-    //   atomics **anywhere**.
-    // - Guarantee that only the buckets for atom 1 in the loop are touched.
-    // - Sort the atom's array at the end of the loop.
-    // - Keep the array in L1 cache during sorting.
-    var torsionBuckets: [[SIMD4<UInt32>]] = Array(
-      repeating: [], count: atoms.count)
-    for torsion in torsions.map.keys {
-      let atomID = Int(torsion[1])
-      torsionBuckets[atomID].append(torsion)
-    }
-    
-    let middle = Date()
-    
     for atomID in atoms.indices {
-      torsionBuckets[atomID].sort(by: { x, y in
+      var angleBucket = UnsafeMutableBufferPointer(
+        start: angleBuckets.advanced(by: 6 &* atomID),
+        count: Int(angleCounts[atomID]))
+      angleBucket.sort(by: { x, y in
+        if x[0] != y[0] { return x[0] < y[0] }
+        if x[2] != y[2] { return x[2] < y[2] }
+        return true
+      })
+      angles.indices += angleBucket
+      
+      var torsionBucket = UnsafeMutableBufferPointer(
+        start: torsionBuckets.advanced(by: 36 &* atomID),
+        count: Int(torsionCounts[atomID]))
+      torsionBucket.sort(by: { x, y in
         if x[2] != y[2] { return x[2] < y[2] }
         if x[0] != y[0] { return x[0] < y[0] }
         if x[3] != y[3] { return x[3] < y[3] }
         return true
       })
-      torsions.indices += torsionBuckets[atomID]
+      torsions.indices += torsionBucket
     }
-    
-    let end = Date()
-    
-    if atoms.count == 1514 {
-      let elapsedTime0 = middle.timeIntervalSince(start)
-      let elapsedTime1 = end.timeIntervalSince(middle)
-      print("torsion sorting:")
-      print("- time interval 0: \(elapsedTime0 * 1e3)")
-      print("- time interval 1: \(elapsedTime1 * 1e3)")
-    }
-    
     
     rings.indices = ringsMap.keys.map { $0 }
     rings.indices.sort(by: compareRing)
