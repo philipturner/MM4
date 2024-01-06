@@ -15,13 +15,13 @@ public struct MM4ParametersDescriptor {
   
   /// Required. The forces to assign parameters for.
   ///
-  /// The default is `MM4Force.allCases`, excluding `.external`.
+  /// The default value includes all available forces.
   ///
   /// Disabling certain forces may reduce the execution time required to
   /// generate parameters. For example, if torsion forces are excluded, the
   /// array of torsion parameters will be empty. `nonbondedExceptions14` will
   /// also be an empty array.
-  public var forces: Set<MM4Force> = [
+  public var forces: MM4ForceOptions = [
     .bend,
     .bendBend,
     .nonbonded,
@@ -91,10 +91,8 @@ public struct MM4Parameters {
           let descriptorBonds = descriptor.bonds else {
       fatalError("Descriptor did not have the required properties.")
     }
+    
     // TODO: Actually reflect the choice of forces in the parameters descriptor.
-    guard !descriptor.forces.contains(.external) else {
-      fatalError("External forces do not use fixed parameters.")
-    }
     
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.

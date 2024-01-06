@@ -8,7 +8,7 @@
 import Foundation
 import OpenMM
 
-class MM4NonbondedForce: MM4ForceGroup {
+class MM4NonbondedForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // WARNING
     //
@@ -101,7 +101,7 @@ class MM4NonbondedForce: MM4ForceGroup {
 /// on the diagonal. It also wouldn't change the compute cost due to divergence.
 /// The version here may actually decrease compute cost a little, as the
 /// exp(-12) term is omitted.
-class MM4NonbondedExceptionForce: MM4ForceGroup {
+class MM4NonbondedExceptionForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // It seems like "disfac" was the dispersion factor, similar to the DISP-14
     // keyword in Tinker. Keep the Pauli repulsion force the same though.

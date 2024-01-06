@@ -92,7 +92,10 @@ public class MM4ForceField {
       fatalError("Specified both parameters and rigid bodies.")
     }
     
-    MM4Plugins.global.load()
+    // Load available plugins before doing anything that might require them.
+    let directory = OpenMM_Platform.defaultPluginsDirectory!
+    _ = OpenMM_Platform.loadPlugins(directory: directory)!
+    
     system = MM4System(parameters: parameters, descriptor: descriptor)
     context = MM4Context(system: system, platform: descriptor.platform)
     cachedState = MM4State()

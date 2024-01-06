@@ -7,7 +7,7 @@
 
 import OpenMM
 
-class MM4ExternalForce: MM4ForceGroup {
+class MM4ExternalForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // There is no need to convert from kJ/mol to zJ here.
     let force = OpenMM_CustomExternalForce(energy: """

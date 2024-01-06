@@ -8,7 +8,7 @@
 import OpenMM
 
 /// Torsion and torsion-stretch force.
-class MM4TorsionForce: MM4ForceGroup {
+class MM4TorsionForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Eventually, we want to optimize this by fusing all the torsions
     // surrounding the same bond into a single invocation.
@@ -95,7 +95,7 @@ class MM4TorsionForce: MM4ForceGroup {
 }
 
 /// Torsion, torsion-stretch, torsion-bend, and bend-torsion-bend force.
-class MM4TorsionExtendedForce: MM4ForceGroup {
+class MM4TorsionExtendedForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // When fusing multiple carbon-like torsions into a single invocation: V4/V6
     // terms are very rare. There should be a separate force to handle only the

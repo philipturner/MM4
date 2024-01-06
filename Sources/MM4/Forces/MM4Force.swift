@@ -7,40 +7,44 @@
 
 import OpenMM
 
-public enum MM4Force: CaseIterable, Hashable {
+public struct MM4ForceOptions: OptionSet {
+  public let rawValue: UInt32
+  
+  @_transparent
+  public init(rawValue: UInt32) {
+    self.rawValue = rawValue
+  }
+  
   /// Angle bending with a sextic Taylor expansion.
-  case bend
+  public static let bend = MM4ForceOptions(rawValue: 1 << 0)
   
   /// Coupling of vibrational frequencies of two angles with the same center.
-  case bendBend
-  
-  /// Unchanging potential gradient imposed by something outside the system.
-  case external
+  public static let bendBend = MM4ForceOptions(rawValue: 1 << 1)
   
   /// London dispersion, overlap repulsion, and Coulomb forces.
-  case nonbonded
+  public static let nonbonded = MM4ForceOptions(rawValue: 1 << 2)
   
   /// Morse bond stretching potential.
-  case stretch
+  public static let stretch = MM4ForceOptions(rawValue: 1 << 3)
   
   /// Increase in covalent bond length as bond angle shrinks.
-  case stretchBend
+  public static let stretchBend = MM4ForceOptions(rawValue: 1 << 4)
   
   /// Coupling of adjacent covalent bonds invoked by electronegative atoms.
-  case stretchStretch
+  public static let stretchStretch = MM4ForceOptions(rawValue: 1 << 5)
   
   /// Torsion and 1-4 nonbonded exception forces.
-  case torsion
+  public static let torsion = MM4ForceOptions(rawValue: 1 << 6)
   
   /// Torsion-bend and bend-torsion-bend for electronegative atoms.
-  case torsionBend
+  public static let torsionBend = MM4ForceOptions(rawValue: 1 << 7)
   
   /// Decrease in covalent bond length as a torsion reaches the eclipsing
   /// position.
-  case torsionStretch
+  public static let torsionStretch = MM4ForceOptions(rawValue: 1 << 8)
 }
 
-class MM4ForceGroup {
+class MM4Force {
   /// The OpenMM objects containing the forces.
   var forces: [OpenMM_Force]
   
@@ -104,16 +108,11 @@ class MM4Forces {
     self.stretch = .init(system: system, descriptor: descriptor)
   }
   
-  // Make this act explicit instead of performing it in the initializer. This
-  // makes the code more declarative; it's easier to debug when one writes
-  // functions this way.
   func addForces(to system: OpenMM_System) {
-    // Force Group 0
-    external.addForces(to: system)
-    
     // Force Group 1
     electrostatic.addForces(to: system)
     electrostaticException.addForces(to: system)
+    external.addForces(to: system)
     nonbonded.addForces(to: system)
     nonbondedException.addForces(to: system)
     torsion.addForces(to: system)

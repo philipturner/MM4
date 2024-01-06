@@ -8,7 +8,7 @@
 import OpenMM
 
 /// Morse bond stretch force.
-class MM4StretchForce: MM4ForceGroup {
+class MM4StretchForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Using "beta" instead of "alpha", as it's the character used in
     // Nanosystems 3.3.3(a).
