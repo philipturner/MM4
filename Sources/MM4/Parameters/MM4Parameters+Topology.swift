@@ -175,141 +175,175 @@ extension MM4Parameters {
       (index + 5) % 5
     }
     
-    // This loop could be optimized with multithreading, if it becomes a
-    // bottleneck in any workflow. The sorting of torsion indices might also
-    // be possible to parallelize.
+    // Scope the rings map into a local dictionary per-thread. Merge the partial
+    // results on single-core after the loop is over.
+    let taskSize = 128
+    let taskCount = (atoms.count + taskSize - 1) / taskSize
+    var localRingsMaps = [[SIMD8<UInt32>: Bool]](
+      repeating: [:], count: taskCount)
+    var localErrors = [MM4Error?](repeating: nil, count: taskCount)
+    
+    DispatchQueue.concurrentPerform(iterations: taskCount) { z in
+      do {
+        try execute(taskID: z)
+      } catch let error {
+        localErrors[z] = error as? MM4Error
+      }
+    }
+    for error in localErrors {
+      if let error {
+        throw error
+      }
+    }
     var ringsMap: [SIMD8<UInt32>: Bool] = [:]
-    for atom1 in 0..<UInt32(atoms.count) {
-      let map1 = vAtomsToAtomsMap[Int(atom1)]
-      var ringType: UInt8 = 6
+    for localRingsMap in localRingsMaps {
+      for key in localRingsMap.keys {
+        ringsMap[key] = true
+      }
+    }
+    
+    func execute(taskID: Int) throws {
+      var ringsMap: [SIMD8<UInt32>: Bool] = [:]
+      defer {
+        localRingsMaps[taskID] = ringsMap
+      }
       
-      for lane2 in 0..<4 where map1[lane2] != -1 {
-        let atom2 = UInt32(truncatingIfNeeded: map1[lane2])
-        let map2 = vAtomsToAtomsMap[Int(atom2)]
+      let atomStart = taskID * taskSize
+      let atomEnd = min(atomStart + taskSize, atoms.count)
+      for atom1 in UInt32(atomStart)..<UInt32(atomEnd) {
+        let map1 = vAtomsToAtomsMap[Int(atom1)]
+        var ringType: UInt8 = 6
         
-        for lane3 in 0..<4 where map2[lane3] != -1 {
-          let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
-          if atom1 == atom3 { continue }
-          if includeAngles, atom1 < atom3 {
-            let angle = SIMD3(atom1, atom2, atom3)
-            let atomID = Int(atom2)
-            let atomic = UnsafeAtomic<UInt16>(
-              at: angleAtomics.advanced(by: atomID))
-            
-            let count = atomic.loadThenWrappingIncrement(ordering: .relaxed)
-            angleCounts[atomID] = count &+ 1
-            angleBuckets[6 &* atomID &+ Int(count)] = angle
-          }
-          let map3 = vAtomsToAtomsMap[Int(atom3)]
+        for lane2 in 0..<4 where map1[lane2] != -1 {
+          let atom2 = UInt32(truncatingIfNeeded: map1[lane2])
+          let map2 = vAtomsToAtomsMap[Int(atom2)]
           
-          for lane4 in 0..<4 where map3[lane4] != -1 {
-            let atom4 = UInt32(truncatingIfNeeded: map3[lane4])
-            if atom2 == atom4 {
-              continue
-            } else if atom1 == atom4 {
-              ringType = min(3, ringType)
-              continue
+          for lane3 in 0..<4 where map2[lane3] != -1 {
+            let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
+            if atom1 == atom3 { continue }
+            if includeAngles, atom1 < atom3 {
+              let angle = SIMD3(atom1, atom2, atom3)
+              let atomID = Int(atom2)
+              let atomic = UnsafeAtomic<UInt16>(
+                at: angleAtomics.advanced(by: atomID))
+              
+              let count = atomic
+                .loadThenWrappingIncrement(ordering: .relaxed)
+              angleCounts[atomID] = count &+ 1
+              angleBuckets[6 &* atomID &+ Int(count)] = angle
             }
-            
-            let map4 = vAtomsToAtomsMap[Int(atom4)]
-            var maskA: SIMD4<Int32> = .init(repeating: 6)
-            var maskB: SIMD4<Int32> = .init(repeating: 6)
-            var maskC: SIMD4<Int32> = .init(repeating: 6)
-            var maskD: SIMD4<Int32> = .init(repeating: 6)
-            let mapA = vAtomsToAtomsMap[Int(map4[0])]
-            let mapB = vAtomsToAtomsMap[Int(map4[1])]
-            let mapC = vAtomsToAtomsMap[Int(map4[2])]
-            let mapD = vAtomsToAtomsMap[Int(map4[3])]
-            
-            let fives = SIMD4<Int32>(repeating: 5)
-            let atom = Int32(truncatingIfNeeded: atom1)
-            maskA.replace(with: fives, where: atom .== mapA)
-            maskB.replace(with: fives, where: atom .== mapB)
-            maskC.replace(with: fives, where: atom .== mapC)
-            maskD.replace(with: fives, where: atom .== mapD)
-            
-            maskA.replace(with: maskB, where: maskB .< maskA)
-            maskC.replace(with: maskD, where: maskD .< maskC)
-            maskA.replace(with: maskC, where: maskC .< maskA)
-            maskA.replace(with: .init(repeating: 4), where: atom .== map4)
-            ringType = min(ringType, UInt8(truncatingIfNeeded: maskA.min()))
-            
-            if atom2 < atom3 {
-              if includeTorsions {
-                let torsion = SIMD4(atom1, atom2, atom3, atom4)
-                let atomID = Int(atom2)
-                let atomic = UnsafeAtomic<UInt16>(
-                  at: torsionAtomics.advanced(by: atomID))
-                
-                let count = atomic.loadThenWrappingIncrement(ordering: .relaxed)
-                torsionCounts[atomID] = count &+ 1
-                torsionBuckets[36 &* atomID &+ Int(count)] = torsion
-              }
-              
-              var match1: SIMD4<Int32> = .zero
-              var match2: SIMD4<Int32> = .zero
-              var match3: SIMD4<Int32> = .zero
-              var match4: SIMD4<Int32> = .zero
-              match1.replace(with: .one, where: map1[0] .== map4)
-              match2.replace(with: .one, where: map1[1] .== map4)
-              match3.replace(with: .one, where: map1[2] .== map4)
-              match4.replace(with: .one, where: map1[3] .== map4)
-              
-              match1 &+= match2
-              match3 &+= match4
-              match1 &+= match3
-              match1.replace(with: SIMD4.zero, where: map4 .== -1)
-              
-              // Atom indices within the angles and torsions are already sorted.
-              // Here, we initialize rings with correct ordering as well.
-              for lane in 0..<4 where match1[lane] > 0 {
-                let array = SIMD8<UInt32>(
-                  atom1, atom2, atom3, atom4,
-                  UInt32(truncatingIfNeeded: map4[lane]), 0, 0, 0)
-                
-                var minIndex = 0
-                for lane in 0..<5 {
-                  if array[lane] < array[minIndex] {
-                    minIndex = lane
-                  }
-                }
-                
-                let prev = array[wrap(minIndex - 1)]
-                let next = array[wrap(minIndex + 1)]
-                let increment = (next > prev) ? +1 : -1
-                
-                var output: SIMD8<UInt32> = .init(repeating: .max)
-                for lane in 0..<5 {
-                  let index = wrap(minIndex + lane * increment)
-                  output[lane] = array[index]
-                }
-                ringsMap[output] = true
-              }
-            }
-          }
-          
-          if ringType < 5 {
-            var addresses: [MM4Address] = []
-            addresses.append(createAddress(atom1))
-            addresses.append(createAddress(atom2))
-            addresses.append(createAddress(atom3))
+            let map3 = vAtomsToAtomsMap[Int(atom3)]
             
             for lane4 in 0..<4 where map3[lane4] != -1 {
-              let atom4 = UInt32(map3[lane4])
+              let atom4 = UInt32(truncatingIfNeeded: map3[lane4])
               if atom2 == atom4 {
                 continue
               } else if atom1 == atom4 {
-                throw MM4Error.unsupportedRing(addresses)
+                ringType = min(3, ringType)
+                continue
               }
               
               let map4 = vAtomsToAtomsMap[Int(atom4)]
-              for lane5 in 0..<4 where atom1 == map4[lane5] {
-                addresses.append(createAddress(atom4))
-                throw MM4Error.unsupportedRing(addresses)
+              var maskA: SIMD4<Int32> = .init(repeating: 6)
+              var maskB: SIMD4<Int32> = .init(repeating: 6)
+              var maskC: SIMD4<Int32> = .init(repeating: 6)
+              var maskD: SIMD4<Int32> = .init(repeating: 6)
+              let mapA = vAtomsToAtomsMap[Int(map4[0])]
+              let mapB = vAtomsToAtomsMap[Int(map4[1])]
+              let mapC = vAtomsToAtomsMap[Int(map4[2])]
+              let mapD = vAtomsToAtomsMap[Int(map4[3])]
+              
+              let fives = SIMD4<Int32>(repeating: 5)
+              let atom = Int32(truncatingIfNeeded: atom1)
+              maskA.replace(with: fives, where: atom .== mapA)
+              maskB.replace(with: fives, where: atom .== mapB)
+              maskC.replace(with: fives, where: atom .== mapC)
+              maskD.replace(with: fives, where: atom .== mapD)
+              
+              maskA.replace(with: maskB, where: maskB .< maskA)
+              maskC.replace(with: maskD, where: maskD .< maskC)
+              maskA.replace(with: maskC, where: maskC .< maskA)
+              maskA.replace(with: .init(repeating: 4), where: atom .== map4)
+              ringType = min(ringType, UInt8(truncatingIfNeeded: maskA.min()))
+              
+              if atom2 < atom3 {
+                if includeTorsions {
+                  let torsion = SIMD4(atom1, atom2, atom3, atom4)
+                  let atomID = Int(atom2)
+                  let atomic = UnsafeAtomic<UInt16>(
+                    at: torsionAtomics.advanced(by: atomID))
+                  
+                  let count = atomic
+                    .loadThenWrappingIncrement(ordering: .relaxed)
+                  torsionCounts[atomID] = count &+ 1
+                  torsionBuckets[36 &* atomID &+ Int(count)] = torsion
+                }
+                
+                var match1: SIMD4<Int32> = .zero
+                var match2: SIMD4<Int32> = .zero
+                var match3: SIMD4<Int32> = .zero
+                var match4: SIMD4<Int32> = .zero
+                match1.replace(with: .one, where: map1[0] .== map4)
+                match2.replace(with: .one, where: map1[1] .== map4)
+                match3.replace(with: .one, where: map1[2] .== map4)
+                match4.replace(with: .one, where: map1[3] .== map4)
+                
+                match1 &+= match2
+                match3 &+= match4
+                match1 &+= match3
+                match1.replace(with: SIMD4.zero, where: map4 .== -1)
+                
+                // Atom indices within the angles/torsions are already sorted.
+                // Here, we initialize rings with correct ordering as well.
+                for lane in 0..<4 where match1[lane] > 0 {
+                  let array = SIMD8<UInt32>(
+                    atom1, atom2, atom3, atom4,
+                    UInt32(truncatingIfNeeded: map4[lane]), 0, 0, 0)
+                  
+                  var minIndex = 0
+                  for lane in 0..<5 {
+                    if array[lane] < array[minIndex] {
+                      minIndex = lane
+                    }
+                  }
+                  
+                  let prev = array[wrap(minIndex - 1)]
+                  let next = array[wrap(minIndex + 1)]
+                  let increment = (next > prev) ? +1 : -1
+                  
+                  var output: SIMD8<UInt32> = .init(repeating: .max)
+                  for lane in 0..<5 {
+                    let index = wrap(minIndex + lane * increment)
+                    output[lane] = array[index]
+                  }
+                  ringsMap[output] = true
+                }
               }
             }
-            fatalError(
-              "Ring type was less than 5, but faulting atom group was not found.")
+            
+            if ringType < 5 {
+              var addresses: [MM4Address] = []
+              addresses.append(createAddress(atom1))
+              addresses.append(createAddress(atom2))
+              addresses.append(createAddress(atom3))
+              
+              for lane4 in 0..<4 where map3[lane4] != -1 {
+                let atom4 = UInt32(map3[lane4])
+                if atom2 == atom4 {
+                  continue
+                } else if atom1 == atom4 {
+                  throw MM4Error.unsupportedRing(addresses)
+                }
+                
+                let map4 = vAtomsToAtomsMap[Int(atom4)]
+                for lane5 in 0..<4 where atom1 == map4[lane5] {
+                  addresses.append(createAddress(atom4))
+                  throw MM4Error.unsupportedRing(addresses)
+                }
+              }
+              fatalError(
+                "Ring type was less than 5, but faulting atom group was not found.")
+            }
           }
         }
       }

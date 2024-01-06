@@ -108,7 +108,7 @@ public struct MM4Parameters {
     let checkpoint1 = Date() // 0.2 ms 0.2 ms
     try createAtomsToBondsMap()
     try createAtomsToAtomsMap()
-    let checkpoint2 = Date() // 5.2 ms 8.2 ms
+    let checkpoint2 = Date() // 2.4 ms 2.4 ms
     try createTopology(forces: descriptor.forces)
     let checkpoint3 = Date() // 0.0 ms 0.0 ms
     try createCenterTypes()
