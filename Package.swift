@@ -13,7 +13,6 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-docc-plugin", branch: "main"),
-    .package(url: "https://github.com/philipturner/swift-numerics", branch: "Quaternions"),
     .package(url: "https://github.com/philipturner/swift-openmm", branch: "main"),
   ],
   targets: [
@@ -22,7 +21,6 @@ let package = Package(
     .target(
       name: "MM4",
       dependencies: [
-        .product(name: "Numerics", package: "swift-numerics"),
         .product(name: "OpenMM", package: "swift-openmm"),
       ]),
     .testTarget(

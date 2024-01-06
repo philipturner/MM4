@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
-import Numerics
-
 extension MM4RigidBody {
   /// The velocity (in nanometers per picosecond) of each atom.
   ///
@@ -127,7 +125,7 @@ extension MM4RigidBodyStorage {
   
   // WARNING: This returns a nonzero angular velocity, even when we should store
   // zero (anchors > 1). It is the angular velocity of non-anchors.
-  func createAngularVelocity() -> Quaternion<Float> {
+  func createAngularVelocity() -> SIMD3<Float> {
     var momentum: SIMD3<Double> = .zero
     ensureCenterOfMassCached()
     guard let centerOfMass else {
@@ -162,21 +160,7 @@ extension MM4RigidBodyStorage {
     let velocityX = inverse.0 * Float(momentum.x)
     let velocityY = inverse.1 * Float(momentum.y)
     let velocityZ = inverse.2 * Float(momentum.z)
-    let velocity = velocityX + velocityY + velocityZ
-    
-    if all(velocity .< .leastNormalMagnitude .&
-           velocity .> -.leastNormalMagnitude) {
-      return .zero
-    } else {
-      let lengthSquared = (velocity * velocity).sum()
-      if abs(lengthSquared) < .leastNormalMagnitude {
-        return .zero
-      }
-      
-      let axis = SIMD3<Float>(velocity / lengthSquared.squareRoot())
-      let angle = Float(lengthSquared.squareRoot())
-      return Quaternion<Float>(angle: angle, axis: axis)
-    }
+    return velocityX + velocityY + velocityZ
   }
 }
 
@@ -185,7 +169,7 @@ extension MM4RigidBodyStorage {
 extension MM4RigidBody {
   /// The net angular velocity (in radians per picosecond) of the non-anchor
   /// atoms.
-  public var angularVelocity: Quaternion<Float> {
+  public var angularVelocity: SIMD3<Float> {
     _read {
       storage.ensureAngularVelocityCached()
       yield storage.angularVelocity!
@@ -205,8 +189,6 @@ extension MM4RigidBody {
         fatalError("This should never happen.")
       }
       
-      let previousW = quaternionToVector(previous)
-      let nextW = quaternionToVector(next)
       for vID in 0..<storage.atoms.vectorCount {
         let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
         let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
@@ -217,7 +199,7 @@ extension MM4RigidBody {
         
         // Un-apply the previous bulk angular velocity.
         do {
-          let w = previousW
+          let w = previous
           vX -= w.y * rZ - w.z * rY
           vY -= w.z * rX - w.x * rZ
           vZ -= w.x * rY - w.y * rX
@@ -225,7 +207,7 @@ extension MM4RigidBody {
         
         // Apply the next bulk angular velocity.
         do {
-          let w = nextW
+          let w = next
           vX += w.y * rZ - w.z * rY
           vY += w.z * rX - w.x * rZ
           vZ += w.x * rY - w.y * rX

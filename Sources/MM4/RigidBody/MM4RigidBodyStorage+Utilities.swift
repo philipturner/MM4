@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 11/25/23.
 //
 
-import Numerics
-
 // Source: https://stackoverflow.com/a/18504573
 func invertMatrix3x3(
   _ columns: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>)
@@ -38,59 +36,6 @@ func invertMatrix3x3(
   return (SIMD3<Float>(column0),
           SIMD3<Float>(column1),
           SIMD3<Float>(column2))
-}
-
-func quaternionToVector(_ quaternion: Quaternion<Float>) -> SIMD3<Float> {
-  let angleAxis = quaternion.angleAxis
-  let axis = angleAxis.axis
-  
-  if axis[0].isNaN || axis[1].isNaN || axis[2].isNaN {
-    return .zero
-  } else if angleAxis.length == 0 || angleAxis.angle.isNaN {
-    return .zero
-  } else {
-    return angleAxis.angle * angleAxis.axis
-  }
-}
-
-func vQuaternionPrepare(
-  _ quaternion: Quaternion<Float>
-) -> (real: Float, imaginary: SIMD3<Float>, p1: Float) {
-  let real = quaternion.real
-  let imaginary = quaternion.imaginary
-  let p1 = real * real - (imaginary * imaginary).sum()
-  return (real, imaginary, p1)
-}
-
-// Convert the quaternion to real-imaginary format beforehand to minimize
-// overhead.
-@inline(__always)
-func vQuaternionAct(
-  _ quaternion: (real: Float, imaginary: SIMD3<Float>, p1: Float),
-  _ x: inout MM4FloatVector,
-  _ y: inout MM4FloatVector,
-  _ z: inout MM4FloatVector
-) {
-  let real = quaternion.real
-  let imag = quaternion.imaginary
-  
-  let p1x = x * quaternion.p1
-  let p1y = y * quaternion.p1
-  let p1z = z * quaternion.p1
-  
-  let dot = imag.x * x + imag.y * y + imag.z * z
-  let p2x = imag.x * dot
-  let p2y = imag.y * dot
-  let p2z = imag.z * dot
-  
-  // WARNING: `p3` is not multiplied by `real` yet.
-  let p3x = imag.y * z - imag.z * y
-  let p3y = imag.z * x - imag.x * z
-  let p3z = imag.x * y - imag.y * x
-  
-  x = p1x.addingProduct(2, p2x.addingProduct(p3x, real))
-  y = p1y.addingProduct(2, p2y.addingProduct(p3y, real))
-  z = p1z.addingProduct(2, p2z.addingProduct(p3z, real))
 }
 
 extension MM4RigidBodyStorage {

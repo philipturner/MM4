@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
+import Foundation
+
 extension MM4RigidBody {
   /// Set the thermal kinetic energy to match a given temperature, assuming
   /// positions are energy-minimized at 0 K.
@@ -206,10 +208,10 @@ extension MM4RigidBodyStorage {
         // "auto-vectorize" this transcendental function, which may have
         // control flow operations that prevent it from actually vectorizing.
         for lane in 0..<MM4VectorWidth {
-          xyLog[lane] = Float.log(xyLog[lane])
+          xyLog[lane] = log(xyLog[lane])
         }
         for lane in 0..<MM4VectorWidth / 2 {
-          zLog[lane] = Float.log(zLog[lane])
+          zLog[lane] = log(zLog[lane])
         }
         
         let xyMultiplier = (-2 * xyLog / xyR2).squareRoot()
@@ -233,8 +235,7 @@ extension MM4RigidBodyStorage {
     
     // Query the bulk linear and angular momentum.
     let linearDrift = createLinearVelocity()
-    let angularDrift = createAngularVelocity()
-    let wDrift = quaternionToVector(angularDrift)
+    let wDrift = createAngularVelocity()
     
     // Set momentum to zero and calculate the modified thermal energy.
     var correctedThermalKineticEnergy: Double = .zero
@@ -287,7 +288,7 @@ extension MM4RigidBodyStorage {
       Float(atoms.nonAnchorCount) * particleEnergy /
       Float(correctedThermalKineticEnergy)
     ).squareRoot()
-    let w = quaternionToVector(constantAngularVelocity)
+    let w = constantAngularVelocity
     
     for vID in 0..<atoms.vectorCount {
       let rX = vPositions[vID &* 3 &+ 0] - centerOfMass.x

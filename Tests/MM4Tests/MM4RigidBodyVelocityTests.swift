@@ -1,6 +1,5 @@
 import XCTest
 import MM4
-import Numerics
 
 // Test the correctness of functionality that initializes and mutates
 // rigid body velocities.
@@ -161,17 +160,6 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
     return output
   }
   
-  // Helper function for extracting a quaternion's rotation vector.
-  func createRotationVector(
-    _ quaternion: Quaternion<Float>
-  ) -> SIMD3<Float> {
-    if quaternion.angle.isNaN {
-      return .zero
-    } else {
-      return quaternion.rotationVector
-    }
-  }
-  
   // Test that a pre-existing angular velocity is recognized.
   for bulkVelocity in bulkVelocities {
     let originalVelocities = createVelocities(bulkVelocity)
@@ -180,8 +168,7 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
     rigidBody.setPositions(reference.positions)
     rigidBody.setVelocities(originalVelocities)
     
-    let quaternion = rigidBody.angularVelocity
-    let computedVelocity = createRotationVector(quaternion)
+    let computedVelocity = rigidBody.angularVelocity
     XCTAssertEqual(
       computedVelocity,
       (parameters.atoms.count > 0) ? bulkVelocity : .zero,
@@ -200,8 +187,7 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
     rigidBody.setPositions(reference.positions)
     rigidBody.setVelocities(originalVelocities)
     
-    let quaternion = rigidBody.angularVelocity
-    let computedVelocity = createRotationVector(quaternion)
+    let computedVelocity = rigidBody.angularVelocity
     XCTAssertEqual(
       computedVelocity,
       (parameters.atoms.count > 0) ? bulkVelocity : .zero,
@@ -216,17 +202,14 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
   for bulkVelocity in bulkVelocities {
     var rigidBody = MM4RigidBody(parameters: reference.parameters)
     rigidBody.setPositions(reference.positions)
-    XCTAssert(rigidBody.angularVelocity.angle.isNaN)
+    XCTAssert(rigidBody.angularVelocity == .zero)
     for i in parameters.atoms.indices {
       XCTAssertEqual(rigidBody.velocities[i], .zero, accuracy: 1e-5)
     }
     
-    let angle = (bulkVelocity * bulkVelocity).sum().squareRoot()
-    let axis = (angle == 0) ? SIMD3<Float>(1, 0, 0) : bulkVelocity / angle
-    rigidBody.angularVelocity = Quaternion(angle: angle, axis: axis)
+    rigidBody.angularVelocity = bulkVelocity
     
-    var quaternion = rigidBody.angularVelocity
-    var computedVelocity = createRotationVector(quaternion)
+    var computedVelocity = rigidBody.angularVelocity
     XCTAssertEqual(
       computedVelocity,
       (parameters.atoms.count > 0) ? bulkVelocity : .zero,
@@ -240,8 +223,7 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
       XCTAssertEqual(velocity, rigidBody.velocities[i], accuracy: 1e-3)
     }
     
-    quaternion = rigidBody.angularVelocity
-    computedVelocity = createRotationVector(quaternion)
+    computedVelocity = rigidBody.angularVelocity
     XCTAssertEqual(
       computedVelocity,
       (parameters.atoms.count > 0) ? bulkVelocity : .zero,
@@ -268,15 +250,10 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
     }
     if changeAngular {
       currentAngularVelocity = .random(in: -0.020...0.020)
-      
-      let velocity = currentAngularVelocity
-      let angle = (velocity * velocity).sum().squareRoot()
-      let axis = (angle == 0) ? SIMD3<Float>(1, 0, 0) : velocity / angle
-      rigidBody.angularVelocity = Quaternion(angle: angle, axis: axis)
+      rigidBody.angularVelocity = currentAngularVelocity
     }
     
-    let quaternion = rigidBody.angularVelocity
-    let computedVelocity = createRotationVector(quaternion)
+    let computedVelocity = rigidBody.angularVelocity
     XCTAssertEqual(
       rigidBody.linearVelocity,
       (parameters.atoms.count > 0) ? currentLinearVelocity : .zero,

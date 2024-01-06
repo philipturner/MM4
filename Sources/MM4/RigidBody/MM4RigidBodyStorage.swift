@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 11/22/23.
 //
 
-import Numerics
-
 final class MM4RigidBodyStorage {
   // Sources of truth.
   var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
@@ -22,7 +20,7 @@ final class MM4RigidBodyStorage {
   var velocities: [SIMD3<Float>]?
   
   // Rarely cached (frequently erased).
-  var angularVelocity: Quaternion<Float>?
+  var angularVelocity: SIMD3<Float>?
   var linearVelocity: SIMD3<Float>?
   var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>)?
   

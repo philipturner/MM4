@@ -1,6 +1,5 @@
 import XCTest
 import MM4
-import Numerics
 
 // Test the basic functionality of the rigid body API.
 
