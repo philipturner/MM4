@@ -50,7 +50,7 @@ class MM4System {
 }
 
 extension MM4System {
-  @inline(__always)
+  @_transparent
   func reorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
     var output: SIMD2<UInt32> = .zero
     for i in 0..<indices.scalarCount {
@@ -59,7 +59,7 @@ extension MM4System {
     return SIMD2(truncatingIfNeeded: output)
   }
   
-  @inline(__always)
+  @_transparent
   func reorder(_ indices: SIMD3<UInt32>) -> SIMD3<Int> {
     var output: SIMD3<UInt32> = .zero
     for i in 0..<indices.scalarCount {
@@ -68,7 +68,7 @@ extension MM4System {
     return SIMD3(truncatingIfNeeded: output)
   }
   
-  @inline(__always)
+  @_transparent
   func reorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
     var output: SIMD4<UInt32> = .zero
     for i in 0..<indices.scalarCount {

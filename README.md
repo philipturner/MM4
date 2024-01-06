@@ -58,9 +58,9 @@ Available forces:
 - bend ❌
 - bend-bend ❌
 - nonbonded ❌
-  - London dispersion ❌
+  - van der Waals force ❌
   - overlap repulsion ❌
-  - Coulomb force ❌
+  - electrostatic force ❌
 - stretch ❌
 - stretch-bend ❌
 - stretch-stretch ❌

@@ -118,8 +118,12 @@ fi
 # Compile the executable. The tests shouldn't actually run, and no error should
 # appear, because the command is broken.
 if [[ $build_release == true ]]; then
-  swift test -c release
-  export XCTEST_FILE="$(pwd)/.build/release/MM4PackageTests.xctest"
+  swift test -Xswiftc -Ounchecked -Xswiftc -DRELEASE
+  export XCTEST_FILE="$(pwd)/.build/debug/MM4PackageTests.xctest"
+  
+    # Alternative commands to activate when benchmarking performance.
+#    swift test -c release
+#    export XCTEST_FILE="$(pwd)/.build/release/MM4PackageTests.xctest"
 else
   swift test
   export XCTEST_FILE="$(pwd)/.build/debug/MM4PackageTests.xctest"

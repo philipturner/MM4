@@ -8,14 +8,6 @@
 // MARK: - Locating Atoms
 
 extension MM4Parameters {
-  @inline(__always)
-  func other<T: FixedWidthInteger, U: FixedWidthInteger>(
-    atomID: T, bondID: U
-  ) -> UInt32 {
-    let bond = bonds.indices[Int(bondID)]
-    return (bond[0] == atomID) ? bond[1] : bond[0]
-  }
-  
   func createAddress<T: FixedWidthInteger>(_ atomID: T) -> MM4Address {
     MM4Address(
       rigidBodyIndex: 0,
@@ -38,7 +30,10 @@ extension MM4Parameters {
   /// Overloads the function `createAtomCodes()`, but is a more elegant API,
   /// that follows the de facto naming convention established for MM4 and
   /// related projects.
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == SIMD2<UInt32>, U == SIMD2<UInt8>)
+  @_specialize(where T == SIMD3<UInt32>, U == SIMD3<UInt8>)
+  @_specialize(where T == SIMD4<UInt32>, U == SIMD4<UInt8>)
   func createAtomCodes<T: SIMD, U: SIMD>(group: T, zero: U) -> U
   where T.Scalar == UInt32, U.Scalar == UInt8 {
     var codes = zero
@@ -51,7 +46,7 @@ extension MM4Parameters {
   
   /// Fetch atomic numbers from an atom-to-atom map, some of which may be -1.
   /// Return invalid atoms as zero.
-  @inline(__always)
+  @_transparent
   func createAtomicNumbers(map: SIMD4<Int32>) -> SIMD4<UInt8> {
     var atomicNumbers: SIMD4<UInt8> = .zero
     for lane in 0..<4 where map[lane] != -1 {
@@ -63,7 +58,10 @@ extension MM4Parameters {
   
   static let excluding5RingElements: [UInt8] = [11, 19, 25, 31]
   
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == SIMD2<UInt8>)
+  @_specialize(where T == SIMD3<UInt8>)
+  @_specialize(where T == SIMD4<UInt8>)
   func with5RingsRemoved<T: SIMD>(_ codes: () -> T) -> T
   where T.Scalar == UInt8 {
     var output = codes()
@@ -77,7 +75,10 @@ extension MM4Parameters {
   
   static let nonCarbonElements: [UInt8] = [6, 8, 11, 15, 19, 25, 31]
   
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == SIMD2<UInt8>)
+  @_specialize(where T == SIMD3<UInt8>)
+  @_specialize(where T == SIMD4<UInt8>)
   func containsTwoNonCarbons<T: SIMD>(_ codes: T) -> Bool
   where T.Scalar == UInt8 {
     var with5RingsRemoved = codes
@@ -98,7 +99,9 @@ extension MM4Parameters {
 extension MM4Parameters {
   /// `codes` could also contain atom indices, for sorting the bond while
   /// generating the bond topology.
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func sortBond<T>(_ codes: SIMD2<T>) -> SIMD2<T>
   where T: FixedWidthInteger {
     if codes[0] > codes[1] {
@@ -110,7 +113,9 @@ extension MM4Parameters {
   
   /// `codes` could also contain atom indices, for sorting the angle while
   /// generating the bond topology.
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func sortAngle<T>(_ codes: SIMD3<T>) -> SIMD3<T>
   where T: FixedWidthInteger {
     if codes[0] > codes[2] {
@@ -122,7 +127,9 @@ extension MM4Parameters {
   
   /// `codes` could also contain atom indices, for sorting the torsion while
   /// generating the bond topology.
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func sortTorsion<T>(_ codes: SIMD4<T>) -> SIMD4<T>
   where T: FixedWidthInteger {
     var reorder = false
@@ -145,7 +152,9 @@ extension MM4Parameters {
 // MARK: - Sorting Between Bonds
 
 extension MM4Parameters {
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func compareAngle<T>(_ x: SIMD3<T>, _ y: SIMD3<T>) -> Bool
   where T: FixedWidthInteger {
     if x[1] != y[1] { return x[1] < y[1] }
@@ -154,7 +163,9 @@ extension MM4Parameters {
     return true
   }
   
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func compareTorsion<T>(_ x: SIMD4<T>, _ y: SIMD4<T>) -> Bool
   where T: FixedWidthInteger {
     if x[1] != y[1] { return x[1] < y[1] }
@@ -164,7 +175,9 @@ extension MM4Parameters {
     return true
   }
   
-  @inline(__always)
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
   func compareRing<T>(_ x: SIMD8<T>, _ y: SIMD8<T>) -> Bool
   where T: FixedWidthInteger {
     if x[0] != y[0] { return x[0] < y[0] }

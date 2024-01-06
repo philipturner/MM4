@@ -67,7 +67,8 @@ extension MM4System {
       }
       
       let bondID = map[0]
-      let otherID = parameters.other(atomID: originalID, bondID: bondID)
+      let bond = parameters.bonds.indices[Int(bondID)]
+      let otherID = (bond[0] == originalID) ? bond[1] : bond[0]
       
       let otherParameters = parameters.atoms.parameters[Int(otherID)]
       let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
@@ -117,12 +118,12 @@ extension MM4System {
     force.addInteractionGroup(set1: group, set2: group)
   }
   
-  @inline(__always)
+  @_transparent
   func virtualSiteReorder(_ index: Int) -> Int {
     return virtualSiteCount + index
   }
   
-  @inline(__always)
+  @_transparent
   func virtualSiteReorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
     var output: SIMD2<UInt32> = indices
     let virtualSiteCount = UInt32(truncatingIfNeeded: virtualSiteCount)
@@ -130,7 +131,7 @@ extension MM4System {
     return SIMD2<Int>(truncatingIfNeeded: output)
   }
   
-  @inline(__always)
+  @_transparent
   func virtualSiteReorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
     var output: SIMD4<UInt32> = indices
     let virtualSiteCount = UInt32(truncatingIfNeeded: virtualSiteCount)

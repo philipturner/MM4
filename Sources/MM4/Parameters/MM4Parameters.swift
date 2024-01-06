@@ -104,7 +104,7 @@ public struct MM4Parameters {
     // Topology
     try createAtomsToBondsMap()
     try createAtomsToAtomsMap()
-    try createTopology()
+    try createTopology(forces: descriptor.forces)
     try createCenterTypes()
     
     // Atom Parameters

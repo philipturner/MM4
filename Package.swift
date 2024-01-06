@@ -12,6 +12,7 @@ let package = Package(
       targets: ["MM4"]),
   ],
   dependencies: [
+    .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.2.0")),
     .package(url: "https://github.com/apple/swift-docc-plugin", branch: "main"),
     .package(url: "https://github.com/philipturner/swift-openmm", branch: "main"),
   ],
@@ -21,6 +22,7 @@ let package = Package(
     .target(
       name: "MM4",
       dependencies: [
+        .product(name: "Atomics", package: "swift-atomics"),
         .product(name: "OpenMM", package: "swift-openmm"),
       ]),
     .testTarget(

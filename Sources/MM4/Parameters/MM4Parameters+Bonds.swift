@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
+import Dispatch
+
 /// Parameters for a group of 2 atoms.
 public struct MM4Bonds {
   /// Each value corresponds to the bond at the same array index.
@@ -282,13 +284,6 @@ extension MM4Parameters {
   }
   
   private func electrostaticEffect(sign: Float) -> [Float] {
-    var primaryNeighbors: [[(correction: Float, decay: Float)]] = Array(
-      repeating: [], count: bonds.indices.count)
-    var secondaryNeighborsSum: [Float] = Array(
-      repeating: 0, count: bonds.indices.count)
-    var bohlmannEffectSum: [Float] = Array(
-      repeating: 0, count: bonds.indices.count)
-    
     func correction(
       atomID: Int32, endID: Int32, bondID: Int32
     ) -> (
@@ -297,7 +292,8 @@ extension MM4Parameters {
       // Try once with 5-ring carbons. If that doesn't work, try again with
       // 6-ring carbons.
       for attemptID in 0..<2 {
-        let otherID = other(atomID: endID, bondID: bondID)
+        let bond = bonds.indices[Int(bondID)]
+        let otherID = (bond[0] == endID) ? bond[1] : bond[0]
         var codeActing = atoms.codes[Int(atomID)].rawValue
         var codeEnd = atoms.codes[Int(endID)].rawValue
         var codeOther = atoms.codes[Int(otherID)].rawValue
@@ -320,6 +316,9 @@ extension MM4Parameters {
           // non-carbon elements. This should never happen because torsions are
           // assigned before electronegativity corrections.
           fatalError("Encountered two non-carbon elements while computing electrostatic effect.")
+        }
+        if nonCarbonElementCount == 0 {
+          continue
         }
         
         switch (bondCodes.0, bondCodes.1, codeEnd, codeActing) {
@@ -399,38 +398,59 @@ extension MM4Parameters {
       return nil
     }
     
-    for atom0 in 0..<Int32(atoms.count) {
-      let zeroLevelAtoms = atomsToAtomsMap[Int(atom0)]
-      
-      for lane in 0..<4 where zeroLevelAtoms[lane] != -1 {
-        let atom1 = zeroLevelAtoms[lane]
-        let primaryLevelAtoms = atomsToAtomsMap[Int(atom1)]
-        let primaryLevelBonds = atomsToBondsMap[Int(atom1)]
+    var primaryNeighbors: [[(correction: Float, decay: Float)]] = Array(
+      repeating: [], count: bonds.indices.count)
+    var secondaryNeighborsSum: [Float] = Array(
+      repeating: 0, count: bonds.indices.count)
+    var bohlmannEffectSum: [Float] = Array(
+      repeating: 0, count: bonds.indices.count)
+    
+    let taskSize = 128
+    let taskCount = (atoms.count + taskSize - 1) / taskSize
+    DispatchQueue.concurrentPerform(iterations: taskCount) { z in
+      execute(taskID: z)
+    }
+    
+    func execute(taskID: Int) {
+      let atomStart = taskID * taskSize
+      let atomEnd = min(atomStart + taskSize, atoms.count)
+      for atom0 in Int32(atomStart)..<Int32(atomEnd) {
+        let zeroLevelAtoms = atomsToAtomsMap[Int(atom0)]
         
-        for lane in 0..<4 where primaryLevelAtoms[lane] != -1 {
-          let atom2 = primaryLevelAtoms[lane]
-          if atom0 == atom2 { continue }
+        for lane in 0..<4 where zeroLevelAtoms[lane] != -1 {
+          let atom1 = zeroLevelAtoms[lane]
+          let primaryLevelAtoms = atomsToAtomsMap[Int(atom1)]
+          let primaryLevelBonds = atomsToBondsMap[Int(atom1)]
           
-          let bondID = primaryLevelBonds[lane]
-          let corr = correction(atomID: atom0, endID: atom1, bondID: bondID)
-          if let corr, corr.correction * sign > 0 {
-            primaryNeighbors[Int(bondID)].append((corr.correction, corr.decay))
-          }
-          if let bohlmann = corr?.bohlmann {
-            bohlmannEffectSum[Int(bondID)] += bohlmann
-          }
-          
-          let secondaryLevelAtoms = atomsToAtomsMap[Int(atom2)]
-          let secondaryLevelBonds = atomsToBondsMap[Int(atom2)]
-          for lane in 0..<4 where secondaryLevelAtoms[lane] != -1 {
-            let atom3 = secondaryLevelAtoms[lane]
-            if atom1 == atom3 { continue }
-            if atom0 == atom3 { fatalError("This should never happen.") }
+          for lane in 0..<4 where primaryLevelAtoms[lane] != -1 {
+            let atom2 = primaryLevelAtoms[lane]
+            if atom0 == atom2 { continue }
             
-            let bondID = secondaryLevelBonds[lane]
-            let corr = correction(atomID: atom0, endID: atom2, bondID: bondID)
+            let bondID = primaryLevelBonds[lane]
+            let corr = correction(
+              atomID: atom0, endID: atom1, bondID: bondID)
             if let corr, corr.correction * sign > 0 {
-              secondaryNeighborsSum[Int(bondID)] += corr.correction * corr.beta
+              primaryNeighbors[Int(bondID)]
+                .append((corr.correction, corr.decay))
+            }
+            if let bohlmann = corr?.bohlmann {
+              bohlmannEffectSum[Int(bondID)] += bohlmann
+            }
+            
+            let secondaryLevelAtoms = atomsToAtomsMap[Int(atom2)]
+            let secondaryLevelBonds = atomsToBondsMap[Int(atom2)]
+            for lane in 0..<4 where secondaryLevelAtoms[lane] != -1 {
+              let atom3 = secondaryLevelAtoms[lane]
+              if atom1 == atom3 { continue }
+              if atom0 == atom3 { fatalError("This should never happen.") }
+              
+              let bondID = secondaryLevelBonds[lane]
+              let corr = correction(
+                atomID: atom0, endID: atom2, bondID: bondID)
+              if let corr, corr.correction * sign > 0 {
+                secondaryNeighborsSum[Int(bondID)]
+                += corr.correction * corr.beta
+              }
             }
           }
         }
@@ -457,8 +477,16 @@ extension MM4Parameters {
   
   mutating func createElectronegativityEffectCorrections() {
     // Add electronegativity corrections to bond length.
-    let electronegativeCorrections = electrostaticEffect(sign: -1)
-    let electropositiveCorrections = electrostaticEffect(sign: +1)
+    var electronegativeCorrections: [Float] = []
+    var electropositiveCorrections: [Float] = []
+    DispatchQueue.concurrentPerform(iterations: 2) { z in
+      if z == 0 {
+        electronegativeCorrections = electrostaticEffect(sign: -1)
+      } else if z == 1 {
+        electropositiveCorrections = electrostaticEffect(sign: +1)
+      }
+    }
+    
     for i in bonds.indices.indices {
       // We are not adding electronegativity effects to bond stiffness, due to
       // the results being questionable. It would be quite time-consuming to
