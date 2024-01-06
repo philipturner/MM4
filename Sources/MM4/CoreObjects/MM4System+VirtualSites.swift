@@ -43,10 +43,7 @@ extension MM4System {
   
   func createMasses() {
     for (index, originalID) in originalIndices.enumerated() {
-      // Units: yg -> amu
       var mass = parameters.atoms.masses[Int(originalID)]
-      mass *= Float(MM4AmuPerYg)
-      
       let atomicNumber = parameters.atoms.atomicNumbers[Int(originalID)]
       if index >= virtualSiteCount {
         if atomicNumber == 1 {
