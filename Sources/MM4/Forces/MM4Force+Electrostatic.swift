@@ -22,9 +22,13 @@ class MM4ElectrostaticForce: MM4Force {
     let metersPerNm: Double = 1e-9
     prefactor /= metersPerNm
     
-    // Units: J -> aJ -> kJ/mol
+    // Units: J -> aJ
+    //       aJ -> kJ/mol
+    //   kJ/mol -> zJ
     let AJPerJ: Double = 1e18
-    prefactor *= AJPerJ * MM4KJPerMolPerAJ
+    prefactor *= AJPerJ
+    prefactor *= MM4KJPerMolPerAJ
+    prefactor *= MM4ZJPerKJPerMol
     return prefactor
   }
   
@@ -75,7 +79,7 @@ class MM4ElectrostaticForce: MM4Force {
       dielectricConstant: descriptor.dielectricConstant)
     
     let force = OpenMM_CustomNonbondedForce(energy: """
-      \(MM4ZJPerKJPerMol) * \(prefactor) * charge1 * charge2 * (
+      \(prefactor) * charge1 * charge2 * (
         1 / r + \(K) * r^2 - \(C)
       );
       """)
@@ -206,7 +210,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     // interaction. This must be resolved through testing.
     #if true
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      \(MM4ZJPerKJPerMol) * \(prefactor) * -chargeCharge;
+      \(prefactor) * -chargeCharge;
       chargeCharge = chargeChargeProduct * (
         1 / r14 + \(K) * r14^2 - \(C)
       );
@@ -214,7 +218,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
       """)
     #else
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      \(MM4ZJPerKJPerMol) * \(prefactor) * (dipoleDipole - chargeCharge);
+      \(prefactor) * (dipoleDipole - chargeCharge);
       
       dipoleDipole = dipoleDipoleProduct * invLength_muij^3 * lengthScale * (
         (xi * xj + yi * yj + zi * zj) - 3 * invLength_muij^2 * (

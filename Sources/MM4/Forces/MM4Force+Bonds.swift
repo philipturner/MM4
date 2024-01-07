@@ -21,7 +21,7 @@ class MM4StretchForce: MM4Force {
     // of magnitude. Relative differences between different energies are
     // unchanged.
     let force = OpenMM_CustomBondForce(energy: """
-      \(MM4ZJPerKJPerMol) * potentialWellDepth * (
+      potentialWellDepth * (
         1 - exp(-beta * (r - equilibriumLength))
       )^2;
       """)
@@ -41,10 +41,16 @@ class MM4StretchForce: MM4Force {
       let parameters = bonds.parameters[bondID]
       
       // Units: millidyne-angstrom -> kJ/mol
+      //                    kJ/mol -> zJ
       var potentialWellDepth = Double(parameters.potentialWellDepth)
       potentialWellDepth *= MM4KJPerMolPerAJ
+      potentialWellDepth *= MM4ZJPerKJPerMol
       
       // Units: angstrom^-1 -> nm^-1
+      //
+      // Potential well depth is in aJ here, not kJ/mol or zJ.
+      // (mdyne / angstrom) / (mdyne * angstrom) -> 1 / angstrom^2
+      //                  (1 / angstrom^2)^{1/2} -> 1 / angstrom
       var beta = Double(
         parameters.stretchingStiffness / (2 * parameters.potentialWellDepth)
       ).squareRoot()

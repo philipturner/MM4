@@ -47,7 +47,7 @@ class MM4NonbondedForce: MM4Force {
     // occurs on the scale of attojoules. This can be seen by changing the 1000x
     // multiplier for every equation to 1x.
     let force = OpenMM_CustomNonbondedForce(energy: """
-      \(MM4ZJPerKJPerMol) * epsilon * (
+      epsilon * (
         -2.25 * (min(2, radius / r))^6 +
         1.84e5 * exp(-12.00 * (r / radius))
       );
@@ -78,9 +78,10 @@ class MM4NonbondedForce: MM4Force {
       let parameters = atoms.parameters[Int(atomID)]
       
       // Units: kcal/mol -> kJ/mol
+      //          kJ/mol -> zJ
       let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      array[0] = Double(epsilon) * OpenMM_KJPerKcal
-      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal
+      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       
       // Units: angstrom -> nm
       let (radius, hydrogenRadius) = parameters.radius
@@ -108,7 +109,7 @@ class MM4NonbondedExceptionForce: MM4Force {
     let dispersionFactor: Double = 0.550
     let correction = dispersionFactor - 1
     let force = OpenMM_CustomBondForce(energy: """
-      \(MM4ZJPerKJPerMol) * epsilon * (
+      epsilon * (
         \(-2.25 * correction) * (min(2, radius / r))^6
       );
       """)
@@ -118,8 +119,7 @@ class MM4NonbondedExceptionForce: MM4Force {
     
     // Separate force for (Si, Ge) to (H, C, Si, Ge) interactions.
     let legacyForce = OpenMM_CustomBondForce(energy: """
-      \(MM4ZJPerKJPerMol) * difference;
-      difference = legacyEpsilon * (
+      legacyEpsilon * (
         -2.25 * (min(2, legacyRadius / r))^6 +
         1.84e5 * exp(-12.00 * (r / legacyRadius))
       ) - epsilon * (
@@ -159,8 +159,8 @@ class MM4NonbondedExceptionForce: MM4Force {
         /**/     parameters2.radius.default
       }
       
-      // Units: kcal/mol -> kJ/mol, angstrom -> nm
-      array[0] = Double(epsilon) * OpenMM_KJPerKcal
+      // Units: kcal/mol -> zJ, angstrom -> nm
+      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       array[1] = Double(radius) * OpenMM_NmPerAngstrom
       var selectedForce = force
       
@@ -199,8 +199,8 @@ class MM4NonbondedExceptionForce: MM4Force {
         let legacyEpsilon = sqrt(epsilons[0] * epsilons[1])
         let legacyRadius = radii[0] + radii[1]
         
-        // Units: kcal/mol -> kJ/mol, angstrom -> nm
-        array[2] = Double(legacyEpsilon) * OpenMM_KJPerKcal
+        // Units: kcal/mol -> zJ, angstrom -> nm
+        array[2] = Double(legacyEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
         array[3] = Double(legacyRadius) * OpenMM_NmPerAngstrom
         selectedForce = legacyForce
         legacyForceActive = true

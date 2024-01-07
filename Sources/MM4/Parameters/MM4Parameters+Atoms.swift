@@ -135,7 +135,7 @@ public struct MM4AtomParameters {
   
   /// Units:  kilocalorie / mole
   ///
-  /// > WARNING: Convert aJ to kJ/mol.
+  /// > WARNING: Convert kcal/mol to kJ/mol.
   public var epsilon: (default: Float, hydrogen: Float)
   
   /// Units: dimensionless

@@ -17,6 +17,7 @@ struct NCFPart {
     let atoms = Base64Decoder.decodeAtoms(NCFPart.base64Atoms)
     let bonds = Base64Decoder.decodeBonds(NCFPart.base64Bonds)
     
+    // Disable hydrogen mass repartitioning to simplify analysis during tests.
     var descriptor = MM4ParametersDescriptor()
     descriptor.atomicNumbers = atoms.map { UInt8($0.w) }
     descriptor.bonds = bonds

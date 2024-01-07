@@ -18,7 +18,7 @@ class MM4TorsionForce: MM4Force {
     // introducing extra computation for highly mixed-element compounds. There
     // should be a separate force object for this.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      \(MM4ZJPerKJPerMol) * (torsion + torsionStretch);
+      torsion + torsionStretch;
       torsion = V1 * fourierExpansion1
               + Vn * fourierExpansionN
               + V3 * fourierExpansion3;
@@ -54,17 +54,22 @@ class MM4TorsionForce: MM4Force {
       }
       
       // Units: kcal/mol -> kJ/mol
+      //          kJ/mol -> zJ
       //
       // WARNING: Divide all Vn torsion parameters by 2.
-      array[0] = Double(parameters.V1) * OpenMM_KJPerKcal / 2
-      array[1] = Double(parameters.Vn) * OpenMM_KJPerKcal / 2
-      array[2] = Double(parameters.V3) * OpenMM_KJPerKcal / 2
+      let unitConversionFactor = OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+      array[0] = Double(parameters.V1) * unitConversionFactor / 2
+      array[1] = Double(parameters.Vn) * unitConversionFactor / 2
+      array[2] = Double(parameters.V3) * unitConversionFactor / 2
       array[3] = Double(parameters.n)
       
-      // Units: kcal/mol/angstrom -> kJ/mol/nm
+      // Units: kcal/mol/angstrom -> kJ/mol/angstrom
+      //          kJ/mol/angstrom -> kJ/mol/nm
+      //                kJ/mol/nm -> zJ/nm
       var Kts3 = Double(parameters.Kts3)
       Kts3 *= OpenMM_KJPerKcal
       Kts3 /= OpenMM_NmPerAngstrom
+      Kts3 *= MM4ZJPerKJPerMol
       array[4] = Kts3
       
       // Assume the bond is already sorted.
@@ -72,13 +77,9 @@ class MM4TorsionForce: MM4Force {
       guard let bondID = bonds.map[bond] else {
         fatalError("Invalid bond.")
       }
-      let bondParameters = bonds.parameters[Int(bondID)]
-      
-      // No change in units for stretching stiffness.
-      let stretchingStiffness = Double(bondParameters.stretchingStiffness)
-      Kts3 /= stretchingStiffness
       
       // Units: angstrom -> nm
+      let bondParameters = bonds.parameters[Int(bondID)]
       var equilibriumLength = Double(bondParameters.equilibriumLength)
       equilibriumLength *= OpenMM_NmPerAngstrom
       array[5] = equilibriumLength
@@ -101,9 +102,7 @@ class MM4TorsionExtendedForce: MM4Force {
     // terms are very rare. There should be a separate force to handle only the
     // extended torsions with V4 or V6 terms.
     let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
-      \(MM4ZJPerKJPerMol) * (
-        torsion + torsionStretch + torsionBend + bendTorsionBend
-      );
+      torsion + torsionStretch + torsionBend + bendTorsionBend;
       torsion = V1 * fourierExpansion1
               + V2 * fourierExpansion2
               + V3 * fourierExpansion3
@@ -194,57 +193,57 @@ class MM4TorsionExtendedForce: MM4Force {
       
       // MARK: - Torsion
       
-      // WARNING: Divide all Vn torsion parameters by 2.
-      array[0] = Double(originalParameters.V1) * OpenMM_KJPerKcal / 2
-      array[1] = Double(originalParameters.Vn) * OpenMM_KJPerKcal / 2
-      array[2] = Double(originalParameters.V3) * OpenMM_KJPerKcal / 2
-      array[3] = Double(parameters.V4) * OpenMM_KJPerKcal / 2
-      array[4] = Double(parameters.V6) * OpenMM_KJPerKcal / 2
+      do {
+        // Units: kcal/mol -> kJ/mol
+        //          kJ/mol -> zJ
+        //
+        // WARNING: Divide all Vn torsion parameters by 2.
+        let unitConversionFactor = OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+        array[0] = Double(originalParameters.V1) * unitConversionFactor / 2
+        array[1] = Double(originalParameters.Vn) * unitConversionFactor / 2
+        array[2] = Double(originalParameters.V3) * unitConversionFactor / 2
+        array[3] = Double(parameters.V4) * unitConversionFactor / 2
+        array[4] = Double(parameters.V6) * unitConversionFactor / 2
+      }
       
       // MARK: - Torsion-Stretch
       
-      func createBondParams(_ index: Int) -> SIMD2<Float> {
+      func addTorsionStretch(
+        _ index: Int,
+        _ tuple: (`left`: Float, central: Float, `right`: Float)
+      ) {
+        // Units: kcal/mol/angstrom -> kJ/mol/angstrom
+        //          kJ/mol/angstrom -> kJ/mol/nm
+        //                kJ/mol/nm -> zJ/nm
+        var params = SIMD3<Double>(
+          SIMD3(tuple.left, tuple.central, tuple.right))
+        params *= OpenMM_KJPerKcal
+        params /= OpenMM_NmPerAngstrom
+        params *= MM4ZJPerKJPerMol
+        array[5 + index + 0] = params[0]
+        array[5 + index + 3] = params[1]
+        array[5 + index + 6] = params[2]
+      }
+      addTorsionStretch(0, parameters.Kts1)
+      addTorsionStretch(1, parameters.Kts2)
+      addTorsionStretch(2, parameters.Kts3)
+      
+      func createEquilibriumLength(_ index: Int) -> Double {
         var bond = SIMD2(torsion[index], torsion[index + 1])
         bond = system.parameters.sortBond(bond)
         guard let bondID = bonds.map[bond] else {
           fatalError("Invalid bond.")
         }
         
-        // No change in units for stretching stiffness.
-        let bondParameters = bonds.parameters[Int(bondID)]
-        return SIMD2(
-          bondParameters.stretchingStiffness,
-          bondParameters.equilibriumLength)
+        // Units: angstrom -> nm
+        let parameters = bonds.parameters[Int(bondID)]
+        var equilibriumLength = Double(parameters.equilibriumLength)
+        equilibriumLength *= OpenMM_NmPerAngstrom
+        return equilibriumLength
       }
-      let bondParamsLeft = createBondParams(0)
-      let bondParamsCenter = createBondParams(1)
-      let bondParamsRight = createBondParams(2)
-      
-      // Units: kcal/mol/angstrom -> kJ/mol/nm
-      var conversionFactors = SIMD3(
-        repeating: OpenMM_KJPerKcal / OpenMM_NmPerAngstrom)
-      let stiffnesses = SIMD3(
-        bondParamsLeft[0],
-        bondParamsRight[0],
-        bondParamsCenter[0])
-      conversionFactors /= SIMD3<Double>(stiffnesses)
-      
-      func addTorsionStretch(
-        _ index: Int,
-        _ tuple: (left: Float, central: Float, right: Float)
-      ) {
-        array[5 + index + 0] = Double(tuple.left) * conversionFactors[0]
-        array[5 + index + 3] = Double(tuple.central) * conversionFactors[1]
-        array[5 + index + 6] = Double(tuple.right) * conversionFactors[2]
-      }
-      addTorsionStretch(0, parameters.Kts1)
-      addTorsionStretch(1, parameters.Kts2)
-      addTorsionStretch(2, parameters.Kts3)
-      
-      // Units: angstrom -> nm
-      array[14] = Double(bondParamsLeft[1]) * OpenMM_NmPerAngstrom
-      array[15] = Double(bondParamsCenter[1]) * OpenMM_NmPerAngstrom
-      array[16] = Double(bondParamsRight[1]) * OpenMM_NmPerAngstrom
+      array[14] = createEquilibriumLength(0)
+      array[15] = createEquilibriumLength(1)
+      array[16] = createEquilibriumLength(2)
       
       // MARK: - Torsion-Bend, Bend-Torsion-Bend
       
@@ -252,7 +251,33 @@ class MM4TorsionExtendedForce: MM4Force {
       // to attojoules, and should not be divided by 2. Same with torsion-bend,
       // which converts directly without dividing by 2.
       
-      func createAngleParams(_ index: Int) -> Float {
+      func addTorsionBend(
+        _ index: Int,
+        _ tuple: (left: Float, right: Float)
+      ) {
+        // Units: millidyne-angstrom/rad -> kJ/mol/rad
+        //                    kJ/mol/rad -> zJ/rad
+        var params = SIMD2<Double>(
+          SIMD2(tuple.left, tuple.right))
+        params *= MM4KJPerMolPerAJ
+        params *= MM4ZJPerKJPerMol
+        array[17 + index + 0] = params[0]
+        array[17 + index + 3] = params[1]
+      }
+      addTorsionBend(0, parameters.Ktb1)
+      addTorsionBend(1, parameters.Ktb2)
+      addTorsionBend(2, parameters.Ktb3)
+      
+      do {
+        // Units: millidyne-angstrom/rad^2 -> kJ/mol/rad^2
+        //                    kJ/mol/rad^2 -> zJ/rad^2
+        var Kbtb = Double(parameters.Kbtb)
+        Kbtb *= MM4KJPerMolPerAJ
+        Kbtb *= MM4ZJPerKJPerMol
+        array[23] = Kbtb
+      }
+      
+      func createEquilibriumAngle(_ index: Int) -> Double {
         var angle = SIMD3(
           torsion[index], torsion[index + 1], torsion[index + 2])
         angle = system.parameters.sortAngle(angle)
@@ -260,30 +285,14 @@ class MM4TorsionExtendedForce: MM4Force {
           fatalError("Invalid bond.")
         }
         
-        let angleParameters = angles.parameters[Int(angleID)]
-        return angleParameters.equilibriumAngle
+        // Units: degree -> rad
+        let parameters = angles.parameters[Int(angleID)]
+        var equilibriumAngle = Double(parameters.equilibriumAngle)
+        equilibriumAngle *= OpenMM_RadiansPerDegree
+        return equilibriumAngle
       }
-      let angleParamsLeft = createAngleParams(0)
-      let angleParamsRight = createAngleParams(1)
-      
-      // Units: millidyne-angstrom/rad -> kJ/mol/rad
-      func addTorsionBend(
-        _ index: Int,
-        _ tuple: (left: Float, right: Float)
-      ) {
-        array[17 + index + 0] = Double(tuple.left) * MM4KJPerMolPerAJ
-        array[17 + index + 3] = Double(tuple.right) * MM4KJPerMolPerAJ
-      }
-      addTorsionBend(0, parameters.Ktb1)
-      addTorsionBend(1, parameters.Ktb2)
-      addTorsionBend(2, parameters.Ktb3)
-      
-      // Units: millidyne-angstrom/rad^2 -> kJ/mol/rad^2
-      array[23] = Double(parameters.Kbtb) * MM4KJPerMolPerAJ
-      
-      // Units: degree -> rad
-      array[24] = Double(angleParamsLeft) * OpenMM_RadiansPerDegree
-      array[25] = Double(angleParamsRight) * OpenMM_RadiansPerDegree
+      array[24] = createEquilibriumAngle(0)
+      array[25] = createEquilibriumAngle(1)
       
       let reorderedTorsion = system.reorder(torsion)
       for lane in 0..<4 {

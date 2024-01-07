@@ -3,11 +3,6 @@ import MM4
 
 // Test the correctness of functionality that initializes and mutates
 // rigid body velocities.
-//
-// Edge cases to test when adding support for anchors:
-// - Set an anchor to one linear velocity, when the rest of the object has an
-//   entirely different linear velocity. Ensure the rest of the atoms' velocity
-//   does not appear in the bulk linear velocity.
 
 // MARK: - Test Execution
 
@@ -18,6 +13,10 @@ final class MM4RigidBodyVelocityTests: XCTestCase {
       testLinearVelocity(reference)
       testAngularVelocity(reference)
     }
+  }
+  
+  func testRigidBodyTemperature() throws {
+    // not implemented
   }
 }
 
@@ -275,5 +274,3 @@ private func testAngularVelocity(_ reference: MM4RigidBody) {
     }
   }
 }
-
-
