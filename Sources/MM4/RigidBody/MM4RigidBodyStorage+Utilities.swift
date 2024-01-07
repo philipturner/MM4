@@ -30,9 +30,11 @@ func invertMatrix3x3(
   let result21 = (col.2[0] * col.0[1] - col.0[0] * col.2[1]) * invdet
   let result22 = (col.0[0] * col.1[1] - col.1[0] * col.0[1]) * invdet
   
-  let column0 = SIMD3(result00, result10, result20)
-  let column1 = SIMD3(result01, result11, result21)
-  let column2 = SIMD3(result02, result12, result22)
+  // Originally, the result was transposed from the actual inverse. We fixed the
+  // issue now.
+  let column0 = SIMD3(result00, result01, result02)
+  let column1 = SIMD3(result10, result11, result12)
+  let column2 = SIMD3(result20, result21, result22)
   return (SIMD3<Float>(column0),
           SIMD3<Float>(column1),
           SIMD3<Float>(column2))
