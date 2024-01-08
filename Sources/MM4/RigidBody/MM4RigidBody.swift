@@ -16,6 +16,15 @@ public struct MM4RigidBodyDescriptor {
   /// the inertial reference frame and violating some assumptions of rigid body
   /// mechanics.
   public var positions: [SIMD3<Float>]?
+  
+  /// Optional.
+  ///
+  /// The default value is zero for every atom.
+  ///
+  /// When the rigid body is created, atom velocities are decomposed into
+  /// thermal velocities and bulk momenta. The thermal velocities cannot be
+  /// modified, as that would require the momenta to be recomputed.
+  public var velocities: [SIMD3<Float>]?
 }
 
 /// An enclosed group of covalently bonded atoms.

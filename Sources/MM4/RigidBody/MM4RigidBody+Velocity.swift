@@ -12,22 +12,6 @@ extension MM4RigidBody {
       storage.ensureVelocitiesCached()
       yield storage.velocities!
     }
-    
-    // TODO: Use functionality like that in MM4ForceField to enable coexistence
-    // of two copies of velocity. Allow thermal velocities to be set using code
-    // external to the MM4 library, using the 'linearMomentum' and
-    // 'angularMomentum' properties to query how thermalization violated
-    // conservation of momentum.
-    //
-    // After the updates are flushed, velocity will immediately be transformed
-    // back into the reference frame, decomposing into bulk and thermal
-    // velocities. Thermal velocities don't need to be exposed to the public
-    // API.
-    //
-    // forces are be both read and written. Nothing else depends on them,
-    // except netForce/netTorque, which are cached and invalidated. They are
-    // stored as-is, without transformation to a different reference frame or
-    // memory layout.
   }
   
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
