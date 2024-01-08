@@ -36,7 +36,7 @@ public struct MM4StateDescriptor {
 }
 
 /// A frame of a simulation.
-public class MM4State {
+public struct MM4State {
   /// The net varying force (in piconewtons) exerted on each atom.
   ///
   /// This is converted from kJ/mol/nm to piconewtons.
@@ -92,7 +92,7 @@ extension MM4ForceField {
       }
     }
     
-    let state = MM4State()
+    var state = MM4State()
     if descriptor.energy {
       state.kineticEnergy = query.kineticEnergy
       state.potentialEnergy = query.potentialEnergy

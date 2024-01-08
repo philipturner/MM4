@@ -35,4 +35,13 @@ public struct MM4RigidBody {
     self.parameters = parameters
     self.storage = MM4RigidBodyStorage(parameters: parameters)
   }
+  
+  /// Ensure copy-on-write semantics. This is not exposed to the public API.
+  ///
+  /// > WARNING: Call this before every mutating function.
+  mutating func ensureUniquelyReferenced() {
+    if !isKnownUniquelyReferenced(&storage) {
+      storage = MM4RigidBodyStorage(copying: storage)
+    }
+  }
 }
