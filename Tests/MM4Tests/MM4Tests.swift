@@ -2,16 +2,8 @@ import XCTest
 import MM4
 
 final class MM4Tests: XCTestCase {
-  func testExample() throws {
-    
-  }
+  
 }
-
-// MARK: - Tests for Carbon-Only Molecules
-
-// Every part of the API should have defined behavior in every edge case. This
-// includes places where the atom count is zero, every atom is an anchor, etc.
-// Each edge case should have a unit test.
 
 // MARK: - Tests for Non-Carbon Elements
 

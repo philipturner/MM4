@@ -6,23 +6,35 @@
 //
 
 final class MM4RigidBodyStorage {
-  // Sources of truth.
+  // Sources of truth, during the last time they were updated externally.
+  // TODO: Define a different reference frame for positions, velocities, and
+  // forces. In addition, define the transformation to the reference frame
+  // defined by the diagonalized inertia tensor, and the current global
+  // reference frame.
   var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
-  var externalForces: [SIMD3<Float>]
-  var mass: Float
+  var mass: Double
+  var vForces: [MM4FloatVector] // relative forces in reference frame ???
   var vMasses: [MM4FloatVector]
-  var vPositions: [MM4FloatVector]
-  var vVelocities: [MM4FloatVector]
+  var vPositions: [MM4FloatVector] // relative positions in reference frame
+  var vVelocities: [MM4FloatVector] // thermal velocities in reference frame
   
-  // Frequently cached (special handling).
-  var centerOfMass: SIMD3<Float>?
+  var lastUpdateCenterOfMass: SIMD3<Double> // ???
+  var lastUpdatePrincipalAxes: SIMD3<Double> // ???
+  
+  // The diagonalized moment of inertia and principal axes. These are
+  // updated immediately after positions, velocities, or forces are mutated.
+  var angularVelocity: SIMD3<Double>
+  var centerOfMass: SIMD3<Double>
+  var linearVelocity: SIMD3<Double>
+  var momentOfInertia: SIMD3<Double>
+  var principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+  
+  // Cached properties, according to the outside observer.
+  var angularAcceleration: SIMD3<Double>?
+  var linearAcceleration: SIMD3<Double>?
+  var forces: [SIMD3<Float>]?
   var positions: [SIMD3<Float>]?
   var velocities: [SIMD3<Float>]?
-  
-  // Rarely cached (frequently erased).
-  var angularVelocity: SIMD3<Float>?
-  var linearVelocity: SIMD3<Float>?
-  var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>)?
   
   init(parameters: MM4Parameters) {
     let atomCount = parameters.atoms.count
@@ -36,7 +48,6 @@ final class MM4RigidBodyStorage {
       }
     }
     self.atoms = (atomCount, vectorCount, nonAnchorCount)
-    self.externalForces = Array(repeating: .zero, count: atomCount)
     
     // Pad the arrays of masses, positions, and velocities, so the out-of-bounds
     // vector lanes aren't NAN.
@@ -88,7 +99,6 @@ final class MM4RigidBodyStorage {
   init(copying other: MM4RigidBodyStorage) {
     // Initialize stored properties, without copying cached ones.
     atoms = other.atoms
-    externalForces = other.externalForces
     mass = other.mass
     vMasses = other.vMasses
     vPositions = other.vPositions
@@ -107,6 +117,17 @@ final class MM4RigidBodyStorage {
     angularVelocity = nil
     linearVelocity = nil
     momentOfInertia = nil
+  }
+}
+
+extension MM4RigidBody {
+  /// Ensure copy-on-write semantics.
+  ///
+  /// > WARNING: Call this before every mutating function.
+  mutating func ensureUniquelyReferenced() {
+    if !isKnownUniquelyReferenced(&storage) {
+      storage = MM4RigidBodyStorage(copying: storage)
+    }
   }
 }
 
@@ -169,36 +190,5 @@ extension MM4RigidBodyStorage {
         angularVelocity! == .zero,
         "Nonzero angular velocity for empty rigid body.")
     }
-  }
-}
-
-extension MM4RigidBody {
-  /// Ensure copy-on-write semantics.
-  ///
-  /// > WARNING: Call this before every mutating function.
-  mutating func ensureUniquelyReferenced() {
-    if !isKnownUniquelyReferenced(&storage) {
-      storage = MM4RigidBodyStorage(copying: storage)
-    }
-  }
-}
-
-// MARK: - Properties
-
-extension MM4RigidBody {
-  /// The constant force (in piconewtons) exerted on each atom.
-  public var externalForces: [SIMD3<Float>] {
-    _read {
-      yield storage.externalForces
-    }
-    _modify {
-      ensureUniquelyReferenced()
-      yield &storage.externalForces
-    }
-  }
-  
-  /// The total mass (in yoctograms) of all atoms, excluding anchors.
-  public var mass: Float {
-    storage.mass
   }
 }

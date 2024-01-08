@@ -99,8 +99,6 @@ extension MM4RigidBodyStorage {
     return output
   }
   
-  // WARNING: When there are anchors, this returns something besides the bulk
-  // velocity. It is the linear velocity of non-anchors.
   func createLinearVelocity() -> SIMD3<Float> {
     var momentum: SIMD3<Double> = .zero
     withSegmentedLoop(chunk: 256) {
@@ -123,8 +121,6 @@ extension MM4RigidBodyStorage {
     return SIMD3<Float>(momentum) / mass
   }
   
-  // WARNING: This returns a nonzero angular velocity, even when we should store
-  // zero (anchors > 1). It is the angular velocity of non-anchors.
   func createAngularVelocity() -> SIMD3<Float> {
     var momentum: SIMD3<Double> = .zero
     ensureCenterOfMassCached()
@@ -167,9 +163,42 @@ extension MM4RigidBodyStorage {
 // MARK: - Properties
 
 extension MM4RigidBody {
-  /// The net angular velocity (in radians per picosecond) of the non-anchor
-  /// atoms.
-  public var angularVelocity: SIMD3<Float> {
+  /// The net linear velocity (in nanometers per picosecond) of the entire
+  /// object.
+  public var linearVelocity: SIMD3<Double> {
+    _read {
+      storage.ensureLinearVelocityCached()
+      yield storage.linearVelocity!
+    }
+    _modify {
+      ensureUniquelyReferenced()
+      storage.ensureLinearVelocityCached()
+      let previous = storage.linearVelocity!
+      yield &storage.linearVelocity!
+      
+      let velocityDifference = storage.linearVelocity! - previous
+      guard any(velocityDifference .!= .zero) else {
+        return
+      }
+      for vID in 0..<storage.atoms.vectorCount {
+        storage.vVelocities[vID &* 3 &+ 0] += velocityDifference.x
+        storage.vVelocities[vID &* 3 &+ 1] += velocityDifference.y
+        storage.vVelocities[vID &* 3 &+ 2] += velocityDifference.z
+      }
+      if storage.atoms.count == 0 {
+        storage.linearVelocity = .zero
+      }
+      
+      // Invalidate cached properties. Some could be restored, but err on the
+      // side of simplicity for debugging.
+      storage.eraseRarelyCachedProperties()
+      storage.velocities = nil
+    }
+  }
+  
+  /// The net angular velocity (in radians per picosecond) of the entire
+  /// object.
+  public var angularVelocity: SIMD3<Double> {
     _read {
       storage.ensureAngularVelocityCached()
       yield storage.angularVelocity!
@@ -223,42 +252,6 @@ extension MM4RigidBody {
         storage.vVelocities[vID &* 3 &+ 0] += vX
         storage.vVelocities[vID &* 3 &+ 1] += vY
         storage.vVelocities[vID &* 3 &+ 2] += vZ
-      }
-      
-      // Invalidate cached properties. Some could be restored, but err on the
-      // side of simplicity for debugging.
-      storage.eraseRarelyCachedProperties()
-      storage.velocities = nil
-    }
-  }
-  
-  /// The net linear velocity (in nanometers per picosecond) of the entire
-  /// object.
-  ///
-  /// Every anchor's velocity is set to the rigid body's linear velocity.
-  /// When importing velocities, all anchors must have the same velocity.
-  public var linearVelocity: SIMD3<Float> {
-    _read {
-      storage.ensureLinearVelocityCached()
-      yield storage.linearVelocity!
-    }
-    _modify {
-      ensureUniquelyReferenced()
-      storage.ensureLinearVelocityCached()
-      let previous = storage.linearVelocity!
-      yield &storage.linearVelocity!
-      
-      let velocityDifference = storage.linearVelocity! - previous
-      guard any(velocityDifference .!= .zero) else {
-        return
-      }
-      for vID in 0..<storage.atoms.vectorCount {
-        storage.vVelocities[vID &* 3 &+ 0] += velocityDifference.x
-        storage.vVelocities[vID &* 3 &+ 1] += velocityDifference.y
-        storage.vVelocities[vID &* 3 &+ 2] += velocityDifference.z
-      }
-      if storage.atoms.count == 0 {
-        storage.linearVelocity = .zero
       }
       
       // Invalidate cached properties. Some could be restored, but err on the

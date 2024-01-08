@@ -7,38 +7,34 @@
 
 // Source: https://stackoverflow.com/a/18504573
 func invertMatrix3x3(
-  _ columns: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>)
-) -> (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
-  let col = (SIMD3<Double>(columns.0),
-             SIMD3<Double>(columns.1),
-             SIMD3<Double>(columns.2))
+  _ col: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+) -> (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
   let determinant =
   col.0[0] * (col.1[1] * col.2[2] - col.2[1] * col.1[2]) -
   col.0[1] * (col.1[0] * col.2[2] - col.1[2] * col.2[0]) +
   col.0[2] * (col.1[0] * col.2[1] - col.1[1] * col.2[0])
-  let invdet = 1 / determinant
   
-  let result00 = (col.1[1] * col.2[2] - col.2[1] * col.1[2]) * invdet
-  let result01 = (col.0[2] * col.2[1] - col.0[1] * col.2[2]) * invdet
-  let result02 = (col.0[1] * col.1[2] - col.0[2] * col.1[1]) * invdet
+  let result00 = col.1[1] * col.2[2] - col.2[1] * col.1[2]
+  let result01 = col.0[2] * col.2[1] - col.0[1] * col.2[2]
+  let result02 = col.0[1] * col.1[2] - col.0[2] * col.1[1]
   
-  let result10 = (col.1[2] * col.2[0] - col.1[0] * col.2[2]) * invdet
-  let result11 = (col.0[0] * col.2[2] - col.0[2] * col.2[0]) * invdet
-  let result12 = (col.1[0] * col.0[2] - col.0[0] * col.1[2]) * invdet
+  let result10 = col.1[2] * col.2[0] - col.1[0] * col.2[2]
+  let result11 = col.0[0] * col.2[2] - col.0[2] * col.2[0]
+  let result12 = col.1[0] * col.0[2] - col.0[0] * col.1[2]
   
-  let result20 = (col.1[0] * col.2[1] - col.2[0] * col.1[1]) * invdet
-  let result21 = (col.2[0] * col.0[1] - col.0[0] * col.2[1]) * invdet
-  let result22 = (col.0[0] * col.1[1] - col.1[0] * col.0[1]) * invdet
+  let result20 = col.1[0] * col.2[1] - col.2[0] * col.1[1]
+  let result21 = col.2[0] * col.0[1] - col.0[0] * col.2[1]
+  let result22 = col.0[0] * col.1[1] - col.1[0] * col.0[1]
   
-  // Originally, the result was transposed from the actual inverse. We fixed the
-  // issue now.
-  let column0 = SIMD3(result00, result01, result02)
-  let column1 = SIMD3(result10, result11, result12)
-  let column2 = SIMD3(result20, result21, result22)
-  return (SIMD3<Float>(column0),
-          SIMD3<Float>(column1),
-          SIMD3<Float>(column2))
+  let column0 = SIMD3(result00, result01, result02) / determinant
+  let column1 = SIMD3(result10, result11, result12) / determinant
+  let column2 = SIMD3(result20, result21, result22) / determinant
+  return (column0, column1, column2)
 }
+
+// diagonalizeMatrix3x3
+
+// solveCubicPolynomial
 
 extension MM4RigidBodyStorage {
   @_transparent

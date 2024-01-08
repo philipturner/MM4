@@ -187,12 +187,13 @@ extension MM4RigidBodyStorage {
 // MARK: - Properties
 
 extension MM4RigidBody {
-  /// Center of mass, treating anchors as astronomically larger than
-  /// non-anchors.
-  ///
-  /// If there are any anchors, this is the mass-weighted average of the
-  /// anchors.
-  public var centerOfMass: SIMD3<Float> {
+  /// The total mass (in yoctograms) of all atoms.
+  public var mass: Double {
+    storage.mass
+  }
+  
+  /// Center of mass.
+  public var centerOfMass: SIMD3<Double> {
     _read {
       storage.ensureCenterOfMassCached()
       yield storage.centerOfMass!
@@ -224,11 +225,14 @@ extension MM4RigidBody {
   }
   
   /// Symmetric matrix specifying the rigid body's moment of inertia.
-  ///
-  /// If there is more than one anchor, this is the inertia of non-anchor atoms
-  /// around the center of mass defined by anchors.
-  public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
+  public var momentOfInertia: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
     storage.ensureMomentOfInertiaCached()
     return storage.momentOfInertia!
+  }
+  
+  /// Rotate around the same axis as the current angular velocity.
+  public mutating func rotate(angle: Double) {
+    ensureUniquelyReferenced()
+    fatalError("Not implemented.")
   }
 }
