@@ -14,10 +14,6 @@ final class MM4RigidBodyVelocityTests: XCTestCase {
       testAngularVelocity(reference)
     }
   }
-  
-  func testRigidBodyTemperature() throws {
-    // not implemented
-  }
 }
 
 // MARK: - Velocity

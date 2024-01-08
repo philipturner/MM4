@@ -35,14 +35,6 @@ public struct MM4Angles {
     self.parameters += other.parameters
     self.ringTypes += other.ringTypes
   }
-  
-  mutating func reserveCapacity(_ minimumCapacity: Int) {
-    extendedParameters.reserveCapacity(minimumCapacity)
-    indices.reserveCapacity(minimumCapacity)
-    map.reserveCapacity(minimumCapacity)
-    parameters.reserveCapacity(minimumCapacity)
-    ringTypes.reserveCapacity(minimumCapacity)
-  }
 }
 
 /// Parameters for an angle between two bonds, including bending stiffness

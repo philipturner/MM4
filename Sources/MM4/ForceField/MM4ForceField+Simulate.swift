@@ -20,9 +20,7 @@ extension MM4ForceField {
       yield &_timeStep
     }
   }
-}
-
-extension MM4ForceField {
+  
   /// Simulate the system's evolution for the specified time interval.
   ///
   /// - Parameter time: The time interval, in picoseconds.
@@ -89,5 +87,44 @@ extension MM4ForceField {
       context.currentIntegrator = descriptor
       context.step(1, timeStep: remainder)
     }
+  }
+  
+  /// Minimize the system's potential energy.
+  ///
+  /// OpenMM uses the L-BFGS algorithm for gradient descent. It is an O(n)
+  /// version of BFGS, an O(n^2) algorithm. BFGS improves upon O(n^3) methods
+  /// such as Newton's method.
+  ///
+  /// - Parameter tolerance: Accepted uncertainty in potential energy,
+  ///   in zeptojoules. The default value is 10. This contrasts with the default
+  ///   value for most OpenMM simulations, which is 16.6 zJ (10.0 kJ/mol).
+  /// - Parameter maxIterations: Maximum number of force evaluations permitted
+  ///   during the minimization. The default value, 0, puts no restrictions on
+  ///   the number of evaluations.
+  public func minimize(
+    tolerance: Double = 10.0,
+    maxIterations: Int = 0
+  ) {
+    if updateRecord.active() {
+      flushUpdateRecord()
+    }
+    invalidatePositionsAndVelocities()
+    invalidateForcesAndEnergy()
+    
+    // Switch to an integrator that always reports the correct velocity.
+    var integratorDescriptor = MM4IntegratorDescriptor()
+    integratorDescriptor.start = true
+    integratorDescriptor.end = true
+    context.currentIntegrator = integratorDescriptor
+    
+    // Run the energy minimization.
+    //
+    // The reporter doesn't do anything. You have to create a C++ class, which
+    // is not possible through the OpenMM C API.
+    OpenMM_LocalEnergyMinimizer.minimize(
+      context: context.context,
+      tolerance: tolerance,
+      maxIterations: maxIterations,
+      reporter: nil)
   }
 }

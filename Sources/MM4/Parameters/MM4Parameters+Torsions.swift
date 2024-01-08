@@ -35,14 +35,6 @@ public struct MM4Torsions {
     self.parameters += other.parameters
     self.ringTypes += other.ringTypes
   }
-  
-  mutating func reserveCapacity(_ minimumCapacity: Int) {
-    extendedParameters.reserveCapacity(minimumCapacity)
-    indices.reserveCapacity(minimumCapacity)
-    map.reserveCapacity(minimumCapacity)
-    parameters.reserveCapacity(minimumCapacity)
-    ringTypes.reserveCapacity(minimumCapacity)
-  }
 }
 
 /// Parameters for a torsion among hydrogen, carbon, and silicon atoms.

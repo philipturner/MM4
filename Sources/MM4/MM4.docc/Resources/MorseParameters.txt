@@ -1,25 +1,9 @@
-//
-//  MM4MorseParameters.swift
-//  MM4
-//
-//  Created by Philip Turner on 9/11/23.
-//
+// It should be possible to parse this, as every atom name comes with the MM3
+// atom type. There are always 5 numbers after the names, representing the 5
+// parameters. Atoms new to MM4 (5-member ring carbons, etc.) will have to
+// interpolate, making an educated guess based on the CCSD value. For example,
+// it seems the alkane-cyclobutane bond in the MM3 forcefield was 123-56.
 
-class MM4MorseParameters {
-  static let global = MM4MorseParameters()
-  
-  init() {
-    
-  }
-}
-
-extension MM4MorseParameters {
-  // It should be possible to parse this, as every atom name comes with the MM3
-  // atom type. There are always 5 numbers after the names, representing the 5
-  // parameters. Atoms new to MM4 (5-member ring carbons, etc.) will have to
-  // interpolate, making an educated guess based on the CCSD value. For example,
-  // it seems the alkane-cyclobutane bond in the MM3 forcefield was 123-56.
-  static let sourceString = """
 // Originated from: https://pubs.acs.org/doi/epdf/10.1021/acs.jpca.8b12006
 // Copyright (c) 2019 American Chemical Society
 
@@ -208,5 +192,3 @@ O >N−OH hydroxyamine (145),N > N−OH hydroxyamine (146),4.500,,1.405,0.571,5.
 N NSP3 hydrazine (150),N NSP3 hydrazine (150),3.000,,1.549,0.634,5.372,,1.538
 P >PO phosphate (153),O O−PO phosphate (159),5.700,,1.600,1.046,7.226,,1.651
 S >SO2 sulfonamide (154),N NSP3 sulfonamide (155),3.944,,1.697,0.703,4.727,,1.674
-"""
-}

@@ -40,15 +40,6 @@ public struct MM4Atoms {
     self.parameters += other.parameters
     self.ringTypes += other.ringTypes
   }
-  
-  mutating func reserveCapacity(_ minimumCapacity: Int) {
-    atomicNumbers.reserveCapacity(minimumCapacity)
-    centerTypes.reserveCapacity(minimumCapacity)
-    codes.reserveCapacity(minimumCapacity)
-    masses.reserveCapacity(minimumCapacity)
-    parameters.reserveCapacity(minimumCapacity)
-    ringTypes.reserveCapacity(minimumCapacity)
-  }
 }
 
 /// MM4 codes for an element or an atom in a specific functional group.
@@ -221,8 +212,22 @@ extension MM4Parameters {
   
   mutating func createMasses(hydrogenMassScale: Float) {
     atoms.masses = atoms.atomicNumbers.map { atomicNumber in
+      var mass: Float
+      switch atomicNumber {
+      case 1: mass = 1.008
+      case 6: mass = 12.011
+      case 7: mass = 14.007
+      case 8: mass = 15.999
+      case 9: mass = 18.9984031636
+      case 14: mass = 28.085
+      case 15: mass = 30.9737619985
+      case 16: mass = 32.06
+      case 32: mass = 72.6308
+      default:
+        fatalError("Unrecognized atomic number: \(atomicNumber)")
+      }
+      
       /// Units: amu -> yg
-      var mass = MM4MassParameters.global.mass(atomicNumber: atomicNumber)
       mass *= Float(MM4YgPerAmu)
       return mass
     }

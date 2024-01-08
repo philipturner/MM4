@@ -330,39 +330,18 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
 private func _testParametersCombination(
   _ references: [MM4RigidBody]
 ) throws {
-#if DEBUG
+  var ranges: [Range<Int>] = []
   var atomCapacity: Int = 0
-  var bondCapacity: Int = 0
-  var angleCapacity: Int = 0
-  var torsionCapacity: Int = 0
-  var ringCapacity: Int = 0
-  var ranges: [Range<UInt32>] = []
   for reference in references {
-    let oldAtomCapacity = UInt32(atomCapacity)
-    
-    let parameters = reference.parameters
-    atomCapacity += parameters.atoms.count
-    bondCapacity += parameters.bonds.indices.count
-    angleCapacity += parameters.angles.indices.count
-    torsionCapacity += parameters.torsions.indices.count
-    ringCapacity += parameters.rings.indices.count
-    ranges.append(oldAtomCapacity..<UInt32(atomCapacity))
+    let oldAtomCapacity = atomCapacity
+    atomCapacity += reference.parameters.atoms.count
+    ranges.append(oldAtomCapacity..<atomCapacity)
   }
   
   var paramsDesc = MM4ParametersDescriptor()
   paramsDesc.atomicNumbers = []
   paramsDesc.bonds = []
   var combinedParameters = try! MM4Parameters(descriptor: paramsDesc)
-  combinedParameters.atoms.reserveCapacity(atomCapacity)
-  combinedParameters.bonds.reserveCapacity(bondCapacity)
-  combinedParameters.angles.reserveCapacity(angleCapacity)
-  combinedParameters.torsions.reserveCapacity(torsionCapacity)
-  combinedParameters.rings.reserveCapacity(ringCapacity)
-  combinedParameters.nonbondedExceptions13.reserveCapacity(atomCapacity)
-  combinedParameters.nonbondedExceptions14.reserveCapacity(atomCapacity)
-  combinedParameters.atomsToBondsMap.reserveCapacity(bondCapacity)
-  combinedParameters.atomsToAtomsMap.reserveCapacity(atomCapacity)
-  
   for reference in references {
     combinedParameters.append(contentsOf: reference.parameters)
   }
@@ -507,5 +486,4 @@ private func _testParametersCombination(
     exception13Start += thisParameters.nonbondedExceptions13.count
     exception14Start += thisParameters.nonbondedExceptions14.count
   }
-#endif
 }
