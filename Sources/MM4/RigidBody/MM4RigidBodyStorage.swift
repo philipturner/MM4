@@ -13,7 +13,28 @@ final class MM4RigidBodyStorage {
   // reference frame.
   var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
   var mass: Double
-  var vForces: [MM4FloatVector] // relative forces in reference frame ???
+  var forces: [SIMD3<Float>] // according to the outside observer
+  // Use case for forces (maybe?) write on single-core, compute/cache on
+  // multi-core. Or can they be written by MM4ForceField on multi-core?
+  // Or persisting forces across simulation cycles, even as positions change
+  // (weird, but reasonable behavior for the API).
+  // - SIMD3<Float>
+  // - slightly more memory consumption than vectorized format, but swizzling
+  //   only happens once in typical use cases. Plus, you can forward it directly
+  //   to the user without extra caching logic.
+  // - swizzling can also happen in parallel, while otherwise it would be a
+  //   bottleneck for single-core CPU, potentially synchronized routines?
+  //
+  // - make the forcefield cache forces on single-core
+  // - export to the rigid body on multi-core
+  // - do swizzle in-place, just don't compute acceleration in-place yet
+  //   - acceleration can change is positions change, but forces do not
+  //   - invalidate acceleration when positions change, don't recompute
+  //     on-the-spot as <s>positions are</s> bulk orientation is mutated
+  // - multicore bandwidth bottleneck from copying; compact representation can
+  //   provide a meaningful speedup now
+  // - don't provide forces of the individual body; the user can just fetch
+  //   from MM4ForceField at a specific range if they want
   var vMasses: [MM4FloatVector]
   var vPositions: [MM4FloatVector] // relative positions in reference frame
   var vVelocities: [MM4FloatVector] // thermal velocities in reference frame
