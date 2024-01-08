@@ -56,6 +56,9 @@ extension MM4ForceField {
   }
 }
 
+// TODO: Erase all of these functions, use more ergonomic APIs to modify the
+// rigid body, entering into DSL territory.
+
 extension MM4ForceField {
   /// Write the force field's forces into the specified rigid body.
   /// - parameter rigidBody: The rigid body to update.
@@ -99,7 +102,11 @@ extension MM4ForceField {
     }
     
     // Change the force field's positions.
-    cachedState.positions!.replaceSubrange(range, with: rigidBody.positions)
+    cachedState.positions!.withContiguousMutableStorageIfAvailable {
+      let start = $0.baseAddress!.advanced(by: range.startIndex)
+      let buffer = UnsafeMutableBufferPointer(start: start, count: range.count)
+      rigidBody.getPositions(buffer)
+    }
   }
   
   /// Change the force field's velocities to match the specified rigid body.
@@ -121,6 +128,10 @@ extension MM4ForceField {
     }
     
     // Change the force field's velocities.
-    cachedState.velocities!.replaceSubrange(range, with: rigidBody.velocities)
+    cachedState.velocities!.withContiguousMutableStorageIfAvailable {
+      let start = $0.baseAddress!.advanced(by: range.startIndex)
+      let buffer = UnsafeMutableBufferPointer(start: start, count: range.count)
+      rigidBody.getVelocities(buffer)
+    }
   }
 }

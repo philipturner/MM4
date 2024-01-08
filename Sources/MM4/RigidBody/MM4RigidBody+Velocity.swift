@@ -7,99 +7,92 @@
 
 extension MM4RigidBody {
   /// The velocity (in nanometers per picosecond) of each atom.
-  ///
-  /// This is an ergonomic getter for velocities. Behind the scenes, it
-  /// automatically caches the results of swizzling all velocities into the
-  /// non-vectorized representation.
   public var velocities: [SIMD3<Float>] {
     _read {
       storage.ensureVelocitiesCached()
       yield storage.velocities!
     }
+    
+    // TODO: Use functionality like that in MM4ForceField to enable coexistence
+    // of two copies of velocity. Allow thermal velocities to be set using code
+    // external to the MM4 library, using the 'linearMomentum' and
+    // 'angularMomentum' properties to query how thermalization violated
+    // conservation of momentum.
+    //
+    // After the updates are flushed, velocity will immediately be transformed
+    // back into the reference frame, decomposing into bulk and thermal
+    // velocities. Thermal velocities don't need to be exposed to the public
+    // API.
+    //
+    // forces are be both read and written. Nothing else depends on them,
+    // except netForce/netTorque, which are cached and invalidated. They are
+    // stored as-is, without transformation to a different reference frame or
+    // memory layout.
   }
   
-  public var vectorizedVelocities: [MM4FloatVector] {
+  /// The net linear momentum, in yoctogram-nanometers per picosecond.
+  public var linearMomentum: SIMD3<Double> {
     _read {
-      yield storage.vVelocities
+      fatalError("Not implemented.")
     }
     _modify {
       ensureUniquelyReferenced()
-      storage.eraseRarelyCachedProperties()
-      storage.velocities = nil
-      
-      yield &storage.vVelocities
-      guard storage.vVelocities.count == 3 * storage.atoms.vectorCount else {
-        fatalError("Position buffer was not the correct size.")
-      }
+      fatalError("Not implemented.")
     }
   }
   
-  @_specialize(where T == Double)
-  @_specialize(where T == Float)
-  public func getVelocities<T: BinaryFloatingPoint>(
-    _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
-  ) {
-    guard buffer.count == storage.atoms.count else {
-      fatalError("Velocity buffer was not the correct size.")
+  /// The net angular momentum, in yoctogram-radians per picosecond.
+  public var angularMomentum: SIMD3<Double> {
+    _read {
+      fatalError("Not implemented.")
     }
-    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-    
-    for vID in 0..<storage.atoms.vectorCount {
-      let x = storage.vVelocities[vID &* 3 &+ 0]
-      let y = storage.vVelocities[vID &* 3 &+ 1]
-      let z = storage.vVelocities[vID &* 3 &+ 2]
-      storage.swizzleFromVectorWidth((x, y, z), vID, baseAddress)
-    }
-  }
-  
-  public mutating func setVelocities<T: BinaryFloatingPoint, U: Collection>(
-    _ buffer: U
-  ) where U.Element == SIMD3<T> {
-    buffer.withContiguousStorageIfAvailable {
-      setVelocities($0)
-    }
-  }
-  
-  @_specialize(where T == Double)
-  @_specialize(where T == Float)
-  public mutating func setVelocities<T: BinaryFloatingPoint>(
-    _ buffer: UnsafeBufferPointer<SIMD3<T>>
-  ) {
-    ensureUniquelyReferenced()
-    storage.eraseRarelyCachedProperties()
-    storage.velocities = nil
-    
-    guard buffer.count == storage.atoms.count else {
-      fatalError("Velocity buffer was not the correct size.")
-    }
-    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-    
-    for vID in 0..<storage.atoms.vectorCount {
-      let (x, y, z) = storage.swizzleToVectorWidth(vID, baseAddress)
-      storage.vVelocities[vID &* 3 &+ 0] = x
-      storage.vVelocities[vID &* 3 &+ 1] = y
-      storage.vVelocities[vID &* 3 &+ 2] = z
+    _modify {
+      ensureUniquelyReferenced()
+      fatalError("Not implemented.")
     }
   }
 }
 
 extension MM4RigidBodyStorage {
-  func createVelocities() -> [SIMD3<Float>] {
-    let capacity = atoms.vectorCount * MM4VectorWidth
-    let output = [SIMD3<Float>](unsafeUninitializedCapacity: capacity) {
-      let baseAddress = $0.baseAddress.unsafelyUnwrapped
-      for vID in 0..<atoms.vectorCount {
-        let x = vVelocities[vID &* 3 &+ 0]
-        let y = vVelocities[vID &* 3 &+ 1]
-        let z = vVelocities[vID &* 3 &+ 2]
-        swizzleFromVectorWidth((x, y, z), vID, baseAddress)
-      }
-      $1 = atoms.count
+  // Use this function to import velocities into the force field.
+  func createVelocities(
+    _ buffer: UnsafeMutableBufferPointer<SIMD3<Float>>
+  ) {
+    guard buffer.count == atoms.count else {
+      fatalError("Velocity buffer was not the correct size.")
     }
-    return output
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+    
+    // TODO: Transform into the global reference frame.
+    for vID in 0..<atoms.vectorCount {
+      let x = vVelocities[vID &* 3 &+ 0]
+      let y = vVelocities[vID &* 3 &+ 1]
+      let z = vVelocities[vID &* 3 &+ 2]
+      swizzleFromVectorWidth((x, y, z), vID, baseAddress)
+    }
   }
   
-  func createLinearVelocity() -> SIMD3<Float> {
+  func createVectorizedVelocities(_ velocities: [SIMD3<Float>]?) {
+    vVelocities = Array(repeating: .zero, count: 3 * atoms.vectorCount)
+    guard let velocities else {
+      return
+    }
+    precondition(
+      velocities.count == atoms.count,
+      "Initial velocities array has incorrect size.")
+    
+    velocities.withContiguousStorageIfAvailable {
+      let baseAddress = $0.baseAddress.unsafelyUnwrapped
+      for vID in 0..<atoms.vectorCount {
+        let (x, y, z) = swizzleToVectorWidth(vID, baseAddress)
+        vVelocities[vID &* 3 &+ 0] = x
+        vVelocities[vID &* 3 &+ 1] = y
+        vVelocities[vID &* 3 &+ 2] = z
+      }
+    }
+  }
+  
+  func createLinearMomentum() -> SIMD3<Double> {
     var momentum: SIMD3<Double> = .zero
     withSegmentedLoop(chunk: 256) {
       var vMomentumX: MM4FloatVector = .zero
@@ -118,7 +111,7 @@ extension MM4RigidBodyStorage {
       momentum.y += MM4DoubleVector(vMomentumY).sum()
       momentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
-    return SIMD3<Float>(momentum) / mass
+    return momentum
   }
   
   func createAngularVelocity() -> SIMD3<Float> {
@@ -148,6 +141,15 @@ extension MM4RigidBodyStorage {
       momentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
     
+    precondition(
+      momentOfInertia .!= .zero, "Moment of inertia was not yet initialized.")
+    
+    
+    
+    
+    fatalError(
+      "Angular velocity cannot be created because moment of inertia and reference frame are unknown.")
+    
     ensureMomentOfInertiaCached()
     guard let momentOfInertia else {
       fatalError("This should never happen.")
@@ -160,104 +162,4 @@ extension MM4RigidBodyStorage {
   }
 }
 
-// MARK: - Properties
 
-extension MM4RigidBody {
-  /// The net linear velocity (in nanometers per picosecond) of the entire
-  /// object.
-  public var linearVelocity: SIMD3<Double> {
-    _read {
-      storage.ensureLinearVelocityCached()
-      yield storage.linearVelocity!
-    }
-    _modify {
-      ensureUniquelyReferenced()
-      storage.ensureLinearVelocityCached()
-      let previous = storage.linearVelocity!
-      yield &storage.linearVelocity!
-      
-      let velocityDifference = storage.linearVelocity! - previous
-      guard any(velocityDifference .!= .zero) else {
-        return
-      }
-      for vID in 0..<storage.atoms.vectorCount {
-        storage.vVelocities[vID &* 3 &+ 0] += velocityDifference.x
-        storage.vVelocities[vID &* 3 &+ 1] += velocityDifference.y
-        storage.vVelocities[vID &* 3 &+ 2] += velocityDifference.z
-      }
-      if storage.atoms.count == 0 {
-        storage.linearVelocity = .zero
-      }
-      
-      // Invalidate cached properties. Some could be restored, but err on the
-      // side of simplicity for debugging.
-      storage.eraseRarelyCachedProperties()
-      storage.velocities = nil
-    }
-  }
-  
-  /// The net angular velocity (in radians per picosecond) of the entire
-  /// object.
-  public var angularVelocity: SIMD3<Double> {
-    _read {
-      storage.ensureAngularVelocityCached()
-      yield storage.angularVelocity!
-    }
-    _modify {
-      ensureUniquelyReferenced()
-      storage.ensureCenterOfMassCached()
-      storage.ensureAngularVelocityCached()
-      let previous = storage.angularVelocity!
-      yield &storage.angularVelocity!
-      
-      let next = storage.angularVelocity!
-      guard next != previous else {
-        return
-      }
-      guard let centerOfMass = storage.centerOfMass else {
-        fatalError("This should never happen.")
-      }
-      
-      for vID in 0..<storage.atoms.vectorCount {
-        let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
-        let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
-        let rZ = storage.vPositions[vID &* 3 &+ 2] - centerOfMass.z
-        var vX: MM4FloatVector = .zero
-        var vY: MM4FloatVector = .zero
-        var vZ: MM4FloatVector = .zero
-        
-        // Un-apply the previous bulk angular velocity.
-        do {
-          let w = previous
-          vX -= w.y * rZ - w.z * rY
-          vY -= w.z * rX - w.x * rZ
-          vZ -= w.x * rY - w.y * rX
-        }
-        
-        // Apply the next bulk angular velocity.
-        do {
-          let w = next
-          vX += w.y * rZ - w.z * rY
-          vY += w.z * rX - w.x * rZ
-          vZ += w.x * rY - w.y * rX
-        }
-        
-        // Mask out the changes to velocity for anchors.
-        let mass = storage.vMasses[vID]
-        vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
-        vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
-        vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
-        
-        // Write the new velocities as offsets relative to the existing ones.
-        storage.vVelocities[vID &* 3 &+ 0] += vX
-        storage.vVelocities[vID &* 3 &+ 1] += vY
-        storage.vVelocities[vID &* 3 &+ 2] += vZ
-      }
-      
-      // Invalidate cached properties. Some could be restored, but err on the
-      // side of simplicity for debugging.
-      storage.eraseRarelyCachedProperties()
-      storage.velocities = nil
-    }
-  }
-}

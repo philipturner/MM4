@@ -6,13 +6,17 @@
 //
 
 final class MM4RigidBodyStorage {
-  // Sources of truth, during the last time they were updated externally.
+  // Reference frame; never mutated after initialization.
   // TODO: Define a different reference frame for positions, velocities, and
   // forces. In addition, define the transformation to the reference frame
   // defined by the diagonalized inertia tensor, and the current global
   // reference frame.
   var atoms: (count: Int, vectorCount: Int, nonAnchorCount: Int)
-  var mass: Double
+  var mass: Double = .zero
+  var momentOfInertia: SIMD3<Double> = .zero
+  var vMasses: [MM4FloatVector] = []
+  var vPositions: [MM4FloatVector] = [] // relative positions in reference frame
+  
   var forces: [SIMD3<Float>] // according to the outside observer
   // Use case for forces (maybe?) write on single-core, compute/cache on
   // multi-core. Or can they be written by MM4ForceField on multi-core?
@@ -35,25 +39,22 @@ final class MM4RigidBodyStorage {
   //   provide a meaningful speedup now
   // - don't provide forces of the individual body; the user can just fetch
   //   from MM4ForceField at a specific range if they want
-  var vMasses: [MM4FloatVector]
-  var vPositions: [MM4FloatVector] // relative positions in reference frame
   var vVelocities: [MM4FloatVector] // thermal velocities in reference frame
-  
-  var lastUpdateCenterOfMass: SIMD3<Double> // ???
-  var lastUpdatePrincipalAxes: SIMD3<Double> // ???
   
   // The diagonalized moment of inertia and principal axes. These are
   // updated immediately after positions, velocities, or forces are mutated.
+  // TODO: Expose principal axes and diagonal moment of inertia to public API.
   var angularVelocity: SIMD3<Double>
-  var centerOfMass: SIMD3<Double>
+  var centerOfMass: SIMD3<Double> = .zero
   var linearVelocity: SIMD3<Double>
-  var momentOfInertia: SIMD3<Double>
   var principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
   
   // Cached properties, according to the outside observer.
+  // You can track the caching of linear/angular acceleration separately, now
+  // that forces are swizzled beforehand. Sort of like how center of mass and
+  // moment of inertia are computed in two separate passes.
   var angularAcceleration: SIMD3<Double>?
   var linearAcceleration: SIMD3<Double>?
-  var forces: [SIMD3<Float>]?
   var positions: [SIMD3<Float>]?
   var velocities: [SIMD3<Float>]?
   

@@ -37,17 +37,17 @@ func invertMatrix3x3(
 // solveCubicPolynomial
 
 extension MM4RigidBodyStorage {
-  @_transparent
-  func extractScalar(
-    _ scalarID: Int, _ array: [MM4FloatVector]
-  ) -> SIMD3<Float> {
-    let vID = scalarID / MM4VectorWidth
-    let lane = scalarID &- vID &* MM4VectorWidth
-    let x = array[vID &* 3 &+ 0][lane]
-    let y = array[vID &* 3 &+ 1][lane]
-    let z = array[vID &* 3 &+ 2][lane]
-    return SIMD3(x, y, z)
-  }
+//  @_transparent
+//  func extractScalar(
+//    _ scalarID: Int, _ array: [MM4FloatVector]
+//  ) -> SIMD3<Float> {
+//    let vID = scalarID / MM4VectorWidth
+//    let lane = scalarID &- vID &* MM4VectorWidth
+//    let x = array[vID &* 3 &+ 0][lane]
+//    let y = array[vID &* 3 &+ 1][lane]
+//    let z = array[vID &* 3 &+ 2][lane]
+//    return SIMD3(x, y, z)
+//  }
   
   @_transparent
   func swizzleFromVectorWidth<T: BinaryFloatingPoint>(

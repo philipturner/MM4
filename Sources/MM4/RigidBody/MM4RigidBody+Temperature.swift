@@ -7,6 +7,10 @@
 
 import Foundation
 
+// TODO: Consider making velocities mutable and moving this into the hardware
+// catalog. While at the same time, avoiding the compute cost of reinitializing
+// velocities every time the rigid body is updated.
+
 extension MM4RigidBody {
   /// Set the thermal kinetic energy to match a given temperature, assuming
   /// positions are energy-minimized at 0 K.
@@ -41,8 +45,8 @@ extension MM4RigidBody {
   /// - Silicon: 2.41 kT at 298 K, 2.84 kT at 500 K ([Desai, 1985](https://srd.nist.gov/JPCRD/jpcrd298.pdf)).
   ///
   /// ![Material Heat Capacities](MaterialHeatCapacities)
-  public mutating func setThermalKineticEnergy(
-    temperature: Float,
+  public mutating func setVelocitiesToTemperature(
+    _ temperature: Float,
     heatCapacity: Float = 1.5
   ) {
     // Change the thermal velocities regardless of whether the previous thermal
@@ -53,7 +57,7 @@ extension MM4RigidBody {
     
     // E = thermal energy
     // C = heat capacity
-    // N = number of **non-anchor** atoms
+    // N = number of atoms, excluding those with zero mass
     // k = Boltzmann constant
     // T = temperature
     //
