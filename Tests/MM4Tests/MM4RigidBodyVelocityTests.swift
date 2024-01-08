@@ -22,10 +22,13 @@ final class MM4RigidBodyVelocityTests: XCTestCase {
 
 // MARK: - Velocity
 
-// Test that when certain velocities are entered into the object descriptor, it
-// automatically recognizes the correct velocity. Then, test that a stationary
-// object with its velocity mutated shows the expected atom velocities.
-// Also, test what happens when both linear and angular velocity are nonzero.
+// <s>Test that when certain velocities are entered into the object descriptor,
+// it automatically recognizes the correct velocity.</s> Velocities are no
+// longer set through any kind of descriptor.
+//
+// Then, test that a stationary object with its velocity mutated shows the
+// expected atom velocities. Also, test what happens when both linear and
+// angular velocity are nonzero.
 
 private func testLinearVelocity(_ reference: MM4RigidBody) {
   let parameters = reference.parameters

@@ -1,6 +1,6 @@
 # MM4
 
-Molecular mechanics simulator for molecular nanotechnology.
+Molecular mechanics simulator for molecular nanotechnology. The simulator uses OpenMM to offload force computations to the GPU. It also contains high-performance CPU primitives for rigid body mechanics.
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 

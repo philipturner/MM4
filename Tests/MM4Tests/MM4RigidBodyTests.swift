@@ -3,15 +3,6 @@ import MM4
 
 // Test the basic functionality of the rigid body API.
 
-// Edge cases to test when adding support for anchors:
-// - Sort the atoms by farthest distance from the CoM, then choose some
-//   interesting ones for the anchors. Test that the inertia conforms to the
-//   expected rules regarding anchors.
-// - Test what happens when every atom is an anchor.
-// - Ensure there is a fatal error when an anchor has an external force.
-//   This will not be permanently part of the test suite, but the check should
-//   still be performed.
-
 // MARK: - Test Execution
 
 final class MM4RigidBodyTests: XCTestCase {

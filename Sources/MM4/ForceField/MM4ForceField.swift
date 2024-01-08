@@ -32,23 +32,14 @@ public struct MM4ForceFieldDescriptor {
   /// is somewhere in the middle, at ~5.
   public var dielectricConstant: Float = 5.7
   
-  /// Optional. The parameters to initialize internal forces with.
+  /// Required. The parameters that define internal forces.
   ///
-  /// This parameter is mutually exclude with `rigidBodies`. You can either
-  /// specify the parameters directly or enter them through the rigid bodies.
-  /// You cannot do both. If `rigidBodies` is not specified, you must set
-  /// `parameters`.
+  /// If there are multiple rigid bodies, you can combine their parameters with
+  /// <doc:MM4Parameters/append(contentsOf:)>.
   public var parameters: MM4Parameters?
   
   /// Optional. The OpenMM platform to use for simulation.
   public var platform: OpenMM_Platform?
-  
-  /// Optional. The rigid bodies to initialize the system with.
-  ///
-  /// If you do not set the rigid bodies, you must set all positions, velocities,
-  /// and external forces manually. Their default values are all zero. This is the
-  /// same behavior as <doc:MM4RigidBody/init(parameters:)>.
-  public var rigidBodies: [MM4RigidBody]?
 }
 
 /// A force field simulator.
@@ -72,46 +63,27 @@ public class MM4ForceField {
   /// Stores the system's energy.
   var _energy: MM4ForceFieldEnergy!
   
-  /// Stores the external forces before reordering.
-  var _externalForces: [SIMD3<Float>] = []
-  
   /// Stores the time step, in picoseconds.
   var _timeStep: Double = 100 / 23 * OpenMM_PsPerFs
   
   /// Create a simulator using the specified configuration.
   public init(descriptor: MM4ForceFieldDescriptor) {
-    var parameters: MM4Parameters
-    switch (descriptor.parameters, descriptor.rigidBodies) {
-    case (.some(_), nil):
-      parameters = descriptor.parameters!
-    case (nil, .some(let rigidBodies)):
-      parameters = MM4ForceField.createParameters(rigidBodies: rigidBodies)
-    case (nil, nil):
-      fatalError("Did not specify parameters or rigid bodies.")
-    case (.some(_), .some(_)):
-      fatalError("Specified both parameters and rigid bodies.")
+    guard let parameters = descriptor.parameters else {
+      fatalError("No force field parameters were specified.")
     }
     
     // Load available plugins before doing anything that might require them.
-    let directory = OpenMM_Platform.defaultPluginsDirectory!
-    _ = OpenMM_Platform.loadPlugins(directory: directory)!
+    guard let directory = OpenMM_Platform.defaultPluginsDirectory else {
+      fatalError("Could not load OpenMM plugins directory.")
+    }
+    guard OpenMM_Platform.loadPlugins(directory: directory) != nil else {
+      fatalError("Could not load OpenMM plugins.")
+    }
     
     system = MM4System(parameters: parameters, descriptor: descriptor)
     context = MM4Context(system: system, platform: descriptor.platform)
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
-    
     _energy = MM4ForceFieldEnergy(forceField: self)
-    _externalForces = Array(
-      repeating: .zero, count: system.parameters.atoms.count)
-    
-    if let rigidBodies = descriptor.rigidBodies {
-      var atomCursor = 0
-      for rigidBody in rigidBodies {
-        let nextAtomCursor = atomCursor + rigidBody.parameters.atoms.count
-        `import`(from: rigidBody, range: atomCursor..<nextAtomCursor)
-        atomCursor = nextAtomCursor
-      }
-    }
   }
 }
