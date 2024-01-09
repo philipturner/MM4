@@ -21,12 +21,12 @@ extension MM4RigidBody {
     }
   }
   
-  public var force: SIMD3<Double>? {
+  public var netForce: SIMD3<Double>? {
     fatalError("Not implemented.")
   }
   
   // Make a similar warning to that in 'angularMomentum'.
-  public var torque: SIMD3<Double>? {
+  public var netTorque: SIMD3<Double>? {
     fatalError("Not implemented.")
   }
 }
@@ -41,7 +41,23 @@ extension MM4RigidBody {
 // create
 
 extension MM4RigidBodyStorage {
-  func createNetTorque(forces: [SIMD3<Float>]) -> SIMD3<Double> {
-    var netTorque:
+  func createNetTorque(
+    _ buffer: UnsafeBufferPointer<SIMD3<Float>>
+  ) -> SIMD3<Double> {
+    guard buffer.count == atoms.count else {
+      fatalError("Force buffer was not the correct size.")
+    }
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+    
+    var netTorque: SIMD3<Double> = .zero
+    withSegmentedLoop(chunk: 256) {
+      var vTorqueX: MM4FloatVector = .zero
+      var vTorqueY: MM4FloatVector = .zero
+      var vTorqueZ: MM4FloatVector = .zero
+      for vID in $0 {
+        let (x, y, z) = swizzleToVectorWidth(vID, baseAddress)
+        
+      }
+    }
   }
 }

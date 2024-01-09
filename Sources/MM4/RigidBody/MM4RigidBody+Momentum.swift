@@ -19,7 +19,7 @@ extension MM4RigidBody {
   }
   
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
-  public var momentum: SIMD3<Double> {
+  public var linearMomentum: SIMD3<Double> {
     get {
       fatalError("Not implemented.")
     }
@@ -69,7 +69,7 @@ extension MM4RigidBodyStorage {
     }
   }
   
-  func createLinearMomentum() -> SIMD3<Double> {
+  func createMomentum() -> SIMD3<Double> {
     var linearMomentum: SIMD3<Double> = .zero
     withSegmentedLoop(chunk: 256) {
       var vMomentumX: MM4FloatVector = .zero
