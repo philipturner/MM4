@@ -19,11 +19,12 @@ extension MM4RigidBody {
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
   public var linearMomentum: SIMD3<Double> {
     _read {
-      fatalError("Not implemented.")
+      yield storage.linearMomentum
     }
     _modify {
       ensureUniquelyReferenced()
-      fatalError("Not implemented.")
+      storage.invalidateVelocities()
+      yield &storage.linearMomentum
     }
   }
   
@@ -35,11 +36,12 @@ extension MM4RigidBody {
   /// eigenpair of the inertia tensor.
   public var angularMomentum: SIMD3<Double> {
     _read {
-      fatalError("Not implemented.")
+      yield storage.angularMomentum
     }
     _modify {
       ensureUniquelyReferenced()
-      fatalError("Not implemented.")
+      storage.invalidateVelocities()
+      yield &storage.angularMomentum
     }
   }
 }

@@ -25,6 +25,10 @@ public struct MM4RigidBodyDescriptor {
   /// thermal velocities and bulk momenta. The thermal velocities cannot be
   /// modified, as that would require the momenta to be recomputed.
   public var velocities: [SIMD3<Float>]?
+  
+  public init() {
+    
+  }
 }
 
 /// An enclosed group of covalently bonded atoms.

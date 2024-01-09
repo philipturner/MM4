@@ -40,6 +40,10 @@ public struct MM4ForceFieldDescriptor {
   
   /// Optional. The OpenMM platform to use for simulation.
   public var platform: OpenMM_Platform?
+  
+  public init() {
+    
+  }
 }
 
 /// A force field simulator.

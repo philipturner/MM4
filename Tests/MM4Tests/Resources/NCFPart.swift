@@ -18,16 +18,17 @@ struct NCFPart {
     let bonds = Base64Decoder.decodeBonds(NCFPart.base64Bonds)
     
     // Disable hydrogen mass repartitioning to simplify analysis during tests.
-    var descriptor = MM4ParametersDescriptor()
-    descriptor.atomicNumbers = atoms.map { UInt8($0.w) }
-    descriptor.bonds = bonds
-    descriptor.forces = forces
-    descriptor.hydrogenMassScale = 1
-    let parameters = try! MM4Parameters(descriptor: descriptor)
+    var paramsDesc = MM4ParametersDescriptor()
+    paramsDesc.atomicNumbers = atoms.map { UInt8($0.w) }
+    paramsDesc.bonds = bonds
+    paramsDesc.forces = forces
+    paramsDesc.hydrogenMassScale = 1
+    let parameters = try! MM4Parameters(descriptor: paramsDesc)
     
-    var rigidBody = MM4RigidBody(parameters: parameters)
-    rigidBody.setPositions(atoms.map { SIMD3($0.x, $0.y, $0.z) })
-    self.rigidBody = rigidBody
+    var rigidBodyDesc = MM4RigidBodyDescriptor()
+    rigidBodyDesc.parameters = parameters
+    rigidBodyDesc.positions = atoms.map { SIMD3($0.x, $0.y, $0.z) }
+    self.rigidBody = MM4RigidBody(descriptor: rigidBodyDesc)
   }
 }
 

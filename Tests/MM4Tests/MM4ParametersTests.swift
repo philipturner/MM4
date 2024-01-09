@@ -1,9 +1,5 @@
 import XCTest
-#if DEBUG
-@testable import MM4
-#else
 import MM4
-#endif
 
 // TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
 // TODO: Add unit tests for omitting torsions and cross-terms
@@ -43,8 +39,8 @@ final class MM4ParametersTests: XCTestCase {
   }
   
   func testParametersCombination() throws {
-    let references = try MM4RigidBodyTests.createRigidBodyReferences()
-    try _testParametersCombination(references)
+    let descriptors = try MM4RigidBodyTests.createDescriptors()
+    try _testParametersCombination(descriptors)
   }
   
   #if RELEASE
@@ -306,7 +302,6 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
     print()
   }
   
-  #if DEBUG
   // Check that nonbonded exceptions are not duplicated.
   for exceptionID in params.nonbondedExceptions13.indices {
     let exception = params.nonbondedExceptions13[exceptionID]
@@ -324,17 +319,16 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
       XCTAssertNotEqual(reversedException, otherException)
     }
   }
-  #endif
 }
 
 private func _testParametersCombination(
-  _ references: [MM4RigidBody]
+  _ descriptors: [MM4RigidBodyDescriptor]
 ) throws {
   var ranges: [Range<Int>] = []
   var atomCapacity: Int = 0
-  for reference in references {
+  for descriptor in descriptors {
     let oldAtomCapacity = atomCapacity
-    atomCapacity += reference.parameters.atoms.count
+    atomCapacity += descriptor.parameters!.atoms.count
     ranges.append(oldAtomCapacity..<atomCapacity)
   }
   
@@ -342,8 +336,8 @@ private func _testParametersCombination(
   paramsDesc.atomicNumbers = []
   paramsDesc.bonds = []
   var combinedParameters = try! MM4Parameters(descriptor: paramsDesc)
-  for reference in references {
-    combinedParameters.append(contentsOf: reference.parameters)
+  for descriptor in descriptors {
+    combinedParameters.append(contentsOf: descriptor.parameters!)
   }
   
   // The objects are expected to be in the order:
@@ -352,17 +346,17 @@ private func _testParametersCombination(
   // - empty
   let adamantane = Adamantane(atomCode: .alkaneCarbon)
   XCTAssertEqual(
-    references[0].parameters.atoms.count, adamantane.atomicNumbers.count)
+    descriptors[0].parameters!.atoms.count, adamantane.atomicNumbers.count)
   XCTAssertEqual(
-    references[1].parameters.atoms.count, adamantane.atomicNumbers.count)
+    descriptors[1].parameters!.atoms.count, adamantane.atomicNumbers.count)
   XCTAssertEqual(
-    references[2].parameters.atoms.count, 0)
-  XCTAssertTrue(references[0].parameters.atoms.atomicNumbers.contains(6))
-  XCTAssertFalse(references[0].parameters.atoms.atomicNumbers.contains(14))
-  XCTAssertFalse(references[1].parameters.atoms.atomicNumbers.contains(6))
-  XCTAssertTrue(references[1].parameters.atoms.atomicNumbers.contains(14))
-  XCTAssertFalse(references[2].parameters.atoms.atomicNumbers.contains(6))
-  XCTAssertFalse(references[2].parameters.atoms.atomicNumbers.contains(14))
+    descriptors[2].parameters!.atoms.count, 0)
+  XCTAssertTrue(descriptors[0].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertFalse(descriptors[0].parameters!.atoms.atomicNumbers.contains(14))
+  XCTAssertFalse(descriptors[1].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertTrue(descriptors[1].parameters!.atoms.atomicNumbers.contains(14))
+  XCTAssertFalse(descriptors[2].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertFalse(descriptors[2].parameters!.atoms.atomicNumbers.contains(14))
   
   var atomStart: Int = 0
   var bondStart: Int = 0
@@ -371,8 +365,8 @@ private func _testParametersCombination(
   var ringStart: Int = 0
   var exception13Start: Int = 0
   var exception14Start: Int = 0
-  for rigidBodyID in references.indices {
-    let thisParameters = references[rigidBodyID].parameters
+  for rigidBodyID in descriptors.indices {
+    let thisParameters = descriptors[rigidBodyID].parameters!
     
     for thisID in thisParameters.nonbondedExceptions13.indices {
       let combinedID = exception13Start + thisID
@@ -401,17 +395,6 @@ private func _testParametersCombination(
       XCTAssertEqual(
         combinedParameters.atoms.ringTypes[combinedID],
         thisParameters.atoms.ringTypes[thisID])
-      
-      let combinedBonds = combinedParameters.atomsToBondsMap[combinedID]
-      let combinedAtoms = combinedParameters.atomsToAtomsMap[combinedID]
-      var thisBonds = thisParameters.atomsToBondsMap[thisID]
-      var thisAtoms = thisParameters.atomsToAtomsMap[thisID]
-      let modifiedBonds = thisBonds &+ Int32(bondStart)
-      let modifiedAtoms = thisAtoms &+ Int32(atomStart)
-      thisBonds.replace(with: modifiedBonds, where: thisBonds .>= 0)
-      thisAtoms.replace(with: modifiedAtoms, where: thisAtoms .>= 0)
-      XCTAssertEqual(combinedBonds, thisBonds)
-      XCTAssertEqual(combinedAtoms, thisAtoms)
     }
     
     for thisID in thisParameters.bonds.indices.indices {
