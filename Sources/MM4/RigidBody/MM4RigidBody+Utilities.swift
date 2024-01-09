@@ -157,8 +157,8 @@ func diagonalize(
     }
     return nil
   }
-  guard let x = createEigenVector(eigenValues[0]),
-        let y = createEigenVector(eigenValues[1]),
+  guard var x = createEigenVector(eigenValues[0]),
+        var y = createEigenVector(eigenValues[1]),
         var z = createEigenVector(eigenValues[2]) else {
     fatalError("Failed to generate the eigenvectors from the eigenvalues.")
   }
@@ -176,6 +176,12 @@ func diagonalize(
   let crossProduct = SIMD3(s1, s2, s3)
   if (crossProduct * z).sum() < 0 {
     z = -z
+  }
+  
+  // Flip the eigenvectors so they're as close as possible to the original
+  // coordinate space's cardinal axes.
+  if (x * SIMD3(1, 1, 1)).sum() < 0 {
+    (x, y, z) = (-x, -y, -z)
   }
   
   return (

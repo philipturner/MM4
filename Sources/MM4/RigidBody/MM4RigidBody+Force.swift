@@ -6,7 +6,13 @@
 //
 
 extension MM4RigidBody {
-  public var forces: [SIMD3<Float>] {
+  /// The forces (in piconewtons) on each atom.
+  ///
+  /// Force is a function of position and the surrounding environment. When the
+  /// rigid body changes position, the forces changes as well. Therefore, the
+  /// forces are invalidated (turned into `nil`). To restore the forces,
+  /// you must assign them to the `forces` property again.
+  public var forces: [SIMD3<Float>]? {
     _read {
       fatalError("Not implemented.")
     }
@@ -15,11 +21,11 @@ extension MM4RigidBody {
     }
   }
   
-  public var netForce: SIMD3<Double> {
+  public var netForce: SIMD3<Double>? {
     fatalError("Not implemented.")
   }
   
-  public var netTorque: SIMD3<Double> {
+  public var netTorque: SIMD3<Double>? {
     fatalError("Not implemented.")
   }
 }

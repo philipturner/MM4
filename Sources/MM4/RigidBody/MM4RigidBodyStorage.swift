@@ -23,10 +23,10 @@ final class MM4RigidBodyStorage {
     SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
   ) = (.zero, .zero, .zero)
   
-  // Invalidate the accelerations whenever the center of mass, principal axes,
-  // or forces change.
+  // Invalidate the accelerations and forces whenever dependent properties
+  // change. Lazily rematerialize them, if the dependent properties exist.
   var angularAcceleration: SIMD3<Double>?
-  var forces: [SIMD3<Float>] = []
+  var forces: [SIMD3<Float>]?
   var linearAcceleration: SIMD3<Double>?
   
   // Allow fine-grained, O(n) access to publicly presented positions and
@@ -44,15 +44,29 @@ final class MM4RigidBodyStorage {
     guard let positions = descriptor.positions else {
       fatalError("Positions were not specified.")
     }
+    
+    // Swizzle the arrays into a format optimized for vector ALUs.
     createVectorizedMasses(parameters.atoms.masses)
     createVectorizedPositions(positions)
     createVectorizedVelocities(descriptor.velocities)
-    normalizeLinearPositions()
-    normalizeAngularPositions()
-    normalizeLinearVelocities()
-    normalizeAngularVelocities()
     
-    forces = Array(repeating: .zero, count: atoms.count)
+    // Origin of Reference Frame
+    mass = createMass()
+    centerOfMass = createCenterOfMass(mass: mass)
+    normalizeLinearPositions(centerOfMass: centerOfMass)
+    
+    // Momentum of Reference Frame
+    linearMomentum = createLinearMomentum()
+    normalizeLinearVelocities(mass: mass, linearMomentum: linearMomentum)
+    angularMomentum = createAngularMomentum()
+    
+    // Orientation of Reference Frame
+    let inertiaTensor = createInertiaTensor()
+    (momentOfInertia, principalAxes) = diagonalize(matrix: inertiaTensor)
+    normalizeAngularVelocities(
+      angularMomentum: angularMomentum,
+      inertiaTensor: inertiaTensor)
+    normalizeOrientation(principalAxes: principalAxes)
   }
   
   init(copying other: MM4RigidBodyStorage) {
@@ -62,14 +76,26 @@ final class MM4RigidBodyStorage {
 
 extension MM4RigidBodyStorage {
   func ensurePositionsCached() {
-    
+    // compute the position by applying bulk CoM and MoI in the same function
   }
   
   func ensureVelocitiesCached() {
-    
+    // compute the velocity by applying bulk P and L in the same function
   }
   
   func ensureAccelerationsCached() {
-    // both acceleratons are computed in the same function
+    // compute both accelerations in the same function
+  }
+  
+  func invalidatePositions() {
+    
+  }
+  
+  func invalidateVelocities() {
+    
+  }
+  
+  func invalidateForces() {
+    
   }
 }
