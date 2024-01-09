@@ -53,11 +53,6 @@ extension MM4RigidBody {
   /// If `axis` is not specified, the default value aligns with the current
   /// angular momentum. If the angular momentum is zero, you must enter zero
   /// for the angle.
-  ///
-  /// If the axis aligns with angular momentum, angular momentum stays
-  /// constant. If it does not align, angular momentum is rotated along with the
-  /// atom positions. In either case, forces are invalidated because the atom
-  /// positions have changed.
   public mutating func rotate(angle: Double, axis: SIMD3<Double>? = nil) {
     // Create a rotation from a quaternion. Use it to generate a rotation
     // matrix.
@@ -161,8 +156,7 @@ extension MM4RigidBodyStorage {
 
 // MARK: - Angular Properties
 
-// These functions assume the center of mass is (0, 0, 0), and both position
-// and velocity have the same orientation.
+// These functions assume the linear position is already normalized.
 
 extension MM4RigidBodyStorage {
   func createInertiaTensor() -> (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
@@ -242,11 +236,23 @@ extension MM4RigidBodyStorage {
     }
     let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     
-    // TODO: Transform into the global reference frame.
+    let Σ = (
+      SIMD3<Float>(principalAxes.0),
+      SIMD3<Float>(principalAxes.1),
+      SIMD3<Float>(principalAxes.2))
+    
     for vID in 0..<atoms.vectorCount {
-      let x = vPositions[vID &* 3 &+ 0]
-      let y = vPositions[vID &* 3 &+ 1]
-      let z = vPositions[vID &* 3 &+ 2]
+      let rX = vPositions[vID &* 3 &+ 0]
+      let rY = vPositions[vID &* 3 &+ 1]
+      let rZ = vPositions[vID &* 3 &+ 2]
+      
+      var x = Σ.0.x * rX + Σ.1.x * rY + Σ.2.x * rZ
+      var y = Σ.0.y * rX + Σ.1.y * rY + Σ.2.y * rZ
+      var z = Σ.0.z * rX + Σ.1.z * rY + Σ.2.z * rZ
+      x += Float(centerOfMass.x)
+      y += Float(centerOfMass.y)
+      z += Float(centerOfMass.z)
+      
       swizzleFromVectorWidth((x, y, z), vID, baseAddress)
     }
   }

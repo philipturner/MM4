@@ -20,21 +20,32 @@ extension MM4RigidBody {
   
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
   public var linearMomentum: SIMD3<Double> {
-    _read {
+    get {
+      // TODO: Convert between reference frames.
       fatalError("Not implemented.")
     }
-    _modify {
+    set {
+      // TODO: Convert between reference frames.
+      // get/set removes the need to duplicate code for transforming local -> global
       ensureUniquelyReferenced()
       fatalError("Not implemented.")
     }
   }
   
   /// The net angular momentum, in yoctogram-radians per picosecond.
+  ///
+  /// In contrast to linear momentum, angular momentum cannot be projected onto
+  /// the global reference frame. It is not parallel to the axis of rotation.
+  /// Rather, it is the magnitude of angular momentum with respect to each
+  /// eigenpair of the inertia tensor.
   public var angularMomentum: SIMD3<Double> {
-    _read {
+    get {
+      // TODO: Convert between reference frames.
       fatalError("Not implemented.")
     }
-    _modify {
+    set {
+      // TODO: Convert between reference frames.
+      // get/set removes the need to duplicate code for transforming local -> global
       ensureUniquelyReferenced()
       fatalError("Not implemented.")
     }
@@ -98,8 +109,8 @@ extension MM4RigidBodyStorage {
 
 // MARK: - Angular Properties
 
-// These functions assume the center of mass is (0, 0, 0), and both position
-// and velocity have the same orientation.
+// These functions assume the linear position, linear velocity, and orientation
+// are already normalized.
 
 extension MM4RigidBodyStorage {
   func createAngularMomentum() -> SIMD3<Double> {
@@ -128,10 +139,18 @@ extension MM4RigidBodyStorage {
   }
   
   func normalizeAngularVelocities(
-    angularMomentum: SIMD3<Double>,
-    inertiaTensor: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+    momentOfInertia: SIMD3<Double>,
+    angularMomentum: SIMD3<Double>
   ) {
-    
+    // L = I w
+    // w = I^{-1} L
+    // w = (Σ Λ ΣT)^{-1} L
+    // w = (ΣT)^{-1} Λ^{-1} Σ^{-1} L
+    // w = Σ (1/Λ) ΣT L
+    //
+    // If already transformed into the eigenbasis, Σ is the identity matrix.
+    // w = L / Λ
+    let angularVelocity = angularMomentum / momentOfInertia
     
     /*
     let inverse = invertMatrix3x3(momentOfInertia)

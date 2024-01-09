@@ -16,18 +16,18 @@ final class MM4RigidBodyStorage {
   
   // Reference frame; updates are tracked over time, but never recomputed from
   // scratch after initialization.
-  var angularMomentum: SIMD3<Double> = .zero // according to an outside observer
+  var angularMomentum: SIMD3<Double> = .zero // in reference frame
   var centerOfMass: SIMD3<Double> = .zero
-  var linearMomentum: SIMD3<Double> = .zero // according to an outside observer
+  var linearMomentum: SIMD3<Double> = .zero
   var principalAxes: (
     SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
   ) = (.zero, .zero, .zero)
   
   // Invalidate the accelerations and forces whenever dependent properties
   // change. Lazily rematerialize them, if the dependent properties exist.
-  var angularAcceleration: SIMD3<Double>?
+  var angularAcceleration: SIMD3<Double>? // in the global reference frame
   var forces: [SIMD3<Float>]?
-  var linearAcceleration: SIMD3<Double>?
+  var linearAcceleration: SIMD3<Double>? // in the local reference frame
   
   // Allow fine-grained, O(n) access to publicly presented positions and
   // velocities. You can invalidate these simply by deleting the array (setting
@@ -50,23 +50,29 @@ final class MM4RigidBodyStorage {
     createVectorizedPositions(positions)
     createVectorizedVelocities(descriptor.velocities)
     
-    // Origin of Reference Frame
+    // Linear Position
     mass = createMass()
     centerOfMass = createCenterOfMass(mass: mass)
     normalizeLinearPositions(centerOfMass: centerOfMass)
     
-    // Momentum of Reference Frame
-    linearMomentum = createLinearMomentum()
-    normalizeLinearVelocities(mass: mass, linearMomentum: linearMomentum)
-    angularMomentum = createAngularMomentum()
-    
-    // Orientation of Reference Frame
+    // Angular Position
     let inertiaTensor = createInertiaTensor()
     (momentOfInertia, principalAxes) = diagonalize(matrix: inertiaTensor)
-    normalizeAngularVelocities(
-      angularMomentum: angularMomentum,
-      inertiaTensor: inertiaTensor)
     normalizeOrientation(principalAxes: principalAxes)
+    
+    // Linear Momentum
+    linearMomentum = createLinearMomentum()
+    normalizeLinearVelocities(mass: mass, linearMomentum: linearMomentum)
+    
+    // Angular Momentum
+    angularMomentum = createAngularMomentum()
+    normalizeAngularVelocities(
+      momentOfInertia: momentOfInertia,
+      angularMomentum: angularMomentum)
+    
+    // Shift the momenta into the global reference frame.
+    linearMomentum = gemv(matrix: principalAxes, vector: linearMomentum)
+    angularMomentum = gemv(matrix: principalAxes, vector: angularMomentum)
   }
   
   init(copying other: MM4RigidBodyStorage) {
