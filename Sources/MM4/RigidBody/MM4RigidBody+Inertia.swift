@@ -5,6 +5,8 @@
 //  Created by Philip Turner on 1/8/24.
 //
 
+import QuaternionModule
+
 extension MM4RigidBody {
   /// Symmetric matrix specifying the rigid body's moment of inertia.
   public var momentOfInertia: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
@@ -23,11 +25,8 @@ extension MM4RigidBody {
   /// constant. Otherwise, the angular momentum is rotated along with the
   /// atom positions.
   public mutating func rotate(angle: Double, axis: SIMD3<Double>? = nil) {
-    // TODO: Decompose the rotation into the diagonalized reference frame,
-    // instead of adding a dependency on swift-numerics @ Quaternions. This
-    // may simplify generation of the rotation matrix?
-    //
-    // Nvm - create a rotation matrix directly in the world space.
+    // Create a rotation from a quaternion. Use it to generate a rotation
+    // matrix.
     
     ensureUniquelyReferenced()
     fatalError("Not implemented.")
@@ -35,22 +34,21 @@ extension MM4RigidBody {
 }
 
 extension MM4RigidBodyStorage {
-  
-}
-
-extension MM4RigidBodyStorage {
-  func createMomentOfInertia() -> (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
-    ensureCenterOfMassCached()
-    guard let centerOfMass else {
-      fatalError("This should never happen.")
-    }
-    guard atoms.count > 0 else {
-      return (.zero, .zero, .zero)
-    }
+  // Create the moment of inertia and rotate positions so the local reference
+  // frame aligns with the principal axes. Positions must already be shifted
+  // into the local reference frame.
+  func normalizeAngularPositions() {
+    precondition(
+      momentOfInertia == .zero,
+      "Moment of inertia was already initialized.")
+    precondition(
+      principalAxes == (.zero, .zero, .zero),
+      "Principal axes were already initialized.")
     
-    var columns = (SIMD3<Double>.zero,
-                   SIMD3<Double>.zero,
-                   SIMD3<Double>.zero)
+    var inertiaTensor: (
+      SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
+    ) = (.zero, .zero, .zero)
+    
     withSegmentedLoop(chunk: 256) {
       var vXX: MM4FloatVector = .zero
       var vYY: MM4FloatVector = .zero
@@ -59,9 +57,9 @@ extension MM4RigidBodyStorage {
       var vXZ: MM4FloatVector = .zero
       var vYZ: MM4FloatVector = .zero
       for vID in $0 {
-        let x = vPositions[vID &* 3 &+ 0] - centerOfMass.x
-        let y = vPositions[vID &* 3 &+ 1] - centerOfMass.y
-        let z = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        let x = vPositions[vID &* 3 &+ 0]
+        let y = vPositions[vID &* 3 &+ 1]
+        let z = vPositions[vID &* 3 &+ 2]
         let mass = vMasses[vID]
         vXX.addProduct(mass, x * x)
         vYY.addProduct(mass, y * y)
@@ -77,13 +75,39 @@ extension MM4RigidBodyStorage {
       let XY = MM4DoubleVector(vXY).sum()
       let XZ = MM4DoubleVector(vXZ).sum()
       let YZ = MM4DoubleVector(vYZ).sum()
-      columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
-      columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
-      columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
+      inertiaTensor.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
+      inertiaTensor.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
+      inertiaTensor.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
     }
-    return (SIMD3<Float>(columns.0),
-            SIMD3<Float>(columns.1),
-            SIMD3<Float>(columns.2))
+    
+    (momentOfInertia, principalAxes) = diagonalize(matrix: inertiaTensor)
+    
+    // Flip the principal axes so they're as close as possible to the original
+    // orientation.
+    if (principalAxes.0 * SIMD3(1, 1, 1)).sum() < 0 {
+      principalAxes = (-principalAxes.0, -principalAxes.1, -principalAxes.2)
+    }
+    
+    // Take the inverse of the eigenbasis, and cast it to FP32.
+    let basis = principalAxes
+    let rotation = (
+      SIMD3<Float>(SIMD3(basis.0[0], basis.1[0], basis.2[0])),
+      SIMD3<Float>(SIMD3(basis.0[1], basis.1[1], basis.2[1])),
+      SIMD3<Float>(SIMD3(basis.0[2], basis.1[2], basis.2[2])))
+    
+    withSegmentedLoop(chunk: 256) {
+      for vID in $0 {
+        let x = vPositions[vID &* 3 &+ 0]
+        let y = vPositions[vID &* 3 &+ 1]
+        let z = vPositions[vID &* 3 &+ 2]
+        let newX = rotation.0[0] * x + rotation.1[0] * y + rotation.2[0] * z
+        let newY = rotation.0[1] * x + rotation.1[1] * y + rotation.2[1] * z
+        let newZ = rotation.0[2] * x + rotation.1[2] * y + rotation.2[2] * z
+        vPositions[vID &* 3 &+ 0] = x
+        vPositions[vID &* 3 &+ 1] = y
+        vPositions[vID &* 3 &+ 2] = z
+      }
+    }
   }
 }
 
@@ -153,3 +177,4 @@ extension MM4RigidBody {
     }
   }
 }
+

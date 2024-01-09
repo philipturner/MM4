@@ -72,9 +72,7 @@ extension MM4RigidBodyStorage {
   
   func createVectorizedMasses(_ masses: [Float]) {
     vMasses = Array(repeating: .zero, count: atoms.vectorCount)
-    guard mass == 0, atoms.nonAnchorCount == 0 else {
-      fatalError("Vectorized masses were already initialized.")
-    }
+    precondition(mass == 0, "Vectorized masses were already initialized.")
     
     masses.withContiguousStorageIfAvailable {
       let baseAddress = $0.baseAddress.unsafelyUnwrapped
@@ -82,7 +80,6 @@ extension MM4RigidBodyStorage {
       
       withSegmentedLoop(chunk: 256) {
         var vMassAccumulator: MM4FloatVector = .zero
-        var vNonAnchorCount: MM4FloatVector = .zero
         for vID in $0 {
           var vMass: MM4FloatVector = .zero
           if vID == atoms.vectorCount &- 1 {
@@ -94,23 +91,18 @@ extension MM4RigidBodyStorage {
             vMass = vAddress[vID]
           }
           vMasses[vID] = vMass
-          
           vMassAccumulator += vMass
-          vMass.replace(with: .one, where: vMass .!= .zero)
-          vNonAnchorCount += vMass
         }
         mass += MM4DoubleVector(vMassAccumulator).sum()
-        atoms.nonAnchorCount += Int(vNonAnchorCount.sum())
       }
     }
   }
   
-  func createCenterOfMass() {
+  // Create the center of mass and shift positions so the local reference
+  // frame is centered at (0, 0, 0).
+  func normalizeLinearPositions() {
     precondition(
       centerOfMass == .zero, "Center of mass was already initialized.")
-    guard atoms.nonAnchorCount > 0 else {
-      return
-    }
     
     withSegmentedLoop(chunk: 256) {
       var vAccumulatorX: MM4FloatVector = .zero
@@ -130,7 +122,15 @@ extension MM4RigidBodyStorage {
       centerOfMass.z += MM4DoubleVector(vAccumulatorZ).sum()
     }
     
-    precondition(mass > 0, "Mass was not yet initialized.")
+    precondition(mass > 0, "Mass must be positive.")
     centerOfMass /= mass
+    
+    withSegmentedLoop(chunk: 256) {
+      for vID in $0 {
+        vPositions[vID &* 3 &+ 0] -= Float(centerOfMass.x)
+        vPositions[vID &* 3 &+ 1] -= Float(centerOfMass.y)
+        vPositions[vID &* 3 &+ 2] -= Float(centerOfMass.z)
+      }
+    }
   }
 }

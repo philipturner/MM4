@@ -76,8 +76,16 @@ extension MM4RigidBodyStorage {
     }
   }
   
-  func createLinearMomentum() -> SIMD3<Double> {
-    var momentum: SIMD3<Double> = .zero
+  // It does not matter what frame the positions are in.
+  //
+  // TODO: Resolve the issues with transforming between reference frames.
+  // We need to be careful when different quantities are in different frames.
+  // - Which quantities must be transformed, and where?
+  // - Which approach makes the most sense?
+  func normalizeLinearVelocities() {
+    precondition(
+      linearMomentum == .zero, "Linear momentum was already initialized.")
+    
     withSegmentedLoop(chunk: 256) {
       var vMomentumX: MM4FloatVector = .zero
       var vMomentumY: MM4FloatVector = .zero
@@ -91,19 +99,27 @@ extension MM4RigidBodyStorage {
         vMomentumY.addProduct(mass, y)
         vMomentumZ.addProduct(mass, z)
       }
-      momentum.x += MM4DoubleVector(vMomentumX).sum()
-      momentum.y += MM4DoubleVector(vMomentumY).sum()
-      momentum.z += MM4DoubleVector(vMomentumZ).sum()
+      linearMomentum.x += MM4DoubleVector(vMomentumX).sum()
+      linearMomentum.y += MM4DoubleVector(vMomentumY).sum()
+      linearMomentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
-    return momentum
+    
+    let linearVelocity = linearMomentum / mass
+    
+    withSegmentedLoop(chunk: 256) {
+      for vID in $0 {
+        vVelocities[vID &* 3 &+ 0] -= Float(linearVelocity.x)
+        vVelocities[vID &* 3 &+ 1] -= Float(linearVelocity.y)
+        vVelocities[vID &* 3 &+ 2] -= Float(linearVelocity.z)
+      }
+    }
   }
   
-  func createAngularVelocity() -> SIMD3<Float> {
-    var momentum: SIMD3<Double> = .zero
-    ensureCenterOfMassCached()
-    guard let centerOfMass else {
-      fatalError("This should never happen.")
-    }
+  // Positions must already be in the local reference frame
+  func normalizeAngularVelocities() {
+    precondition(
+      angularMomentum == .zero, "Angular momentum was already initialized.")
+    
     withSegmentedLoop(chunk: 256) {
       var vMomentumX: MM4FloatVector = .zero
       var vMomentumY: MM4FloatVector = .zero
@@ -124,6 +140,8 @@ extension MM4RigidBodyStorage {
       momentum.y += MM4DoubleVector(vMomentumY).sum()
       momentum.z += MM4DoubleVector(vMomentumZ).sum()
     }
+    
+    // TODO: Transform the result into the global reference frame.
     
     precondition(
       momentOfInertia .!= .zero, "Moment of inertia was not yet initialized.")

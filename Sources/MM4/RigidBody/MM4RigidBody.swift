@@ -40,9 +40,12 @@ public struct MM4RigidBody {
   var storage: MM4RigidBodyStorage
   
   /// Create a rigid body using the specified configuration.
-  public init(parameters: MM4Parameters) {
+  public init(descriptor: MM4RigidBodyDescriptor) {
+    guard let parameters = descriptor.parameters else {
+      fatalError("Parameters were not specified.")
+    }
     self.parameters = parameters
-    self.storage = MM4RigidBodyStorage(parameters: parameters)
+    self.storage = MM4RigidBodyStorage(descriptor: descriptor)
   }
   
   /// Ensure copy-on-write semantics. This is not exposed to the public API.
