@@ -52,42 +52,33 @@ extension MM4RigidBody {
   /// If `axis` is not specified, the default value aligns with the current
   /// angular momentum. If the angular momentum is zero, you must enter zero
   /// for the angle.
-  public mutating func rotate(angle: Double) {
-    // TODO: Delete the comment. The angular momentum is never mutated
-    // because it's always relative to the principal axes.
-    //
-    // If you want to add an 'axis' argument in the future (with a default value
-    // of NAN, that will not be a breaking API change). However, I see no
-    // reason to include an axis argument at the moment. We don't do rotations,
-    // momentum, or torque with respect to axes in the global coordinate space.
-    // That would complicate the function quite a bit.
-    //
-    // The intended use case is not constructing a scene. People can do that
-    // with quaternion rotations. The use case is integration during a rigid
-    // body dynamics simulation. This restricts what kind of data
-    // transformations you can perform. One restriction is that rotations must
-    // occur in the direction the object is actually rotating.
+  public mutating func rotate(angle: Double, axis: SIMD3<Double>? = nil) {
     ensureUniquelyReferenced()
     storage.invalidatePositions()
     storage.invalidateVelocities()
     
-    let magnitude = (angularMomentum * angularMomentum).sum()
-    if magnitude < .leastNormalMagnitude else {
-      precondition(angle.magnitude < .leastNormalMagnitude, "Angular momentum was zero, but rotation angle was nonzero: \(angle)")
-    }
-    
-    if (angularMomentum * angularMomentum).sum() < .leastNormalMagnitude {
-      guard angle.magnitude
-    }
-    
+    var rotationAxis: SIMD3<Double>
     if let axis {
-      fatalError("'axis' argument not supported yet.")
+      rotationAxis = axis
     } else {
+      let magnitude = (angularMomentum * angularMomentum).sum().squareRoot()
+      if magnitude < .leastNormalMagnitude {
+        guard angle.magnitude < .leastNormalMagnitude else {
+          fatalError(
+            "Angular momentum (\(magnitude)) was zero, but rotation angle (\(angle)) was nonzero.")
+        }
+        return
+      }
       
+      let (Σ, axis) = (principalAxes, angularMomentum / magnitude)
+      rotationAxis = Σ.0 * axis.x + Σ.1 * axis.y + Σ.2 * axis.z
     }
     
-    // Create a rotation from a quaternion. Use it to generate a rotation
-    // matrix.
+    let rotation = Quaternion<Double>(angle: angle, axis: rotationAxis)
+    storage.principalAxes = (
+      rotation.act(on: principalAxes.0),
+      rotation.act(on: principalAxes.1),
+      rotation.act(on: principalAxes.2))
   }
 }
 
