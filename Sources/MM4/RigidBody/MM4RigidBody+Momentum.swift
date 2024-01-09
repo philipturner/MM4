@@ -91,8 +91,7 @@ extension MM4RigidBodyStorage {
     return linearMomentum
   }
   
-  func normalizeLinearVelocities(mass: Double, linearMomentum: SIMD3<Double>) {
-    let linearVelocity = linearMomentum / mass
+  func normalizeLinearVelocities(to linearVelocity: SIMD3<Double>) {
     for vID in 0..<atoms.vectorCount {
       vVelocities[vID &* 3 &+ 0] -= Float(linearVelocity.x)
       vVelocities[vID &* 3 &+ 1] -= Float(linearVelocity.y)
@@ -132,20 +131,16 @@ extension MM4RigidBodyStorage {
     return angularMomentum
   }
   
-  func normalizeAngularVelocities(
-    momentOfInertia: SIMD3<Double>,
-    angularMomentum: SIMD3<Double>
-  ) {
-    // L = I w
-    // w = I^{-1} L
-    // w = (Σ Λ ΣT)^{-1} L
-    // w = (ΣT)^{-1} Λ^{-1} Σ^{-1} L
-    // w = Σ (1/Λ) ΣT L
-    //
-    // If already transformed into the eigenbasis, Σ is the identity matrix.
-    // w = L / Λ
-    let angularVelocity = angularMomentum / momentOfInertia
-    
+  // L = I w
+  // w = I^{-1} L
+  // w = (Σ Λ ΣT)^{-1} L
+  // w = (ΣT)^{-1} Λ^{-1} Σ^{-1} L
+  // w = Σ (1/Λ) ΣT L
+  //
+  // If already transformed into the eigenbasis, Σ is the identity matrix.
+  // w = L / Λ
+  // This is the formula to compute angular velocity.
+  func normalizeAngularVelocities(to angularVelocity: SIMD3<Double>) {
     /*
     let inverse = invertMatrix3x3(momentOfInertia)
     let velocityX = inverse.0 * Float(momentum.x)

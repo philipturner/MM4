@@ -11,27 +11,24 @@ final class MM4RigidBodyStorage {
   var mass: Double = .zero
   var momentOfInertia: SIMD3<Double> = .zero
   var vMasses: [MM4FloatVector] = []
-  var vPositions: [MM4FloatVector] = [] // relative positions in reference frame
-  var vVelocities: [MM4FloatVector] = []  // thermal velocities in reference frame
+  var vPositions: [MM4FloatVector] = [] // relative to reference frame
+  var vVelocities: [MM4FloatVector] = [] // relative to reference frame
   
-  // Reference frame; updates are tracked over time, but never recomputed from
-  // scratch after initialization.
-  var angularMomentum: SIMD3<Double> = .zero // in reference frame
+  // Reference frame; updates are tracked, but never recomputed from scratch.
+  var angularMomentum: SIMD3<Double> = .zero
   var centerOfMass: SIMD3<Double> = .zero
   var linearMomentum: SIMD3<Double> = .zero
   var principalAxes: (
     SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
   ) = (.zero, .zero, .zero)
   
-  // Invalidate the accelerations and forces whenever dependent properties
-  // change. Lazily rematerialize them, if the dependent properties exist.
-  var angularAcceleration: SIMD3<Double>? // in the global reference frame
+  // Invalidate the forces whenever dependent properties change.
   var forces: [SIMD3<Float>]?
-  var linearAcceleration: SIMD3<Double>? // in the local reference frame
+  var netForce: SIMD3<Double>?
+  var netTorque: SIMD3<Double>?
   
   // Allow fine-grained, O(n) access to publicly presented positions and
-  // velocities. You can invalidate these simply by deleting the array (setting
-  // it to `nil`).
+  // velocities.
   var positions: [SIMD3<Float>]?
   var velocities: [SIMD3<Float>]?
   
@@ -44,35 +41,27 @@ final class MM4RigidBodyStorage {
     guard let positions = descriptor.positions else {
       fatalError("Positions were not specified.")
     }
-    
-    // Swizzle the arrays into a format optimized for vector ALUs.
     createVectorizedMasses(parameters.atoms.masses)
     createVectorizedPositions(positions)
     createVectorizedVelocities(descriptor.velocities)
     
     // Linear Position
     mass = createMass()
-    centerOfMass = createCenterOfMass(mass: mass)
-    normalizeLinearPositions(centerOfMass: centerOfMass)
+    centerOfMass = createCenterOfMass()
+    normalizeLinearPositions(to: centerOfMass)
+    
+    // Linear Momentum
+    linearMomentum = createLinearMomentum()
+    normalizeLinearVelocities(to: linearMomentum / mass)
     
     // Angular Position
     let inertiaTensor = createInertiaTensor()
     (momentOfInertia, principalAxes) = diagonalize(matrix: inertiaTensor)
-    normalizeOrientation(principalAxes: principalAxes)
-    
-    // Linear Momentum
-    linearMomentum = createLinearMomentum()
-    normalizeLinearVelocities(mass: mass, linearMomentum: linearMomentum)
+    normalizeOrientation(to: principalAxes)
     
     // Angular Momentum
     angularMomentum = createAngularMomentum()
-    normalizeAngularVelocities(
-      momentOfInertia: momentOfInertia,
-      angularMomentum: angularMomentum)
-    
-    // Shift the momenta into the global reference frame.
-    linearMomentum = gemv(matrix: principalAxes, vector: linearMomentum)
-    angularMomentum = gemv(matrix: principalAxes, vector: angularMomentum)
+    normalizeAngularVelocities(to: angularMomentum / momentOfInertia)
   }
   
   init(copying other: MM4RigidBodyStorage) {

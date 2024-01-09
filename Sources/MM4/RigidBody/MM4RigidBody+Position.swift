@@ -121,7 +121,7 @@ extension MM4RigidBodyStorage {
     return mass
   }
   
-  func createCenterOfMass(mass: Double) -> SIMD3<Double> {
+  func createCenterOfMass() -> SIMD3<Double> {
     var centerOfMass: SIMD3<Double> = .zero
     withSegmentedLoop(chunk: 256) {
       var vAccumulatorX: MM4FloatVector = .zero
@@ -145,7 +145,7 @@ extension MM4RigidBodyStorage {
     return centerOfMass / mass
   }
   
-  func normalizeLinearPositions(centerOfMass: SIMD3<Double>) {
+  func normalizeLinearPositions(to centerOfMass: SIMD3<Double>) {
     for vID in 0..<atoms.vectorCount {
       vPositions[vID &* 3 &+ 0] -= Float(centerOfMass.x)
       vPositions[vID &* 3 &+ 1] -= Float(centerOfMass.y)
@@ -198,7 +198,7 @@ extension MM4RigidBodyStorage {
   }
   
   func normalizeOrientation(
-    principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+    to principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
   ) {
     // Measure the similarity between the eigenvector and the scalars.
     @_transparent
