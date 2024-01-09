@@ -48,11 +48,9 @@ public struct MM4RigidBody {
     self.storage = MM4RigidBodyStorage(descriptor: descriptor)
   }
   
-  /// Ensure copy-on-write semantics. This is not exposed to the public API.
+  /// Ensures copy-on-write semantics. This is not exposed to the public API.
   ///
-  /// > WARNING: Call this before every mutating function. Also, call this
-  ///   before caching properties. Anything that causes a state change to the
-  ///   underlying storage object.
+  /// > WARNING: Call this before every mutating function.
   mutating func ensureUniquelyReferenced() {
     if !isKnownUniquelyReferenced(&storage) {
       storage = MM4RigidBodyStorage(copying: storage)

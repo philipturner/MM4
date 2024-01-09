@@ -89,3 +89,16 @@ extension MM4RigidBodyStorage {
     }
   }
 }
+
+// MARK: - Parallel Dot Product
+
+// Measure the similarity between the eigenvector and the scalars.
+@_transparent
+func dot(
+  vector: SIMD3<Float>,
+  scalars: (MM4FloatVector, MM4FloatVector, MM4FloatVector)
+) -> MM4FloatVector {
+  vector.x * scalars.0 +
+  vector.y * scalars.1 +
+  vector.z * scalars.2
+}

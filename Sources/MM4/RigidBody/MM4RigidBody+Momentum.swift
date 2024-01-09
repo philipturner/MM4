@@ -5,8 +5,6 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
-// Velocity and Momentum
-
 // MARK: - Public API
 
 extension MM4RigidBody {
@@ -20,10 +18,10 @@ extension MM4RigidBody {
   
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
   public var linearMomentum: SIMD3<Double> {
-    get {
+    _read {
       fatalError("Not implemented.")
     }
-    set {
+    _modify {
       ensureUniquelyReferenced()
       fatalError("Not implemented.")
     }
@@ -36,10 +34,10 @@ extension MM4RigidBody {
   /// Rather, it is the magnitude of angular momentum with respect to each
   /// eigenpair of the inertia tensor.
   public var angularMomentum: SIMD3<Double> {
-    get {
+    _read {
       fatalError("Not implemented.")
     }
-    set {
+    _modify {
       ensureUniquelyReferenced()
       fatalError("Not implemented.")
     }
@@ -69,7 +67,7 @@ extension MM4RigidBodyStorage {
     }
   }
   
-  func createMomentum() -> SIMD3<Double> {
+  func createLinearMomentum() -> SIMD3<Double> {
     var linearMomentum: SIMD3<Double> = .zero
     withSegmentedLoop(chunk: 256) {
       var vMomentumX: MM4FloatVector = .zero

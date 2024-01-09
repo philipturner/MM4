@@ -65,32 +65,68 @@ final class MM4RigidBodyStorage {
   }
   
   init(copying other: MM4RigidBodyStorage) {
-    // Copy over the stored and cached properties.
+    // Copy only the sources of truth. Cached properties may be dirty. The
+    // public API still shows the same semantics. If forces aren't 'nil', the
+    // net force and torque will regenerate.
+    atoms = other.atoms
+    mass = other.mass
+    momentOfInertia = other.momentOfInertia
+    vMasses = other.vMasses
+    vPositions = other.vPositions
+    vVelocities = other.vVelocities
+    
+    angularMomentum = other.angularMomentum
+    centerOfMass = other.centerOfMass
+    linearMomentum = other.linearMomentum
+    principalAxes = other.principalAxes
+    
+    forces = other.forces
   }
 }
 
 extension MM4RigidBodyStorage {
   func ensurePositionsCached() {
-    // compute the position by applying bulk CoM and MoI in the same function
+    guard positions == nil else {
+      return
+    }
+    positions = Array(unsafeUninitializedCapacity: atoms.count) {
+      $1 = atoms.count
+      createPositions($0)
+    }
   }
   
   func ensureVelocitiesCached() {
-    // compute the velocity by applying bulk P and L in the same function
+    guard velocities == nil else {
+      return
+    }
+    velocities = Array(unsafeUninitializedCapacity: atoms.count) {
+      $1 = atoms.count
+      createVelocities($0)
+    }
   }
   
   func ensureForceAndTorqueCached() {
-    // compute force and torque in the same function
+    guard netForce == nil,
+          netTorque == nil else {
+      return
+    }
+    if let forces {
+      forces.withUnsafeBufferPointer(setNetForceAndTorque(_:))
+    }
   }
   
   func invalidatePositions() {
-    
+    positions = nil
+    invalidateForces()
   }
   
   func invalidateVelocities() {
-    
+    velocities = nil
   }
   
   func invalidateForces() {
-    
+    forces = nil
+    netForce = nil
+    netTorque = nil
   }
 }
