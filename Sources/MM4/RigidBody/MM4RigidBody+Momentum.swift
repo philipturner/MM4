@@ -19,7 +19,7 @@ extension MM4RigidBody {
   }
   
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
-  public var linearMomentum: SIMD3<Double> {
+  public var momentum: SIMD3<Double> {
     get {
       fatalError("Not implemented.")
     }

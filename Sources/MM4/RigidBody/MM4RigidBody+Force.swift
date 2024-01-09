@@ -21,12 +21,12 @@ extension MM4RigidBody {
     }
   }
   
-  public var netForce: SIMD3<Double>? {
+  public var force: SIMD3<Double>? {
     fatalError("Not implemented.")
   }
   
   // Make a similar warning to that in 'angularMomentum'.
-  public var netTorque: SIMD3<Double>? {
+  public var torque: SIMD3<Double>? {
     fatalError("Not implemented.")
   }
 }
@@ -39,3 +39,9 @@ extension MM4RigidBody {
 // be easy to make it accumulate force as well.
 
 // create
+
+extension MM4RigidBodyStorage {
+  func createNetTorque(forces: [SIMD3<Float>]) -> SIMD3<Double> {
+    var netTorque:
+  }
+}
