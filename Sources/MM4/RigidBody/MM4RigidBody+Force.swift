@@ -30,3 +30,12 @@ extension MM4RigidBody {
     fatalError("Not implemented.")
   }
 }
+
+// TODO: Function for creating net force and torque separately. Until we start
+// aggressively optimizing for performance, fusion would be a premature
+// optimization that makes debugging harder.
+//
+// Or make them together. Start with a function that computes torque. It should
+// be easy to make it accumulate force as well.
+
+// create

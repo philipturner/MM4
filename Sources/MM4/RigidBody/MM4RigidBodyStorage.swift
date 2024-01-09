@@ -78,8 +78,8 @@ extension MM4RigidBodyStorage {
     // compute the velocity by applying bulk P and L in the same function
   }
   
-  func ensureAccelerationsCached() {
-    // compute both accelerations in the same function
+  func ensureForceAndTorqueCached() {
+    // compute force and torque in the same function
   }
   
   func invalidatePositions() {

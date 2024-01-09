@@ -240,18 +240,20 @@ extension MM4RigidBodyStorage {
       SIMD3<Float>(principalAxes.0),
       SIMD3<Float>(principalAxes.1),
       SIMD3<Float>(principalAxes.2))
+    let r̄ = SIMD3<Float>(centerOfMass)
     
     for vID in 0..<atoms.vectorCount {
       let rX = vPositions[vID &* 3 &+ 0]
       let rY = vPositions[vID &* 3 &+ 1]
       let rZ = vPositions[vID &* 3 &+ 2]
       
+      // Σ * r + r̄
       var x = Σ.0.x * rX + Σ.1.x * rY + Σ.2.x * rZ
       var y = Σ.0.y * rX + Σ.1.y * rY + Σ.2.y * rZ
       var z = Σ.0.z * rX + Σ.1.z * rY + Σ.2.z * rZ
-      x += Float(centerOfMass.x)
-      y += Float(centerOfMass.y)
-      z += Float(centerOfMass.z)
+      x += r̄.x
+      y += r̄.y
+      z += r̄.z
       
       swizzleFromVectorWidth((x, y, z), vID, baseAddress)
     }

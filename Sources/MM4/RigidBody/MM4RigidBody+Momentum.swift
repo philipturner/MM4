@@ -113,6 +113,7 @@ extension MM4RigidBodyStorage {
       var vMomentumY: MM4FloatVector = .zero
       var vMomentumZ: MM4FloatVector = .zero
       for vID in $0 {
+        // w = r x v
         let rX = vPositions[vID &* 3 &+ 0]
         let rY = vPositions[vID &* 3 &+ 1]
         let rZ = vPositions[vID &* 3 &+ 2]
@@ -138,56 +139,21 @@ extension MM4RigidBodyStorage {
   // w = Σ (1/Λ) ΣT L
   //
   // If already transformed into the eigenbasis, Σ is the identity matrix.
-  // w = L / Λ
-  // This is the formula to compute angular velocity.
+  // L / Λ is the formula to compute angular velocity.
   func normalizeAngularVelocities(to angularVelocity: SIMD3<Double>) {
-    /*
-    let inverse = invertMatrix3x3(momentOfInertia)
-    let velocityX = inverse.0 * Float(momentum.x)
-    let velocityY = inverse.1 * Float(momentum.y)
-    let velocityZ = inverse.2 * Float(momentum.z)
-    return velocityX + velocityY + velocityZ
+    let w = SIMD3<Float>(angularVelocity)
     
-    for vID in 0..<storage.atoms.vectorCount {
-      let rX = storage.vPositions[vID &* 3 &+ 0] - centerOfMass.x
-      let rY = storage.vPositions[vID &* 3 &+ 1] - centerOfMass.y
-      let rZ = storage.vPositions[vID &* 3 &+ 2] - centerOfMass.z
-      var vX: MM4FloatVector = .zero
-      var vY: MM4FloatVector = .zero
-      var vZ: MM4FloatVector = .zero
-      
-      // Un-apply the previous bulk angular velocity.
-      do {
-        let w = previous
-        vX -= w.y * rZ - w.z * rY
-        vY -= w.z * rX - w.x * rZ
-        vZ -= w.x * rY - w.y * rX
-      }
-      
-      // Apply the next bulk angular velocity.
-      do {
-        let w = next
-        vX += w.y * rZ - w.z * rY
-        vY += w.z * rX - w.x * rZ
-        vZ += w.x * rY - w.y * rX
-      }
-      
-      // Mask out the changes to velocity for anchors.
-      let mass = storage.vMasses[vID]
-      vX.replace(with: MM4FloatVector.zero, where: mass .== 0)
-      vY.replace(with: MM4FloatVector.zero, where: mass .== 0)
-      vZ.replace(with: MM4FloatVector.zero, where: mass .== 0)
-      
-      // Write the new velocities as offsets relative to the existing ones.
-      storage.vVelocities[vID &* 3 &+ 0] += vX
-      storage.vVelocities[vID &* 3 &+ 1] += vY
-      storage.vVelocities[vID &* 3 &+ 2] += vZ
+    for vID in 0..<atoms.vectorCount {
+      // v = w x r
+      let rX = vPositions[vID &* 3 &+ 0]
+      let rY = vPositions[vID &* 3 &+ 1]
+      let rZ = vPositions[vID &* 3 &+ 2]
+      vVelocities[vID &* 3 &+ 0] -= w.y * rZ - w.z * rY
+      vVelocities[vID &* 3 &+ 1] -= w.z * rX - w.x * rZ
+      vVelocities[vID &* 3 &+ 2] -= w.x * rY - w.y * rX
     }
-     */
   }
   
-  // Transforms velocities into the global reference frame.
-  // TODO: Transform into the global reference frame.
   func createVelocities(
     _ buffer: UnsafeMutableBufferPointer<SIMD3<Float>>
   ) {
@@ -196,13 +162,33 @@ extension MM4RigidBodyStorage {
     }
     let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     
+    let Σ = (
+      SIMD3<Float>(principalAxes.0),
+      SIMD3<Float>(principalAxes.1),
+      SIMD3<Float>(principalAxes.2))
+    let w̄ = SIMD3<Float>(angularMomentum / momentOfInertia)
+    let v̄ = SIMD3<Float>(linearMomentum / mass)
+    
     for vID in 0..<atoms.vectorCount {
-      let x = vVelocities[vID &* 3 &+ 0]
-      let y = vVelocities[vID &* 3 &+ 1]
-      let z = vVelocities[vID &* 3 &+ 2]
+      let rX = vPositions[vID &* 3 &+ 0]
+      let rY = vPositions[vID &* 3 &+ 1]
+      let rZ = vPositions[vID &* 3 &+ 2]
+      var vX = vVelocities[vID &* 3 &+ 0]
+      var vY = vVelocities[vID &* 3 &+ 1]
+      var vZ = vVelocities[vID &* 3 &+ 2]
+      
+      // Σ * (v + w̄ x r) + v̄
+      vX += w̄.y * rZ - w̄.z * rY
+      vY += w̄.z * rX - w̄.x * rZ
+      vZ += w̄.x * rY - w̄.y * rX
+      var x = Σ.0.x * vX + Σ.1.x * vY + Σ.2.x * vZ
+      var y = Σ.0.y * vX + Σ.1.y * vY + Σ.2.y * vZ
+      var z = Σ.0.z * vX + Σ.1.z * vY + Σ.2.z * vZ
+      x += v̄.x
+      y += v̄.y
+      z += v̄.z
+      
       swizzleFromVectorWidth((x, y, z), vID, baseAddress)
     }
   }
 }
-
-
