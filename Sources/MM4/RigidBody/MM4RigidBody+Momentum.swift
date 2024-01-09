@@ -21,12 +21,9 @@ extension MM4RigidBody {
   /// The net linear momentum, in yoctogram-nanometers per picosecond.
   public var linearMomentum: SIMD3<Double> {
     get {
-      // TODO: Convert between reference frames.
       fatalError("Not implemented.")
     }
     set {
-      // TODO: Convert between reference frames.
-      // get/set removes the need to duplicate code for transforming local -> global
       ensureUniquelyReferenced()
       fatalError("Not implemented.")
     }
@@ -40,12 +37,9 @@ extension MM4RigidBody {
   /// eigenpair of the inertia tensor.
   public var angularMomentum: SIMD3<Double> {
     get {
-      // TODO: Convert between reference frames.
       fatalError("Not implemented.")
     }
     set {
-      // TODO: Convert between reference frames.
-      // get/set removes the need to duplicate code for transforming local -> global
       ensureUniquelyReferenced()
       fatalError("Not implemented.")
     }
