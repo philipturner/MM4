@@ -24,13 +24,14 @@ extension MM4RigidBody {
     }
   }
   
-  /// The derivative of linear momentum with respect to time.
+  /// The derivative of linear momentum with respect to time, in piconewtons.
   public var netForce: SIMD3<Double>? {
     storage.ensureForceAndTorqueCached()
     return storage.netForce
   }
   
-  /// The derivative of angular momentum with respect to time.
+  /// The derivative of angular momentum with respect to time, in piconewtons
+  /// per nanometer.
   public var netTorque: SIMD3<Double>? {
     storage.ensureForceAndTorqueCached()
     return storage.netTorque

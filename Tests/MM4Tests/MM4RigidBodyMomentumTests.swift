@@ -158,17 +158,57 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
   }
   
   func testNetForce() throws {
-    // TODO
-    
-    // One specific, manual test case where force is computed beforehand in a
-    // calculator.
+    for descriptor in MM4RigidBodyTests.descriptors {
+      var rigidBody = try MM4RigidBody(descriptor: descriptor)
+      
+      var forces = [SIMD3<Float>](
+        repeating: .zero, count: rigidBody.positions.count)
+      forces[1] = [8, 0, 0]
+      forces[5] = [0, 9, 0]
+      forces[6] = [0, -0.5, -7]
+      rigidBody.forces = forces
+      XCTAssertEqual(rigidBody.netForce, SIMD3<Double>(8, 8.5, -7))
+      
+      rigidBody.centerOfMass += SIMD3(repeating: 0.1)
+      XCTAssertNil(rigidBody.netForce)
+    }
   }
   
   func testNetTorque() throws {
-    // TODO
-    
-    // One specific, manual test case where force is computed beforehand in a
-    // calculator. Also, transformed from world space to the reference frame.
+    for descriptor in MM4RigidBodyTests.descriptors {
+      var rigidBody = try MM4RigidBody(descriptor: descriptor)
+      
+      var forces = [SIMD3<Float>](
+        repeating: .zero, count: rigidBody.positions.count)
+      var netForce: SIMD3<Double> = .zero
+      var netTorque: SIMD3<Double> = .zero
+      
+      print()
+      for i in forces.indices {
+        let r = rigidBody.positions[i] - SIMD3(rigidBody.centerOfMass)
+        var f = SIMD3(-r.y, r.x, 0)
+        f /= (f * f).sum().squareRoot()
+        let rCrossF = cross(r, f)
+        print(r, f, rCrossF)
+        
+        netForce += SIMD3(f)
+        netTorque += SIMD3(rCrossF)
+        forces[i] = f
+      }
+      print(netForce)
+      print(netTorque)
+      rigidBody.forces = forces
+      
+      // The first principal axis for the adamantanes is [0, 0, 1].
+      
+      print()
+      print("rigid body")
+      print("- center of mass:", rigidBody.centerOfMass)
+      print("- principal axes:", rigidBody.principalAxes)
+      print("- net force:", rigidBody.netForce!)
+      print("- net torque:", rigidBody.netTorque!)
+      XCTAssertEqual(netForce, rigidBody.netForce!, ratioAccuracy: 1e-6)
+    }
   }
 }
 
@@ -183,13 +223,7 @@ private func _testAngularMomentum(
 ) throws {
   let parameters = descriptor.parameters!
   
-  func cross(_ a: SIMD3<Float>, _ b: SIMD3<Float>) -> SIMD3<Float> {
-    var c: SIMD3<Float> = .zero
-    c.x = a.y * b.z - a.z * b.y
-    c.y = a.z * b.x - a.x * b.z
-    c.z = a.x * b.y - a.y * b.x
-    return c
-  }
+  
   
   var bulkVelocities: [SIMD3<Double>] = []
   bulkVelocities.append(.zero)
@@ -392,4 +426,14 @@ private func _testAngularMomentum(
       XCTAssertEqual(v, actualVelocity, accuracy: 1e-5)
     }
   }
+}
+
+// MARK: - Utilities
+
+func cross(_ a: SIMD3<Float>, _ b: SIMD3<Float>) -> SIMD3<Float> {
+  var c: SIMD3<Float> = .zero
+  c.x = a.y * b.z - a.z * b.y
+  c.y = a.z * b.x - a.x * b.z
+  c.z = a.x * b.y - a.y * b.x
+  return c
 }
