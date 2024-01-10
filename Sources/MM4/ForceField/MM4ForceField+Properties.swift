@@ -53,17 +53,25 @@ extension MM4ForceField {
     _energy
   }
   
-  /// Set the constant force (in piconewtons) exerted on each atom.
+  /// The constant force (in piconewtons) exerted on each atom.
   ///
   /// The default value is zero for every atom.
-  public func setExternalForces(_ forces: [SIMD3<Float>]) {
-    guard forces.count == system.parameters.atoms.count else {
-      fatalError("Number of external forces does not match atom count.")
+  ///
+  /// > WARNING: There is no getter for this property. You must assign an entire
+  /// array to it at once. Otherwise, there will be a runtime crash.
+  public var externalForces: [SIMD3<Float>] {
+    get {
+      fatalError("You cannot retrieve the values of external forces.")
     }
-    
-    let force = system.forces.external
-    force.updateForces(forces, system: system)
-    force.updateParametersInContext(context)
+    set {
+      guard newValue.count == system.parameters.atoms.count else {
+        fatalError("Number of external forces does not match atom count.")
+      }
+      
+      let force = system.forces.external
+      force.updateForces(newValue, system: system)
+      force.updateParametersInContext(context)
+    }
   }
   
   /// The net varying force (in piconewtons) exerted on each atom.

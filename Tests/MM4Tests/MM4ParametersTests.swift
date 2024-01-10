@@ -6,6 +6,9 @@ import MM4
 final class MM4ParametersTests: XCTestCase {
   
   // TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
+  // - Particularly, avoid computing the bend-bend force. This may be a bit
+  //   convoluted to optimize away, as you have to check multiple parameters and
+  //   record whether they're all zero.
   // TODO: Add unit tests for omitting torsions and cross-terms
   // TODO: Add unit tests for omitting 100% of the parameters
   
@@ -48,7 +51,7 @@ final class MM4ParametersTests: XCTestCase {
   
   #if RELEASE
   func testParametersSpeed() throws {
-    _ = NCFPart(forces: [
+    let part1 = NCFPart(forces: [
       .bend,
       .bendBend,
       .nonbonded,
@@ -59,12 +62,25 @@ final class MM4ParametersTests: XCTestCase {
       .torsionBend,
       .torsionStretch,
     ])
-    _ = NCFPart(forces: [
+    let part2 = NCFPart(forces: [
       .bend,
       .stretch,
       .nonbonded
     ])
-    _ = NCFPart(forces: [.nonbonded])
+    let part3 = NCFPart(forces: [.nonbonded])
+    
+    // After testing execution speed, recycle this unit test to judge whether
+    // parameters were omitted correctly. There should be no (1,4) nonbonded
+    // exceptions for the NCFParts without torsions.
+    //
+    // We also need to figure out what to do about nonbonded exceptions. Do
+    // we include (1,4) exceptions when torsion are omitted but torsion-bend is
+    // included (for whatever wierd reason you'd want to do that)? What about
+    // when bend forces are omitted? Do we still include (1,3) exceptions?
+    // - Restrict what combinations of forces are accepted
+    // - If the tier of forces belonging to bond angle is omitted, also omit
+    //   (1,3) exceptions. I don't know whether the FF would be stable with
+    //   forces done this way.
   }
   #endif
   

@@ -84,6 +84,11 @@ public struct MM4Parameters {
       fatalError("Descriptor did not have the required properties.")
     }
     
+//    if !descriptor.forces.contains(.stretch) {
+//      guard !descriptor.forces.contains(.bend),
+//            !descriptor.forces.contains(.)
+//    }
+    
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.
     atoms.atomicNumbers = descriptorAtomicNumbers
