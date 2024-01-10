@@ -3,9 +3,8 @@ import MM4
 
 // MARK: - Test Execution
 
-final class MM4RigidBodyVelocityTests: XCTestCase {
-  #if false
-  func testRigidBodyVelocity() throws {
+final class MM4RigidBodyMomentumTests: XCTestCase {
+  func testRigidBodyMomentum() throws {
     let descriptors = try MM4RigidBodyTests.createDescriptors()
     for descriptor in descriptors {
       if descriptor.parameters!.atoms.count == 0 {
@@ -13,11 +12,12 @@ final class MM4RigidBodyVelocityTests: XCTestCase {
         continue
       }
       
-      testLinearMomentum(descriptor)
-      testAngularMomentum(descriptor)
+      try testLinearMomentum(descriptor)
+      try testAngularMomentum(descriptor)
     }
   }
-  #endif
+  
+  // func testRigidBodyForce() ???
 }
 
 // MARK: - Velocity
@@ -81,7 +81,7 @@ private func testLinearMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
   var rigidBodyDesc = descriptor
   rigidBodyDesc.velocities = Array(
     repeating: SIMD3(bulkVelocities[1]), count: parameters.atoms.count)
-  var rigidBody = try MM4RigidBody(descriptor: descriptor)
+  var rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
   
   XCTAssertEqual(
     rigidBody.linearMomentum / rigidBody.mass,
@@ -169,10 +169,11 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
     rigidBodyDesc.velocities = createVelocities(bulkVelocity)
     let rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
     
-    let computedVelocity = rigidBody.angularMomentum
+    let w = rigidBody.angularMomentum / rigidBody.momentOfInertia
+    let Σ = rigidBody.principalAxes
+    let Σw = Σ.0 * w[0] + Σ.1 * w[1] + Σ.2 * w[2]
     XCTAssertEqual(
-      computedVelocity,
-      (parameters.atoms.count > 0) ? bulkVelocity : .zero,
+      Σw, (parameters.atoms.count > 0) ? bulkVelocity : .zero,
       accuracy: 1e-5)
   }
   
@@ -188,14 +189,24 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
     rigidBodyDesc.velocities = originalVelocities
     let rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
     
-    // TODO: Test both methods for angular velocity. Check that the reported
-    // angular momentum matches what you expect, and shape the angular momentum
-    // into an angular velocity equalling 'bulkVelocity'.
-    let computedVelocity = rigidBody.angularMomentum
-    XCTAssertEqual(
-      computedVelocity,
-      (parameters.atoms.count > 0) ? bulkVelocity : .zero,
-      accuracy: 1e-5)
+    do {
+      let w = rigidBody.angularMomentum / rigidBody.momentOfInertia
+      let Σ = rigidBody.principalAxes
+      let Σw = Σ.0 * w[0] + Σ.1 * w[1] + Σ.2 * w[2]
+      XCTAssertEqual(Σw, bulkVelocity, accuracy: 1e-5)
+    }
+    do {
+      let Σ = rigidBody.principalAxes
+      let ΣT = (
+        SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
+        SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
+        SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
+      let Σw = bulkVelocity
+      let w = ΣT.0 * Σw[0] + ΣT.1 * Σw[1] + ΣT.2 * Σw[2]
+      let L = w * rigidBody.momentOfInertia
+      XCTAssertEqual(rigidBody.angularMomentum, L, accuracy: 1e-5)
+    }
+    
     XCTAssertEqual(
       rigidBody.linearMomentum / rigidBody.mass,
       (parameters.atoms.count > 0) ? linearVelocity : .zero,
