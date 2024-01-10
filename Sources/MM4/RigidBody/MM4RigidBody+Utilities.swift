@@ -153,7 +153,6 @@ func diagonalize(
     // the diagonal, bringing it closer to something invertible.
     for _ in 0..<10 {
       guard let inverseB = invert(matrix: B) else {
-        print("Failed to invert matrix.")
         B.0[0] *= 1 + 1e-10
         B.1[1] *= 1 + 1e-10
         B.2[2] *= 1 + 1e-10
@@ -169,7 +168,6 @@ func diagonalize(
     fatalError("Failed to generate the eigenvectors from the eigenvalues.")
   }
   
-  // TODO: Raise the tolerance for similarity.
   func createOrthogonalityError() -> Double {
     let xyError = (x * y).sum().magnitude
     let xzError = (x * z).sum().magnitude
@@ -180,7 +178,7 @@ func diagonalize(
   // Ensure the eigenvectors are mutually perpendicular, then form a
   // right-handed basis from them.
   var orthogonalityError = createOrthogonalityError()
-  guard orthogonalityError < 1e-4 else {
+  guard orthogonalityError < 1e-3 else {
     fatalError("""
     The eigenvectors were not mutually orthogonal:
     Λ = \(eigenValues[0]) \(eigenValues[1]) \(eigenValues[2])
@@ -189,16 +187,6 @@ func diagonalize(
     """)
   }
   
-  // TODO: Refine the eigenvectors with Jacobi iterations and Gram-Schmidt
-  // orthogonalization. Assert that their dot products have a much better
-  // tolerance than 1e-4. Finally, assert that they're actually scaled by their
-  // respective eigenvalues.
-  // - log the error during each iteration, and examine how it drives toward
-  //   zero (conjugate gradient method)
-  //
-  // TODO: Save the code for logging conjugate gradient descent to GitHub
-  // before moving on and deleting it.
-  print("Iteration 0: error=\(orthogonalityError)")
   let trialCount = 10
   for trialID in 1...trialCount {
     x = gemv(matrix: matrix, vector: x)
@@ -211,11 +199,7 @@ func diagonalize(
       (z * z).sum().squareRoot())
     eigenValueError /= SIMD3(eigenValues[0], eigenValues[1], eigenValues[2])
     eigenValueError -= 1
-    // TODO: Square the eigenvalue error and set the tolerance to 1e-16 universally
-    eigenValueError.replace(with: -eigenValueError, where: eigenValueError .< 0)
-    for lane in 0..<3 {
-      print("- λ\(lane): 1e15 * (actual / expected - 1) = \(String(format: "%.1f", 1e15 * (eigenValueError[lane])))")
-    }
+    eigenValueError *= eigenValueError
     
     x = normalize(vector: x)!
     y -= (y * x).sum() * x
@@ -226,10 +210,8 @@ func diagonalize(
     
     orthogonalityError = createOrthogonalityError()
     
-    print("Iteration \(trialID): error=\(orthogonalityError), \(eigenValueError.max())")
-    
     if orthogonalityError.magnitude < 1e-16,
-       eigenValueError.max() < 1e-8 {
+       eigenValueError.max() < 1e-16 {
       break
     } else if trialID == trialCount {
       fatalError("""
