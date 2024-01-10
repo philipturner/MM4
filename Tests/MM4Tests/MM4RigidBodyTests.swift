@@ -1,8 +1,6 @@
 import XCTest
 import MM4
 
-// Test the basic functionality of the rigid body API.
-
 // TODO: Most equality tests will likely fail. You need to assert they're equal
 // to within a specific tolerance. But get the test suite compiling before you
 // add more complexity.

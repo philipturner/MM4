@@ -5,7 +5,6 @@ import MM4
 // TODO: Add unit tests for omitting torsions and cross-terms
 // TODO: Add unit tests for omitting 100% of the parameters
 
-// Tests parameters for carbon-only molecules.
 final class MM4ParametersTests: XCTestCase {
   func testAdamantane() throws {
     try testAdamantaneVariant(atomCode: .alkaneCarbon)
