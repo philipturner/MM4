@@ -77,14 +77,6 @@ public struct MM4Parameters {
   var atomsToAtomsMap: [SIMD4<Int32>] = []
   
   /// Create a set of parameters using the specified configuration.
-  ///
-  /// - throws: An error if there wasn't a parameter for a certain atom pair, or
-  ///   the descriptor was invalid.
-  ///
-  /// This is a throwing initializer, allowing it to be used as a validation
-  /// mechanism for structures that are potentially invalid. Enter the structure
-  /// into the initializer, then try a different one if it fails. This removes
-  /// the need to reimplement some of that logic in an automated search program.
   public init(descriptor: MM4ParametersDescriptor) throws {
     // Ensure the required descriptor properties were set.
     guard let descriptorAtomicNumbers = descriptor.atomicNumbers,

@@ -1,6 +1,6 @@
 # MM4
 
-Molecular mechanics simulator for molecular nanotechnology.
+Molecular Mechanics force field, version 4. The simulator used to create _Nanosystems (1992)_, but updated with modern ab initio parameters.
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
@@ -98,3 +98,10 @@ MM4's unit system is internally consistent. Units for force and energy are deriv
 energy = 0.5 * m * v^2 = (10^-27) (10^3)^2 = 10^-21
 force = dU / dx = (10^-21) / (10^-9) = 10^-12
 ```
+
+### Levels of Theory
+
+|  | Stable Time Step | Minimum Latency/Step | Force Computation | Integration |
+| :-----------------: | :--------: | :-----: | :-: | :-: |
+| Molecular Dynamics  | 4.35 fs    | ~50 us  | GPU | GPU |
+| Rigid Body Dynamics | ~50-100 fs | ~300 us | GPU | CPU |

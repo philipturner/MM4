@@ -35,12 +35,6 @@ public struct MM4Rings {
     }
     self.ringTypes += other.ringTypes
   }
-  
-  mutating func reserveCapacity(_ minimumCapacity: Int) {
-    indices.reserveCapacity(minimumCapacity)
-    map.reserveCapacity(minimumCapacity)
-    ringTypes.reserveCapacity(minimumCapacity)
-  }
 }
 
 extension MM4Parameters {

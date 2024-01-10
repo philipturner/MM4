@@ -2,16 +2,16 @@ import XCTest
 import MM4
 
 final class MM4Tests: XCTestCase {
-  func testExample() throws {
-    
-  }
+  
 }
 
-// MARK: - Tests for Carbon-Only Molecules
-
-// Every part of the API should have defined behavior in every edge case. This
-// includes places where the atom count is zero, every atom is an anchor, etc.
-// Each edge case should have a unit test.
+// TODO: Debug nonbonded forces with hydrogen reductions. Examine how the
+// distances between surfaces change as hydrogen reductions are enabled.
+//
+// Start out with external forces only. Assert that we have an object with 100%
+// of the parameters deactivated. This allows the equations of motion to be
+// simulated and checked as 1-particle isolated systems. Afterward, we can
+// proceed with the nonbonded force unit tests outlined in molecular-renderer.
 
 // MARK: - Tests for Non-Carbon Elements
 

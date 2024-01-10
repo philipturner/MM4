@@ -9,11 +9,8 @@ import OpenMM
 
 /// Identifying information for an atom.
 public struct MM4Address {
-  /// The rigid body ID.
-  public var rigidBodyIndex: Int
-  
-  /// The position within the rigid body.
-  public var atomIndex: UInt32
+  /// The atom's position within the object.
+  public var index: UInt32
   
   /// The atom's element.
   public var atomicNumber: UInt8
@@ -21,6 +18,16 @@ public struct MM4Address {
 
 /// An error thrown by the MM4 library.
 public enum MM4Error: Error {
+  /// The inertia tensor could not be diagonalized.
+  ///
+  /// This error does not exactly mean the inertia tensor was a defective
+  /// matrix. For example, the null matrix is technically diagonalizable. It
+  /// just means e.g. the center of mass couldn't be created because the mass
+  /// was zero. Therefore, the rigid body couldn't reach the point where it
+  /// generates the inertia tensor. The error may also occur if the
+  /// characteristic polynomial has repeated roots or the eigensolver fails.
+  case defectiveInertiaTensor((SIMD3<Double>, SIMD3<Double>, SIMD3<Double>))
+  
   /// The force field did not have a parameter for a group of atoms.
   ///
   /// Includes the addresses of the atoms.

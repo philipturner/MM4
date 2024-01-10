@@ -36,23 +36,23 @@ public struct MM4StateDescriptor {
 }
 
 /// A frame of a simulation.
-public class MM4State {
+public struct MM4State {
   /// The net varying force (in piconewtons) exerted on each atom.
   ///
   /// This is converted from kJ/mol/nm to piconewtons.
-  public internal(set) var forces: [SIMD3<Float>]?
+  public var forces: [SIMD3<Float>]?
   
   /// The system's total kinetic energy, in zeptojoules.
-  public internal(set) var kineticEnergy: Double?
+  public var kineticEnergy: Double?
   
   /// The position (in nanometers) of each atom's nucleus.
-  public internal(set) var positions: [SIMD3<Float>]?
+  public var positions: [SIMD3<Float>]?
   
   /// The system's total potential energy, in zeptojoules.
-  public internal(set) var potentialEnergy: Double?
+  public var potentialEnergy: Double?
   
   /// The linear velocity (in nanometers per picosecond), of each atom.
-  public internal(set) var velocities: [SIMD3<Float>]?
+  public var velocities: [SIMD3<Float>]?
   
   internal init() {
     
@@ -92,7 +92,7 @@ extension MM4ForceField {
       }
     }
     
-    let state = MM4State()
+    var state = MM4State()
     if descriptor.energy {
       state.kineticEnergy = query.kineticEnergy
       state.potentialEnergy = query.potentialEnergy

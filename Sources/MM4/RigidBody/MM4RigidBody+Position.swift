@@ -5,149 +5,185 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
+import QuaternionModule
+
+// MARK: - Public API
+
 extension MM4RigidBody {
   /// The position (in nanometers) of each atom's nucleus.
-  ///
-  /// This is an ergonomic getter for positions. Behind the scenes, it
-  /// automatically caches the results of swizzling all velocities into the
-  /// non-vectorized representation.
   public var positions: [SIMD3<Float>] {
-    _read {
-      storage.ensurePositionsCached()
-      yield storage.positions!
-    }
+    storage.ensurePositionsCached()
+    return storage.positions!
   }
   
-  public var vectorizedPositions: [MM4FloatVector] {
+  /// The total mass (in yoctograms).
+  public var mass: Double {
+    storage.mass
+  }
+  
+  /// The center of mass, in nanometers.
+  ///
+  /// When the center of mass is modified, forces are invalidated.
+  public var centerOfMass: SIMD3<Double> {
     _read {
-      yield storage.vPositions
+      yield storage.centerOfMass
     }
     _modify {
       ensureUniquelyReferenced()
-      storage.eraseRarelyCachedProperties()
-      storage.centerOfMass = nil
-      storage.positions = nil
-      
-      yield &storage.vPositions
-      guard storage.vPositions.count == 3 * storage.atoms.vectorCount else {
-        fatalError("Position buffer was not the correct size.")
-      }
+      storage.invalidatePositions()
+      yield &storage.centerOfMass
     }
   }
   
-  @_specialize(where T == Double)
-  @_specialize(where T == Float)
-  public func getPositions<T: BinaryFloatingPoint>(
-    _ buffer: UnsafeMutableBufferPointer<SIMD3<T>>
-  ) {
-    guard buffer.count == storage.atoms.count else {
-      fatalError("Position buffer was not the correct size.")
-    }
-    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
-    
-    for vID in 0..<storage.atoms.vectorCount {
-      let x = storage.vPositions[vID &* 3 &+ 0]
-      let y = storage.vPositions[vID &* 3 &+ 1]
-      let z = storage.vPositions[vID &* 3 &+ 2]
-      storage.swizzleFromVectorWidth((x, y, z), vID, baseAddress)
-    }
+  /// The eigenvalues of the inertia tensor, in descending order.
+  public var momentOfInertia: SIMD3<Double> {
+    storage.momentOfInertia
   }
   
-  public mutating func setPositions<T: BinaryFloatingPoint, U: Collection>(
-    _ buffer: U
-  ) where U.Element == SIMD3<T> {
-    buffer.withContiguousStorageIfAvailable {
-      setPositions($0)
-    }
+  /// The eigenvectors of the inertia tensor.
+  public var principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
+    storage.principalAxes
   }
   
-  @_specialize(where T == Double)
-  @_specialize(where T == Float)
-  public mutating func setPositions<T: BinaryFloatingPoint>(
-    _ buffer: UnsafeBufferPointer<SIMD3<T>>
-  ) {
+  /// Rotate the object.
+  /// - parameter angle: The angle to rotate, in radians.
+  /// - parameter axis: The normalized vector to rotate around.
+  ///
+  /// If `axis` is not specified, the default value aligns with the current
+  /// angular momentum. If the angular momentum is zero, you must enter zero
+  /// for the angle.
+  public mutating func rotate(angle: Double, axis: SIMD3<Double>? = nil) {
     ensureUniquelyReferenced()
-    storage.eraseRarelyCachedProperties()
-    storage.centerOfMass = nil
-    storage.positions = nil
+    storage.invalidatePositions()
+    storage.invalidateVelocities()
     
-    guard buffer.count == storage.atoms.count else {
-      fatalError("Position buffer was not the correct size.")
+    var rotationAxis: SIMD3<Double>
+    if let axis {
+      rotationAxis = axis
+    } else {
+      let magnitude = (angularMomentum * angularMomentum).sum().squareRoot()
+      if magnitude < .leastNormalMagnitude {
+        guard angle.magnitude < .leastNormalMagnitude else {
+          fatalError(
+            "Angular momentum (\(magnitude)) was zero, but rotation angle (\(angle)) was nonzero.")
+        }
+        return
+      }
+      
+      let (Σ, axis) = (principalAxes, angularMomentum / magnitude)
+      rotationAxis = Σ.0 * axis.x + Σ.1 * axis.y + Σ.2 * axis.z
     }
-    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
     
-    for vID in 0..<storage.atoms.vectorCount {
-      let (x, y, z) = storage.swizzleToVectorWidth(vID, baseAddress)
-      storage.vPositions[vID &* 3 &+ 0] = x
-      storage.vPositions[vID &* 3 &+ 1] = y
-      storage.vPositions[vID &* 3 &+ 2] = z
-    }
+    let rotation = Quaternion<Double>(angle: angle, axis: rotationAxis)
+    storage.principalAxes = (
+      rotation.act(on: principalAxes.0),
+      rotation.act(on: principalAxes.1),
+      rotation.act(on: principalAxes.2))
   }
 }
 
+// MARK: - Linear Properties
+
 extension MM4RigidBodyStorage {
-  func createPositions() -> [SIMD3<Float>] {
-    let capacity = atoms.vectorCount * MM4VectorWidth
-    let output = [SIMD3<Float>](unsafeUninitializedCapacity: capacity) {
+  func createVectorizedMasses(_ masses: [Float]) {
+    vMasses = Array(repeating: .zero, count: atoms.vectorCount)
+    
+    masses.withContiguousStorageIfAvailable {
       let baseAddress = $0.baseAddress.unsafelyUnwrapped
-      for vID in 0..<atoms.vectorCount {
-        let x = vPositions[vID &* 3 &+ 0]
-        let y = vPositions[vID &* 3 &+ 1]
-        let z = vPositions[vID &* 3 &+ 2]
-        swizzleFromVectorWidth((x, y, z), vID, baseAddress)
+      let vAddress = UnsafePointer<MM4FloatVector>(OpaquePointer(baseAddress))
+      
+      withSegmentedLoop(chunk: 256) {
+        for vID in $0 {
+          var vMass: MM4FloatVector = .zero
+          if vID == atoms.vectorCount &- 1 {
+            let remaining = atoms.count &- vID &* MM4VectorWidth
+            for lane in 0..<remaining {
+              vMass[lane] = baseAddress[vID &* MM4VectorWidth &+ lane]
+            }
+          } else {
+            vMass = vAddress[vID]
+          }
+          vMasses[vID] = vMass
+        }
       }
-      $1 = atoms.count
     }
-    return output
   }
   
-  func createCenterOfMass() -> SIMD3<Float> {
-    guard atoms.count > 0 else {
-      return .zero
+  func createVectorizedPositions(_ positions: [SIMD3<Float>]?) {
+    vPositions = Array(repeating: .zero, count: 3 * atoms.vectorCount)
+    guard let positions else {
+      fatalError("Initial positions must be specified.")
     }
-    guard mass > 0 else {
-      // I'm not sure any of the other properties can be computed in this
-      // situation, so it is reasonable to throw a fatal error. It is better
-      // than making up some behavior for the edge case, which require extensive
-      // unit testing and complicate the code. The user can always use a custom
-      // alternative to MM4RigidBody for parts that have every atom position
-      // constrained.
-      fatalError(
-        "Could not create center of mass because all atoms had zero mass.")
+    precondition(
+      positions.count == atoms.count,
+      "Initial velocities array has incorrect size.")
+    
+    positions.withContiguousStorageIfAvailable {
+      let baseAddress = $0.baseAddress.unsafelyUnwrapped
+      for vID in 0..<atoms.vectorCount {
+        let (x, y, z) = swizzleToVectorWidth(vID, baseAddress)
+        vPositions[vID &* 3 &+ 0] = x
+        vPositions[vID &* 3 &+ 1] = y
+        vPositions[vID &* 3 &+ 2] = z
+      }
     }
-    var center: SIMD3<Double> = .zero
+  }
+  
+  func createMass() -> Double {
+    var mass: Double = .zero
     withSegmentedLoop(chunk: 256) {
-      var vCenterX: MM4FloatVector = .zero
-      var vCenterY: MM4FloatVector = .zero
-      var vCenterZ: MM4FloatVector = .zero
+      var vMassAccumulator: MM4FloatVector = .zero
+      for vID in $0 {
+        vMassAccumulator += vMasses[vID]
+      }
+      mass += MM4DoubleVector(vMassAccumulator).sum()
+    }
+    return mass
+  }
+  
+  func createCenterOfMass() -> SIMD3<Double> {
+    var centerOfMass: SIMD3<Double> = .zero
+    withSegmentedLoop(chunk: 256) {
+      var vAccumulatorX: MM4FloatVector = .zero
+      var vAccumulatorY: MM4FloatVector = .zero
+      var vAccumulatorZ: MM4FloatVector = .zero
       for vID in $0 {
         let x = vPositions[vID &* 3 &+ 0]
         let y = vPositions[vID &* 3 &+ 1]
         let z = vPositions[vID &* 3 &+ 2]
         let mass = vMasses[vID]
-        vCenterX.addProduct(mass, x)
-        vCenterY.addProduct(mass, y)
-        vCenterZ.addProduct(mass, z)
+        vAccumulatorX.addProduct(mass, x)
+        vAccumulatorY.addProduct(mass, y)
+        vAccumulatorZ.addProduct(mass, z)
       }
-      center.x += MM4DoubleVector(vCenterX).sum()
-      center.y += MM4DoubleVector(vCenterY).sum()
-      center.z += MM4DoubleVector(vCenterZ).sum()
-    }
-    return SIMD3<Float>(center) / mass
-  }
-  
-  func createMomentOfInertia() -> (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
-    ensureCenterOfMassCached()
-    guard let centerOfMass else {
-      fatalError("This should never happen.")
-    }
-    guard atoms.count > 0 else {
-      return (.zero, .zero, .zero)
+      centerOfMass.x += MM4DoubleVector(vAccumulatorX).sum()
+      centerOfMass.y += MM4DoubleVector(vAccumulatorY).sum()
+      centerOfMass.z += MM4DoubleVector(vAccumulatorZ).sum()
     }
     
-    var columns = (SIMD3<Double>.zero,
-                   SIMD3<Double>.zero,
-                   SIMD3<Double>.zero)
+    precondition(mass > 0, "Mass must be positive.")
+    return centerOfMass / mass
+  }
+  
+  func normalizeLinearPositions(to centerOfMass: SIMD3<Double>) {
+    for vID in 0..<atoms.vectorCount {
+      vPositions[vID &* 3 &+ 0] -= Float(centerOfMass.x)
+      vPositions[vID &* 3 &+ 1] -= Float(centerOfMass.y)
+      vPositions[vID &* 3 &+ 2] -= Float(centerOfMass.z)
+    }
+  }
+}
+
+// MARK: - Angular Properties
+
+// These functions assume the linear position is already normalized.
+
+extension MM4RigidBodyStorage {
+  func createInertiaTensor() -> (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
+    var inertiaTensor: (
+      SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
+    ) = (.zero, .zero, .zero)
+    
     withSegmentedLoop(chunk: 256) {
       var vXX: MM4FloatVector = .zero
       var vYY: MM4FloatVector = .zero
@@ -156,9 +192,9 @@ extension MM4RigidBodyStorage {
       var vXZ: MM4FloatVector = .zero
       var vYZ: MM4FloatVector = .zero
       for vID in $0 {
-        let x = vPositions[vID &* 3 &+ 0] - centerOfMass.x
-        let y = vPositions[vID &* 3 &+ 1] - centerOfMass.y
-        let z = vPositions[vID &* 3 &+ 2] - centerOfMass.z
+        let x = vPositions[vID &* 3 &+ 0]
+        let y = vPositions[vID &* 3 &+ 1]
+        let z = vPositions[vID &* 3 &+ 2]
         let mass = vMasses[vID]
         vXX.addProduct(mass, x * x)
         vYY.addProduct(mass, y * y)
@@ -174,61 +210,68 @@ extension MM4RigidBodyStorage {
       let XY = MM4DoubleVector(vXY).sum()
       let XZ = MM4DoubleVector(vXZ).sum()
       let YZ = MM4DoubleVector(vYZ).sum()
-      columns.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
-      columns.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
-      columns.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
+      inertiaTensor.0 += SIMD3<Double>(YY + ZZ, -XY, -XZ)
+      inertiaTensor.1 += SIMD3<Double>(-XY, XX + ZZ, -YZ)
+      inertiaTensor.2 += SIMD3<Double>(-XZ, -YZ, XX + YY)
     }
-    return (SIMD3<Float>(columns.0),
-            SIMD3<Float>(columns.1),
-            SIMD3<Float>(columns.2))
+    return inertiaTensor
   }
-}
-
-// MARK: - Properties
-
-extension MM4RigidBody {
-  /// Center of mass, treating anchors as astronomically larger than
-  /// non-anchors.
-  ///
-  /// If there are any anchors, this is the mass-weighted average of the
-  /// anchors.
-  public var centerOfMass: SIMD3<Float> {
-    _read {
-      storage.ensureCenterOfMassCached()
-      yield storage.centerOfMass!
-    }
-    _modify {
-      ensureUniquelyReferenced()
-      storage.ensureCenterOfMassCached()
-      let previous = storage.centerOfMass!
-      yield &storage.centerOfMass!
+  
+  func normalizeOrientation(
+    to principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+  ) {
+    let Σ = (
+      SIMD3<Float>(principalAxes.0),
+      SIMD3<Float>(principalAxes.1),
+      SIMD3<Float>(principalAxes.2))
+    
+    for vID in 0..<atoms.vectorCount {
+      let rX = vPositions[vID &* 3 &+ 0]
+      let rY = vPositions[vID &* 3 &+ 1]
+      let rZ = vPositions[vID &* 3 &+ 2]
+      let r = (rX, rY, rZ)
+      vPositions[vID &* 3 &+ 0] = dot(vector: Σ.0, scalars: r)
+      vPositions[vID &* 3 &+ 1] = dot(vector: Σ.1, scalars: r)
+      vPositions[vID &* 3 &+ 2] = dot(vector: Σ.2, scalars: r)
       
-      let difference = storage.centerOfMass! - previous
-      guard any(difference .!= .zero) else {
-        return
-      }
-      for vID in 0..<storage.atoms.vectorCount {
-        storage.vPositions[vID &* 3 &+ 0] += difference.x
-        storage.vPositions[vID &* 3 &+ 1] += difference.y
-        storage.vPositions[vID &* 3 &+ 2] += difference.z
-      }
-      if storage.atoms.count == 0 {
-        storage.centerOfMass = .zero
-      }
-      
-      // Invalidate cached properties. Some could be restored, but err on the
-      // side of simplicity for debugging.
-      storage.eraseRarelyCachedProperties()
-      storage.positions = nil
+      let vX = vVelocities[vID &* 3 &+ 0]
+      let vY = vVelocities[vID &* 3 &+ 1]
+      let vZ = vVelocities[vID &* 3 &+ 2]
+      let v = (vX, vY, vZ)
+      vVelocities[vID &* 3 &+ 0] = dot(vector: Σ.0, scalars: v)
+      vVelocities[vID &* 3 &+ 1] = dot(vector: Σ.1, scalars: v)
+      vVelocities[vID &* 3 &+ 2] = dot(vector: Σ.2, scalars: v)
     }
   }
   
-  /// Symmetric matrix specifying the rigid body's moment of inertia.
-  ///
-  /// If there is more than one anchor, this is the inertia of non-anchor atoms
-  /// around the center of mass defined by anchors.
-  public var momentOfInertia: (SIMD3<Float>, SIMD3<Float>, SIMD3<Float>) {
-    storage.ensureMomentOfInertiaCached()
-    return storage.momentOfInertia!
+  func createPositions(
+    _ buffer: UnsafeMutableBufferPointer<SIMD3<Float>>
+  ) {
+    guard buffer.count == atoms.count else {
+      fatalError("Position buffer was not the correct size.")
+    }
+    let baseAddress = buffer.baseAddress.unsafelyUnwrapped
+    
+    let Σ = (
+      SIMD3<Float>(principalAxes.0),
+      SIMD3<Float>(principalAxes.1),
+      SIMD3<Float>(principalAxes.2))
+    let r̄ = SIMD3<Float>(centerOfMass)
+    
+    for vID in 0..<atoms.vectorCount {
+      let rX = vPositions[vID &* 3 &+ 0]
+      let rY = vPositions[vID &* 3 &+ 1]
+      let rZ = vPositions[vID &* 3 &+ 2]
+      
+      // Σ * r + r̄
+      var x = Σ.0.x * rX + Σ.1.x * rY + Σ.2.x * rZ
+      var y = Σ.0.y * rX + Σ.1.y * rY + Σ.2.y * rZ
+      var z = Σ.0.z * rX + Σ.1.z * rY + Σ.2.z * rZ
+      x += r̄.x
+      y += r̄.y
+      z += r̄.z
+      
+      swizzleFromVectorWidth((x, y, z), vID, baseAddress)
+    }
   }
 }

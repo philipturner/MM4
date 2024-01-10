@@ -10,8 +10,7 @@
 extension MM4Parameters {
   func createAddress<T: FixedWidthInteger>(_ atomID: T) -> MM4Address {
     MM4Address(
-      rigidBodyIndex: 0,
-      atomIndex: UInt32(atomID),
+      index: UInt32(atomID),
       atomicNumber: atoms.atomicNumbers[Int(atomID)])
   }
   
