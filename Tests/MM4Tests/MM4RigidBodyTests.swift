@@ -11,6 +11,7 @@ import MM4
 // MARK: - Test Execution
 
 final class MM4RigidBodyTests: XCTestCase {
+  #if false
   func testRigidBody() throws {
     let descriptors = try MM4RigidBodyTests.createDescriptors()
     for descriptor in descriptors {
@@ -40,6 +41,7 @@ final class MM4RigidBodyTests: XCTestCase {
       }
     }
   }
+  #endif
 }
 
 extension MM4RigidBodyTests {

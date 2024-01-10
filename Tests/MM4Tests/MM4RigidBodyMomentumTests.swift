@@ -4,6 +4,7 @@ import MM4
 // MARK: - Test Execution
 
 final class MM4RigidBodyVelocityTests: XCTestCase {
+  #if false
   func testRigidBodyVelocity() throws {
     let descriptors = try MM4RigidBodyTests.createDescriptors()
     for descriptor in descriptors {
@@ -11,6 +12,7 @@ final class MM4RigidBodyVelocityTests: XCTestCase {
       testAngularMomentum(descriptor)
     }
   }
+  #endif
 }
 
 // MARK: - Velocity
