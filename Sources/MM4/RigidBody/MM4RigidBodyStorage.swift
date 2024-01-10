@@ -32,7 +32,7 @@ final class MM4RigidBodyStorage {
   var positions: [SIMD3<Float>]?
   var velocities: [SIMD3<Float>]?
   
-  init(descriptor: MM4RigidBodyDescriptor) {
+  init(descriptor: MM4RigidBodyDescriptor) throws {
     let parameters = descriptor.parameters!
     let atomCount = parameters.atoms.count
     let vectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
@@ -47,6 +47,9 @@ final class MM4RigidBodyStorage {
     
     // Linear Position
     mass = createMass()
+    guard mass > .leastNormalMagnitude else {
+      throw MM4Error.defectiveInertiaTensor((.zero, .zero, .zero))
+    }
     centerOfMass = createCenterOfMass()
     normalizeLinearPositions(to: centerOfMass)
     
@@ -56,7 +59,10 @@ final class MM4RigidBodyStorage {
     
     // Angular Position
     let inertiaTensor = createInertiaTensor()
-    (momentOfInertia, principalAxes) = diagonalize(matrix: inertiaTensor)
+    guard let eigenPairs = diagonalize(matrix: inertiaTensor) else {
+      throw MM4Error.defectiveInertiaTensor(inertiaTensor)
+    }
+    (momentOfInertia, principalAxes) = eigenPairs
     normalizeOrientation(to: principalAxes)
     
     // Angular Momentum

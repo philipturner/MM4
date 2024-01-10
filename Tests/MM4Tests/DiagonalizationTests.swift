@@ -10,10 +10,9 @@ import MM4
 // be copied over into the unit tests here.
 // - 3 tests for factoring a cubic polynomial
 // - 3 tests for diagonalizing a matrix
-// - test that a rigid body for NCFPart successfully initializes
 
+#if DEBUG
 final class DiagonalizationTests: XCTestCase {
-  #if DEBUG
   func testFactorCubicPolynomial() throws {
     do {
       let coefficients: SIMD4<Double> = [1, -6, 11, -6]
@@ -90,6 +89,37 @@ final class DiagonalizationTests: XCTestCase {
   }
   
   func testDiagonalize() throws {
+    func checkEigenPairs(
+      _ actual: (
+        eigenValues: SIMD3<Double>,
+        eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+      )?,
+      _ expected: (
+        eigenValues: SIMD3<Double>,
+        eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
+      ),
+      file: StaticString = #filePath,
+      line: UInt = #line
+    ) {
+      guard let actual else {
+        XCTAssert(false, "Matrix failed to diagonalize", file: file, line: line)
+        return
+      }
+      
+      XCTAssertEqual(
+        actual.eigenValues, expected.eigenValues, ratioAccuracy: 1e-5,
+        file: file, line: line)
+      XCTAssertEqual(
+        actual.eigenVectors.0, expected.eigenVectors.0, accuracy: 1e-4,
+        file: file, line: line)
+      XCTAssertEqual(
+        actual.eigenVectors.1, expected.eigenVectors.1, accuracy: 1e-4,
+        file: file, line: line)
+      XCTAssertEqual(
+        actual.eigenVectors.2, expected.eigenVectors.2, accuracy: 1e-4,
+        file: file, line: line)
+    }
+    
     do {
       let matrix = (
         SIMD3(4049.46630859375, -782.010498046875, -7.963180541992188e-05),
@@ -102,11 +132,26 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(-0.0076379897, 0.99997085, 0),
         SIMD3(-0.99997085, -0.0076379897, 0))
       
-      let (eigenValues, eigenVectors) = diagonalize(matrix: matrix)
-      XCTAssertEqual(eigenValues, expectedEigenValues, ratioAccuracy: 1e-5)
-      XCTAssertEqual(eigenVectors.0, expectedEigenVectors.0, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.1, expectedEigenVectors.1, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.2, expectedEigenVectors.2, accuracy: 1e-4)
+      let eigenPairs = diagonalize(matrix: matrix)
+      checkEigenPairs(
+        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+    }
+    
+    do {
+      let matrix = (
+        SIMD3(4049.4675941467285, -782.0110626220703, -2.2411346435546875e-05),
+        SIMD3(-782.0110626220703, 106424.83778762817, 4.26173210144043e-06),
+        SIMD3(-2.2411346435546875e-05, 4.26173210144043e-06, 109983.75480651855))
+      let expectedEigenValues = SIMD3(
+        109983.7548065182, 106430.81095893068, 4043.494422844558)
+      let expectedEigenVectors = (
+        SIMD3(0, 0, 1.0),
+        SIMD3(-0.0076379897, 0.99997085, 0),
+        SIMD3(-0.99997085, -0.0076379897, 0))
+      
+      let eigenPairs = diagonalize(matrix: matrix)
+      checkEigenPairs(
+        eigenPairs, (expectedEigenValues, expectedEigenVectors))
     }
     
     do {
@@ -121,11 +166,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(-0.0076380027, 0.98477906, 0.17364302),
         SIMD3(-0.99997085, -0.0075219646, -0.0013263224))
       
-      let (eigenValues, eigenVectors) = diagonalize(matrix: matrix)
-      XCTAssertEqual(eigenValues, expectedEigenValues, ratioAccuracy: 1e-5)
-      XCTAssertEqual(eigenVectors.0, expectedEigenVectors.0, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.1, expectedEigenVectors.1, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.2, expectedEigenVectors.2, accuracy: 1e-4)
+      let eigenPairs = diagonalize(matrix: matrix)
+      checkEigenPairs(
+        eigenPairs, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 1 eigenvector.
@@ -141,11 +184,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.3834677, 0.90293205, -0.19407801),
         SIMD3(-0.5029437, 0.38041282, 0.7761016))
       
-      let (eigenValues, eigenVectors) = diagonalize(matrix: matrix)
-      XCTAssertEqual(eigenValues, expectedEigenValues, ratioAccuracy: 1e-5)
-      XCTAssertEqual(eigenVectors.0, expectedEigenVectors.0, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.1, expectedEigenVectors.1, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.2, expectedEigenVectors.2, accuracy: 1e-4)
+      let eigenPairs = diagonalize(matrix: matrix)
+      checkEigenPairs(
+        eigenPairs, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 1 eigenvector.
@@ -161,11 +202,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.23297852, 0.9506457, 0.20492388),
         SIMD3(-0.88001007, 0.29577452, -0.37161765))
       
-      let (eigenValues, eigenVectors) = diagonalize(matrix: matrix)
-      XCTAssertEqual(eigenValues, expectedEigenValues, ratioAccuracy: 1e-5)
-      XCTAssertEqual(eigenVectors.0, expectedEigenVectors.0, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.1, expectedEigenVectors.1, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.2, expectedEigenVectors.2, accuracy: 1e-4)
+      let eigenPairs = diagonalize(matrix: matrix)
+      checkEigenPairs(
+        eigenPairs, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 2 eigenvectors.
@@ -181,15 +220,13 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.05351307, 0.89175814, -0.44933698),
         SIMD3(-0.39553395, 0.43210563, 0.8104552))
       
-      let (eigenValues, eigenVectors) = diagonalize(matrix: matrix)
-      XCTAssertEqual(eigenValues, expectedEigenValues, ratioAccuracy: 1e-5)
-      XCTAssertEqual(eigenVectors.0, expectedEigenVectors.0, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.1, expectedEigenVectors.1, accuracy: 1e-4)
-      XCTAssertEqual(eigenVectors.2, expectedEigenVectors.2, accuracy: 1e-4)
+      let eigenPairs = diagonalize(matrix: matrix)
+      checkEigenPairs(
+        eigenPairs, (expectedEigenValues, expectedEigenVectors))
     }
   }
-  #endif
 }
+#endif
 
 // MARK: - Utilities
 

@@ -28,7 +28,7 @@ struct NCFPart {
     var rigidBodyDesc = MM4RigidBodyDescriptor()
     rigidBodyDesc.parameters = parameters
     rigidBodyDesc.positions = atoms.map { SIMD3($0.x, $0.y, $0.z) }
-    self.rigidBody = MM4RigidBody(descriptor: rigidBodyDesc)
+    self.rigidBody = try! MM4RigidBody(descriptor: rigidBodyDesc)
   }
 }
 

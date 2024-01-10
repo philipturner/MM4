@@ -111,7 +111,7 @@ func diagonalize(
 ) -> (
   eigenValues: SIMD3<Double>,
   eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
-) {
+)? {
   // Characteristic polynomial:
   // [-1, tr(A), -0.5 * [tr(A)^2 - tr(A^2)], det(A)]
   var characteristicPolynomial: SIMD4<Double> = .zero
@@ -133,7 +133,8 @@ func diagonalize(
   guard let root0,
         let root1,
         let root2 else {
-    fatalError("Could not factor the characteristic polynomial.")
+    // Could not factor the characteristic polynomial.
+    return nil
   }
   
   // Sort the eigenvalues in descending order.
@@ -165,7 +166,8 @@ func diagonalize(
   guard var x = createEigenVector(eigenValues[0]),
         var y = createEigenVector(eigenValues[1]),
         var z = createEigenVector(eigenValues[2]) else {
-    fatalError("Failed to generate the eigenvectors from the eigenvalues.")
+    // Failed to generate the eigenvectors from the eigenvalues.
+    return nil
   }
   
   func createOrthogonalityError() -> Double {
@@ -178,14 +180,6 @@ func diagonalize(
   // Ensure the eigenvectors are mutually perpendicular, then form a
   // right-handed basis from them.
   var orthogonalityError = createOrthogonalityError()
-  guard orthogonalityError < 1e-3 else {
-    fatalError("""
-    The eigenvectors were not mutually orthogonal:
-    Λ = \(eigenValues[0]) \(eigenValues[1]) \(eigenValues[2])
-    Σ = \(x) \(y) \(z)
-    xy=\((x * y).sum()) xz=\((x * z).sum()) yz=\((y * z).sum())
-    """)
-  }
   
   let trialCount = 10
   for trialID in 1...trialCount {
@@ -214,11 +208,8 @@ func diagonalize(
        eigenValueError.max() < 1e-16 {
       break
     } else if trialID == trialCount {
-      fatalError("""
-       Failed to refine eigenpairs.
-       orthogonality error = \(orthogonalityError)
-       eigenvalue error = \(eigenValueError.max())
-       """)
+      // Failed to refine eigenpairs.
+      return nil
     }
   }
   

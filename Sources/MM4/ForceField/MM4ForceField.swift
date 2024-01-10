@@ -71,7 +71,7 @@ public class MM4ForceField {
   var _timeStep: Double = 100 / 23 * OpenMM_PsPerFs
   
   /// Create a simulator using the specified configuration.
-  public init(descriptor: MM4ForceFieldDescriptor) {
+  public init(descriptor: MM4ForceFieldDescriptor) throws {
     guard let parameters = descriptor.parameters else {
       fatalError("No force field parameters were specified.")
     }

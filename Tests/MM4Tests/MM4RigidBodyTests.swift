@@ -11,18 +11,22 @@ import MM4
 // MARK: - Test Execution
 
 final class MM4RigidBodyTests: XCTestCase {
-  #if false
   func testRigidBody() throws {
     let descriptors = try MM4RigidBodyTests.createDescriptors()
     for descriptor in descriptors {
-      testCoW(descriptor)
+      if descriptor.parameters!.atoms.count == 0 {
+        XCTAssertThrowsError(try MM4RigidBody(descriptor: descriptor))
+        continue
+      }
       
       // Test whether the initial velocities are zero.
-      var rigidBody = MM4RigidBody(descriptor: descriptor)
-      XCTAssertEqual(rigidBody.positions, descriptor.positions!)
+      var rigidBody = try MM4RigidBody(descriptor: descriptor)
+      for i in rigidBody.parameters.atoms.indices {
+        XCTAssertEqual(
+          rigidBody.positions[i], descriptor.positions![i], accuracy: 1e-3)
+      }
       XCTAssertEqual(rigidBody.velocities.count, descriptor.positions!.count)
       XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
-      testInertia(rigidBody)
       
       rigidBody.forces = nil
       XCTAssertNil(rigidBody.forces)
@@ -39,9 +43,11 @@ final class MM4RigidBodyTests: XCTestCase {
         rigidBody.forces = forces
         XCTAssertEqual(rigidBody.forces, forces)
       }
+      
+      try testInertia(descriptor)
+      try testCoW(descriptor)
     }
   }
-  #endif
 }
 
 extension MM4RigidBodyTests {
@@ -81,26 +87,28 @@ extension MM4RigidBodyTests {
 // This function does not validate whether the inertia is correct after
 // modification. Another function should mutate some inertia properties and
 // determine whether they behave correctly.
-private func testInertia(_ rigidBody: MM4RigidBody) {
+private func testInertia(_ descriptor: MM4RigidBodyDescriptor) throws {
   // Assert that all quantities are equal within 1e-3 tolerance. This is an
   // internally consistent unit system where the fundamental quantities are
   // roughly 1. Therefore, absolute errors should be on the same order as what
   // you expect for relative errors when using a multiplicative factor. Using
   // absolute errors enables use of more ergonomic testing functions.
   
-  let mass = deriveMass(rigidBody)
+  let rigidBody = try MM4RigidBody(descriptor: descriptor)
+  let mass = deriveMass(descriptor)
   XCTAssertEqual(mass, rigidBody.mass, accuracy: 1e-3)
   
-  let centerOfMass = deriveCenterOfMass(rigidBody)
+  let centerOfMass = deriveCenterOfMass(descriptor)
   XCTAssertEqual(centerOfMass, rigidBody.centerOfMass, accuracy: 1e-3)
   
-  let I = deriveInertiaTensor(rigidBody)
+  let I = deriveInertiaTensor(descriptor)
   let Σ = rigidBody.principalAxes
   let Λ = rigidBody.momentOfInertia
-  let ΛΣT = (
-    Λ[0] * SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
-    Λ[1] * SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
-    Λ[2] * SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
+  let ΣT = (
+    SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
+    SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
+    SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
+  let ΛΣT = (Λ * ΣT.0, Λ * ΣT.1, Λ * ΣT.2)
   
   func gemv(
     matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>),
@@ -115,8 +123,8 @@ private func testInertia(_ rigidBody: MM4RigidBody) {
 
 // MARK: - Copy on Write
 
-private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
-  var rigidBody1 = MM4RigidBody(descriptor: descriptor)
+private func testCoW(_ descriptor: MM4RigidBodyDescriptor) throws {
+  var rigidBody1 = try MM4RigidBody(descriptor: descriptor)
   var rigidBody2 = rigidBody1
   let parameters = rigidBody1.parameters
   
@@ -188,25 +196,25 @@ private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
 
 // MARK: - Utilities
 
-private func deriveMass(_ rigidBody: MM4RigidBody) -> Double {
+private func deriveMass(_ descriptor: MM4RigidBodyDescriptor) -> Double {
   var output: Double = .zero
-  for i in rigidBody.parameters.atoms.indices {
-    output += Double(rigidBody.parameters.atoms.masses[i])
+  for i in descriptor.parameters!.atoms.indices {
+    output += Double(descriptor.parameters!.atoms.masses[i])
   }
   return output
 }
 
 private func deriveCenterOfMass(
-  _ rigidBody: MM4RigidBody
+  _ descriptor: MM4RigidBodyDescriptor
 ) -> SIMD3<Double> {
   var output: SIMD3<Double> = .zero
-  for i in rigidBody.parameters.atoms.indices {
-    let position = rigidBody.positions[i]
-    let mass = rigidBody.parameters.atoms.masses[i]
+  for i in descriptor.parameters!.atoms.indices {
+    let position = descriptor.positions![i]
+    let mass = descriptor.parameters!.atoms.masses[i]
     output += SIMD3<Double>(mass * position)
   }
   
-  let mass = deriveMass(rigidBody)
+  let mass = deriveMass(descriptor)
   if mass == 0 {
     return .zero
   } else {
@@ -216,16 +224,16 @@ private func deriveCenterOfMass(
 }
 
 private func deriveInertiaTensor(
-  _ rigidBody: MM4RigidBody
+  _ descriptor: MM4RigidBodyDescriptor
 ) -> (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
-  let centerOfMass = deriveCenterOfMass(rigidBody)
+  let centerOfMass = deriveCenterOfMass(descriptor)
   var output: (
     SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
   ) = (.zero, .zero, .zero)
   
-  for i in rigidBody.parameters.atoms.indices {
-    let delta = rigidBody.positions[i] - SIMD3<Float>(centerOfMass)
-    let mass = rigidBody.parameters.atoms.masses[i]
+  for i in descriptor.parameters!.atoms.indices {
+    let delta = descriptor.positions![i] - SIMD3<Float>(centerOfMass)
+    let mass = descriptor.parameters!.atoms.masses[i]
     let STS = (delta * delta).sum()
     output.0[0] += Double(mass * STS)
     output.1[1] += Double(mass * STS)
@@ -242,7 +250,7 @@ private func deriveInertiaTensor(
   )
 }
 
-private func invertInertiaTensor(
+private func invertMatrix(
   _ momentOfInertia: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
 ) -> (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
   let col = (
