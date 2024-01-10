@@ -6,6 +6,9 @@ import MM4
 final class MM4RigidBodyTests: XCTestCase {
   
   // TODO: Test the rotate() function.
+  //
+  // After adding the test for rotate(), this should be ready to merge into the
+  // main branch.
   
   func testInertia() throws {
     for descriptor in MM4RigidBodyTests.descriptors {

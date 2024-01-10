@@ -34,7 +34,7 @@ public struct MM4RigidBodyDescriptor {
 /// An enclosed group of covalently bonded atoms.
 ///
 /// `MM4RigidBody` is an API to efficiently compute basic properties in rigid
-/// body mechanics. It stores atoms in an internal representation optimized for
+/// body mechanics. It stores atoms in a memory layout optimized for
 /// the vector units on modern CPUs.
 public struct MM4RigidBody {
   /// The force field parameters cached for this rigid body.

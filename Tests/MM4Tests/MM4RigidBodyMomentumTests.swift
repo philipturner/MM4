@@ -5,10 +5,6 @@ import MM4
 
 final class MM4RigidBodyMomentumTests: XCTestCase {
   
-  // TODO: Test some random forces and torques here. Ensure the forces become
-  // 'nil' when the positions are modified through each of the 2 available
-  // methods (centerOfMass, rotate).
-  
   func testInitialVelocities() throws {
     for descriptor in MM4RigidBodyTests.descriptors {
       let rigidBody = try MM4RigidBody(descriptor: descriptor)
@@ -183,31 +179,32 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
       var netForce: SIMD3<Double> = .zero
       var netTorque: SIMD3<Double> = .zero
       
-      print()
+      // The first principal axis for the adamantanes is [0, 0, 1]. Create a
+      // net torque with a large magnitude along this axis.
       for i in forces.indices {
         let r = rigidBody.positions[i] - SIMD3(rigidBody.centerOfMass)
         var f = SIMD3(-r.y, r.x, 0)
         f /= (f * f).sum().squareRoot()
         let rCrossF = cross(r, f)
-        print(r, f, rCrossF)
         
         netForce += SIMD3(f)
         netTorque += SIMD3(rCrossF)
         forces[i] = f
       }
-      print(netForce)
-      print(netTorque)
       rigidBody.forces = forces
       
-      // The first principal axis for the adamantanes is [0, 0, 1].
-      
-      print()
-      print("rigid body")
-      print("- center of mass:", rigidBody.centerOfMass)
-      print("- principal axes:", rigidBody.principalAxes)
-      print("- net force:", rigidBody.netForce!)
-      print("- net torque:", rigidBody.netTorque!)
+      // check that torque along the first principal axis = torque.z
+      // check that the RMS torque along the remaining two = torque.xy
+      let expectedTorque2D = SIMD2(netTorque.x, netTorque.y)
+      let actualTorque2D = SIMD2(
+        rigidBody.netTorque![1], rigidBody.netTorque![2])
+      let expectedTorqueRMS = (
+        expectedTorque2D * expectedTorque2D).sum().squareRoot()
+      let actualTorqueRMS = (
+        actualTorque2D * actualTorque2D).sum().squareRoot()
       XCTAssertEqual(netForce, rigidBody.netForce!, ratioAccuracy: 1e-6)
+      XCTAssertEqual(netTorque.z, rigidBody.netTorque![0], accuracy: 1e-6)
+      XCTAssertEqual(expectedTorqueRMS, actualTorqueRMS, accuracy: 1e-7)
     }
   }
 }
