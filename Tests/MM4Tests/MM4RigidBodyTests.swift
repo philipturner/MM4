@@ -1,5 +1,6 @@
 import XCTest
 import MM4
+import QuaternionModule
 
 // MARK: - Test Execution
 
@@ -131,7 +132,36 @@ final class MM4RigidBodyTests: XCTestCase {
   
   func testRotate() throws {
     for descriptor in MM4RigidBodyTests.descriptors {
+      var rigidBody = try MM4RigidBody(descriptor: descriptor)
       
+      // Rotate 1 radian around the principal axis using three methods:
+      // - Quaternion rotation
+      // - Extracting the first principal axis and specifying explicitly
+      // - Creating an angular momentum with 1 for the first eigenvalue and
+      //   0 for the other 2 eigenvalues.
+      //
+      // Combine the last 2 methods. Rotate 0.5 radians with the first of them,
+      // then 0.5 radians with the last of them.
+      var positions = descriptor.positions!
+      let rotation = Quaternion<Float>(angle: 1, axis: [0, 0, 1])
+      let center = SIMD3<Float>(rigidBody.centerOfMass)
+      for i in positions.indices {
+        var r = positions[i] - center
+        r = rotation.act(on: r)
+        positions[i] = center + r
+      }
+      
+      for _ in 0..<5 {
+        rigidBody.angularMomentum = SIMD3(1e-6, 0, 0)
+        rigidBody.rotate(angle: 0.1)
+        rigidBody.rotate(angle: 0.1, axis: rigidBody.principalAxes.0)
+      }
+      
+      for i in positions.indices {
+        let expectedPosition = positions[i]
+        let actualPosition = rigidBody.positions[i]
+        XCTAssertEqual(actualPosition, expectedPosition, accuracy: 1e-6)
+      }
     }
   }
 }

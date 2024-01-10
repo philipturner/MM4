@@ -5,6 +5,14 @@ final class MM4Tests: XCTestCase {
   
 }
 
+// TODO: Debug nonbonded forces with hydrogen reductions. Examine how the
+// distances between surfaces change as hydrogen reductions are enabled.
+//
+// Start out with external forces only. Assert that we have an object with 100%
+// of the parameters deactivated. This allows the equations of motion to be
+// simulated and checked as 1-particle isolated systems. Afterward, we can
+// proceed with the nonbonded force unit tests outlined in molecular-renderer.
+
 // MARK: - Tests for Non-Carbon Elements
 
 // Pick some examples experimental and computed forcefield values from the
