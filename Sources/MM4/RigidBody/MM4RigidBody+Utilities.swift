@@ -66,6 +66,17 @@ func determinant(
   matrix.0[2] * (matrix.1[0] * matrix.2[1] - matrix.1[1] * matrix.2[0])
 }
 
+@_transparent
+func normalize(
+  vector: SIMD3<Double>
+) -> SIMD3<Double>? {
+  let length = (vector * vector).sum().squareRoot()
+  guard length >= .leastNormalMagnitude else {
+    return nil
+  }
+  return vector / length
+}
+
 // Source: https://stackoverflow.com/a/18504573
 func invert(
   matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
@@ -127,11 +138,13 @@ func diagonalize(
   
   // Sort the eigenvalues in descending order.
   var eigenValues = [root0, root1, root2]
-  eigenValues.sort()
+  eigenValues.sort(by: { $0 > $1 })
   
   // Find the eigenvector corresponding to each eigenvalue.
   func createEigenVector(_ eigenValue: Double) -> SIMD3<Double>? {
-    var B = matrix
+    var B = (SIMD3<Double>(SIMD3<Float>(matrix.0)),
+             SIMD3<Double>(SIMD3<Float>(matrix.1)),
+             SIMD3<Double>(SIMD3<Float>(matrix.2)))
     B.0[0] -= eigenValue
     B.1[1] -= eigenValue
     B.2[2] -= eigenValue
@@ -140,20 +153,13 @@ func diagonalize(
     // the diagonal, bringing it closer to something invertible.
     for _ in 0..<10 {
       guard let inverseB = invert(matrix: B) else {
+        print("Failed to invert matrix.")
         B.0[0] *= 1 + 1e-10
         B.1[1] *= 1 + 1e-10
         B.2[2] *= 1 + 1e-10
         continue
       }
-      
-      // Ensure the eigenvector can be normalized.
-      var eigenVector = inverseB.2
-      eigenVector /= (eigenVector * eigenVector).sum().squareRoot()
-      let length = (eigenVector * eigenVector).sum().squareRoot()
-      guard (length - 1).magnitude < 1e-8 else {
-        fatalError("The eigenvector could not be normalized.")
-      }
-      return eigenVector
+      return normalize(vector: inverseB.2)
     }
     return nil
   }
@@ -163,12 +169,84 @@ func diagonalize(
     fatalError("Failed to generate the eigenvectors from the eigenvalues.")
   }
   
+  // TODO: Raise the tolerance for similarity.
+  func createOrthogonalityError() -> Double {
+    let xyError = (x * y).sum().magnitude
+    let xzError = (x * z).sum().magnitude
+    let yzError = (y * z).sum().magnitude
+    return SIMD3(xyError, xzError, yzError).max()
+  }
+  
   // Ensure the eigenvectors are mutually perpendicular, then form a
   // right-handed basis from them.
-  guard (x * y).sum().magnitude < 1e-8,
-        (x * z).sum().magnitude < 1e-8,
-        (y * z).sum().magnitude < 1e-8 else {
-    fatalError("The eigenvectors were not mutually orthogonal.")
+  var orthogonalityError = createOrthogonalityError()
+  guard orthogonalityError < 1e-4 else {
+    fatalError("""
+    The eigenvectors were not mutually orthogonal:
+    Λ = \(eigenValues[0]) \(eigenValues[1]) \(eigenValues[2])
+    Σ = \(x) \(y) \(z)
+    xy=\((x * y).sum()) xz=\((x * z).sum()) yz=\((y * z).sum())
+    """)
+  }
+  
+  // TODO: Refine the eigenvectors with Jacobi iterations and Gram-Schmidt
+  // orthogonalization. Assert that their dot products have a much better
+  // tolerance than 1e-4. Finally, assert that they're actually scaled by their
+  // respective eigenvalues.
+  // - log the error during each iteration, and examine how it drives toward
+  //   zero (conjugate gradient method)
+  //
+  // TODO: Save the code for logging conjugate gradient descent to GitHub
+  // before moving on and deleting it.
+  print("Iteration 0: error=\(orthogonalityError)")
+  let trialCount = 10
+  for trialID in 1...trialCount {
+    x = gemv(matrix: matrix, vector: x)
+    y = gemv(matrix: matrix, vector: y)
+    z = gemv(matrix: matrix, vector: z)
+    
+    var eigenValueError = SIMD3(
+      (x * x).sum().squareRoot(),
+      (y * y).sum().squareRoot(),
+      (z * z).sum().squareRoot())
+    eigenValueError /= SIMD3(eigenValues[0], eigenValues[1], eigenValues[2])
+    eigenValueError -= 1
+    // TODO: Square the eigenvalue error and set the tolerance to 1e-16 universally
+    eigenValueError.replace(with: -eigenValueError, where: eigenValueError .< 0)
+    for lane in 0..<3 {
+      print("- λ\(lane): 1e15 * (actual / expected - 1) = \(String(format: "%.1f", 1e15 * (eigenValueError[lane])))")
+    }
+    
+    x = normalize(vector: x)!
+    y -= (y * x).sum() * x
+    z -= (z * x).sum() * x
+    y = normalize(vector: y)!
+    z -= (z * y).sum() * y
+    z = normalize(vector: z)!
+    
+    orthogonalityError = createOrthogonalityError()
+    
+    print("Iteration \(trialID): error=\(orthogonalityError), \(eigenValueError.max())")
+    
+    if orthogonalityError.magnitude < 1e-16,
+       eigenValueError.max() < 1e-8 {
+      break
+    } else if trialID == trialCount {
+      fatalError("""
+       Failed to refine eigenpairs.
+       orthogonality error = \(orthogonalityError)
+       eigenvalue error = \(eigenValueError.max())
+       """)
+    }
+  }
+  
+  // Flip the eigenvectors so they're as close as possible to the original
+  // coordinate space's cardinal axes.
+  if (x * SIMD3(1, 1, 1)).sum() < 0 {
+    x = -x
+  }
+  if (y * SIMD3(1, 1, 1)).sum() < 0 {
+    y = -y
   }
   let s1 = x[1] * y[2] - x[2] * y[1]
   let s2 = x[2] * y[0] - x[0] * y[2]
@@ -176,12 +254,6 @@ func diagonalize(
   let crossProduct = SIMD3(s1, s2, s3)
   if (crossProduct * z).sum() < 0 {
     z = -z
-  }
-  
-  // Flip the eigenvectors so they're as close as possible to the original
-  // coordinate space's cardinal axes.
-  if (x * SIMD3(1, 1, 1)).sum() < 0 {
-    (x, y, z) = (-x, -y, -z)
   }
   
   return (

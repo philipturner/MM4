@@ -188,23 +188,6 @@ private func testCoW(_ descriptor: MM4RigidBodyDescriptor) {
 
 // MARK: - Utilities
 
-func XCTAssertEqual<T: SIMD>(
-  _ lhs: T,
-  _ rhs: T,
-  accuracy: T.Scalar,
-  _ message: String = "",
-  file: StaticString = #filePath,
-  line: UInt = #line
-)
-where T.Scalar : FloatingPoint {
-  for lane in 0..<T.scalarCount {
-    XCTAssertEqual(
-      lhs[lane], rhs[lane], accuracy: accuracy,
-      "v[\(lane)] did not match for '\(message)'.",
-      file: file, line: line)
-  }
-}
-
 private func deriveMass(_ rigidBody: MM4RigidBody) -> Double {
   var output: Double = .zero
   for i in rigidBody.parameters.atoms.indices {
