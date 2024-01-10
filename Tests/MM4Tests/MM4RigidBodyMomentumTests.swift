@@ -16,11 +16,9 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
       try testAngularMomentum(descriptor)
     }
   }
-  
-  // func testRigidBodyForce() ???
 }
 
-// MARK: - Velocity
+// MARK: - Momentum
 
 // Test that when certain velocities are entered into the object descriptor,
 // it automatically recognizes the correct momentum. Test what happens when
@@ -226,9 +224,23 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
     }
     
     // Fix this.
-    rigidBody.angularMomentum = bulkVelocity
+    let Σ = rigidBody.principalAxes
+    let ΣT = (
+      SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
+      SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
+      SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
+    let Σw = bulkVelocity
+    let w = ΣT.0 * Σw[0] + ΣT.1 * Σw[1] + ΣT.2 * Σw[2]
+    rigidBody.angularMomentum = w * rigidBody.momentOfInertia
     
-    var computedVelocity = rigidBody.angularMomentum
+    func createComputedVelocity() -> SIMD3<Double> {
+      let w = rigidBody.angularMomentum / rigidBody.momentOfInertia
+      let Σ = rigidBody.principalAxes
+      let Σw = Σ.0 * w[0] + Σ.1 * w[1] + Σ.2 * w[2]
+      return Σw
+    }
+    
+    var computedVelocity = createComputedVelocity()
     XCTAssertEqual(
       computedVelocity,
       (parameters.atoms.count > 0) ? bulkVelocity : .zero,
@@ -242,7 +254,7 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
       XCTAssertEqual(velocity, rigidBody.velocities[i], accuracy: 1e-3)
     }
     
-    computedVelocity = rigidBody.angularMomentum
+    computedVelocity = createComputedVelocity()
     XCTAssertEqual(
       computedVelocity,
       (parameters.atoms.count > 0) ? bulkVelocity : .zero,
@@ -269,9 +281,10 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
     if changeAngular {
       currentAngularVelocity = .random(in: -0.020...0.020)
       rigidBody.angularMomentum = currentAngularVelocity
+      rigidBody.angularMomentum *= rigidBody.momentOfInertia
     }
     
-    let computedVelocity = rigidBody.angularMomentum
+    
     if Bool.random() {
       XCTAssertEqual(
         rigidBody.linearMomentum / rigidBody.mass,
@@ -284,25 +297,35 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
         (parameters.atoms.count > 0) ? expectedVelocity : .zero,
         accuracy: 1e-5)
     }
-    if Bool.random() {
-      XCTAssertEqual(
-        computedVelocity,
-        (parameters.atoms.count > 0) ? currentAngularVelocity : .zero,
-        accuracy: 1e-5)
-    } else {
-      // TODO: Two different methods of checking angular motion.
+    do {
+      let w = rigidBody.angularMomentum / rigidBody.momentOfInertia
+      XCTAssertEqual(w, currentAngularVelocity, accuracy: 1e-5)
     }
     
-    // Fix this.
+    let Σ = {
+      let f64 = rigidBody.principalAxes
+      let f32 = (
+        SIMD3<Float>(f64.0),
+        SIMD3<Float>(f64.1),
+        SIMD3<Float>(f64.2))
+      return f32
+    }()
+    let ΣT = (
+      SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
+      SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
+      SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
+    
     for i in parameters.atoms.indices {
       let position = descriptor.positions![i]
-      let delta = position - SIMD3(centerOfMass)
-      var velocity: SIMD3<Float> = .zero
-      velocity += cross(SIMD3(currentAngularVelocity), delta)
-      velocity += SIMD3(currentLinearVelocity)
+      var r = position - SIMD3(centerOfMass)
+      r = ΣT.0 * r[0] + ΣT.1 * r[1] + ΣT.2 * r[2]
+      
+      var v = cross(SIMD3(currentAngularVelocity), r)
+      v = Σ.0 * v[0] + Σ.1 * v[1] + Σ.2 * v[2]
+      v += SIMD3(currentLinearVelocity)
       
       let actualVelocity = rigidBody.velocities[i]
-      XCTAssertEqual(velocity, actualVelocity, accuracy: 1e-5)
+      XCTAssertEqual(v, actualVelocity, accuracy: 1e-5)
     }
   }
 }

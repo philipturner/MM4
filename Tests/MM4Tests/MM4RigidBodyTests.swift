@@ -44,6 +44,16 @@ final class MM4RigidBodyTests: XCTestCase {
         XCTAssertEqual(rigidBody.forces, forces)
       }
       
+      // TODO: Test the rotate() function.
+      // -> separate file MM4RigidBodyPositionTests
+      //
+      // TODO: Test some random forces and torques here. Create a separate
+      // function for testing force. Ensure the force becomes 'nil' when
+      // the positions are modified.
+      // -> separate file MM4RigidBodyForceTests
+      
+      
+      
       try testInertia(descriptor)
       try testCoW(descriptor)
     }
