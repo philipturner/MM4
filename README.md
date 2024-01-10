@@ -101,7 +101,7 @@ force = dU / dx = (10^-21) / (10^-9) = 10^-12
 
 ### Levels of Theory
 
-|  | Stable Time Step | Force Computation | Integration | Minimum Latency/Step |
-| :-----------------: | :--------: | :-: | :-: | :-----: |
-| Molecular Dynamics  | 4.35 fs    | GPU | GPU | ~50 us  |
-| Rigid Body Dynamics | ~50-100 fs | GPU | CPU | ~200 us |
+|  | Stable Time Step | Minimum Latency/Step | Force Computation | Integration |
+| :-----------------: | :--------: | :-----: | :-: | :-: |
+| Molecular Dynamics  | 4.35 fs    | ~50 us  | GPU | GPU |
+| Rigid Body Dynamics | ~50-100 fs | ~300 us | GPU | CPU |
