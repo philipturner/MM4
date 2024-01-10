@@ -1,16 +1,19 @@
 import XCTest
 import MM4
 
-// TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
-// TODO: Add unit tests for omitting torsions and cross-terms
-// TODO: Add unit tests for omitting 100% of the parameters
+// MARK: - Test Execution
 
 final class MM4ParametersTests: XCTestCase {
+  
+  // TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
+  // TODO: Add unit tests for omitting torsions and cross-terms
+  // TODO: Add unit tests for omitting 100% of the parameters
+  
   func testAdamantane() throws {
     try testAdamantaneVariant(atomCode: .alkaneCarbon)
   }
   
-  func testEmpty() throws {
+  func testEmptyParameters() throws {
     var paramsDesc = MM4ParametersDescriptor()
     paramsDesc.atomicNumbers = []
     paramsDesc.bonds = []
@@ -38,7 +41,8 @@ final class MM4ParametersTests: XCTestCase {
   }
   
   func testParametersCombination() throws {
-    let descriptors = try MM4RigidBodyTests.createDescriptors()
+    var descriptors = MM4RigidBodyTests.descriptors
+    descriptors.append(MM4RigidBodyTests.emptyDescriptor)
     try _testParametersCombination(descriptors)
   }
   
@@ -98,6 +102,8 @@ final class MM4ParametersTests: XCTestCase {
     }
   }
 }
+
+// MARK: - Parameters
 
 private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   let adamantane = Adamantane(atomCode: atomCode)

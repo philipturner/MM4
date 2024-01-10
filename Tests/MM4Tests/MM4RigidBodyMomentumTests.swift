@@ -4,17 +4,150 @@ import MM4
 // MARK: - Test Execution
 
 final class MM4RigidBodyMomentumTests: XCTestCase {
-  func testRigidBodyMomentum() throws {
-    let descriptors = try MM4RigidBodyTests.createDescriptors()
-    for descriptor in descriptors {
-      if descriptor.parameters!.atoms.count == 0 {
-        XCTAssertThrowsError(try MM4RigidBody(descriptor: descriptor))
-        continue
+  
+  // TODO: Test some random forces and torques here. Ensure the forces become
+  // 'nil' when the positions are modified through each of the 2 available
+  // methods (centerOfMass, rotate).
+  
+  func testInitialVelocities() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      let rigidBody = try MM4RigidBody(descriptor: descriptor)
+      for i in rigidBody.parameters.atoms.indices {
+        XCTAssertEqual(
+          rigidBody.positions[i], descriptor.positions![i], accuracy: 1e-3)
+      }
+      XCTAssertEqual(rigidBody.velocities.count, descriptor.positions!.count)
+      XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
+    }
+  }
+  
+  func testLinearMomentum() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      let parameters = descriptor.parameters!
+      
+      var bulkVelocities: [SIMD3<Double>] = []
+      bulkVelocities.append(.zero)
+      while true {
+        // Add one random velocity with up to 200 m/s for each component.
+        let random = SIMD3<Double>.random(in: -0.2...0.2)
+        if any(random .!= .zero) {
+          bulkVelocities.append(random)
+          break
+        } else {
+          continue
+        }
       }
       
-      try testLinearMomentum(descriptor)
-      try testAngularMomentum(descriptor)
+      // Test that a pre-existing linear velocity is recognized.
+      for bulkVelocity in bulkVelocities {
+        var rigidBodyDesc = descriptor
+        rigidBodyDesc.velocities = Array(
+          repeating: SIMD3(bulkVelocity), count: parameters.atoms.count)
+        let rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
+        let computedVelocity = rigidBody.linearMomentum / rigidBody.mass
+        XCTAssertEqual(computedVelocity, bulkVelocity, accuracy: 1e-5)
+      }
+      
+      // Test that the original linear velocity is zero, but a modified linear
+      // velocity is reflected in the 'velocities' property. Ensure the property
+      // is all zeroes before linear velocity changes.
+      for bulkVelocity in bulkVelocities {
+        var rigidBody = try MM4RigidBody(descriptor: descriptor)
+        XCTAssertEqual(rigidBody.linearMomentum, .zero, accuracy: 1e-5)
+        for i in parameters.atoms.indices {
+          XCTAssertEqual(rigidBody.velocities[i], .zero, accuracy: 1e-5)
+        }
+        rigidBody.linearMomentum = bulkVelocity * rigidBody.mass
+        
+        XCTAssertEqual(
+          rigidBody.linearMomentum / rigidBody.mass,
+          bulkVelocity, accuracy: 1e-5)
+        for i in parameters.atoms.indices {
+          XCTAssertEqual(
+            rigidBody.velocities[i], SIMD3(bulkVelocity), accuracy: 1e-5)
+        }
+        XCTAssertEqual(
+          rigidBody.linearMomentum / rigidBody.mass,
+          bulkVelocity, accuracy: 1e-5)
+      }
+      
+      // Test what happens when you change a rigid body's velocity multiple
+      // times.
+      var rigidBodyDesc = descriptor
+      rigidBodyDesc.velocities = Array(
+        repeating: SIMD3(bulkVelocities[1]), count: parameters.atoms.count)
+      var rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
+      
+      XCTAssertEqual(
+        rigidBody.linearMomentum / rigidBody.mass,
+        (parameters.atoms.count > 0) ? bulkVelocities[1] : .zero,
+        accuracy: 1e-5)
+      for i in parameters.atoms.indices {
+        XCTAssertEqual(
+          rigidBody.velocities[i], SIMD3(bulkVelocities[1]), accuracy: 1e-5)
+      }
+      XCTAssertEqual(
+        rigidBody.linearMomentum / rigidBody.mass,
+        (parameters.atoms.count > 0) ? bulkVelocities[1] : .zero,
+        accuracy: 1e-5)
+      
+      for _ in 0..<5 {
+        // Generate a random 3D vector ranging from -200 m/s to 200 m/s.
+        let velocity = SIMD3<Double>.random(in: -0.2...0.2)
+        rigidBody.linearMomentum = velocity * rigidBody.mass
+        
+        XCTAssertEqual(
+          rigidBody.linearMomentum,
+          (parameters.atoms.count > 0) ? velocity * rigidBody.mass : .zero,
+          accuracy: 1e-5)
+        for i in parameters.atoms.indices {
+          XCTAssertEqual(
+            rigidBody.velocities[i], SIMD3(velocity), accuracy: 1e-5)
+        }
+        XCTAssertEqual(
+          rigidBody.linearMomentum,
+          (parameters.atoms.count > 0) ? velocity * rigidBody.mass : .zero,
+          accuracy: 1e-5)
+      }
     }
+  }
+  
+  func testAngularMomentum() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      try _testAngularMomentum(descriptor)
+    }
+  }
+  
+  func testForces() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      var rigidBody = try MM4RigidBody(descriptor: descriptor)
+      XCTAssertNil(rigidBody.forces)
+      rigidBody.forces = nil
+      XCTAssertNil(rigidBody.forces)
+      
+      for zeroForces in [false, true] {
+        var forces: [SIMD3<Float>] = []
+        for _ in rigidBody.parameters.atoms.indices {
+          if zeroForces {
+            forces.append(.zero)
+          } else {
+            forces.append(.random(in: -0.1...0.1))
+          }
+        }
+        
+        rigidBody.forces = forces
+        XCTAssertNotNil(rigidBody.forces)
+        XCTAssertEqual(rigidBody.forces, forces)
+      }
+    }
+  }
+  
+  func testNetForce() throws {
+    // TODO
+  }
+  
+  func testNetTorque() throws {
+    // TODO
   }
 }
 
@@ -24,99 +157,9 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
 // it automatically recognizes the correct momentum. Test what happens when
 // both linear and angular momentum are nonzero.
 
-private func testLinearMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
-  let parameters = descriptor.parameters!
-  
-  var bulkVelocities: [SIMD3<Double>] = []
-  bulkVelocities.append(.zero)
-  while true {
-    // Add one random velocity with up to 200 m/s for each component.
-    let random = SIMD3<Double>.random(in: -0.2...0.2)
-    if any(random .!= .zero) {
-      bulkVelocities.append(random)
-      break
-    } else {
-      continue
-    }
-  }
-  
-  // Test that a pre-existing linear velocity is recognized.
-  for bulkVelocity in bulkVelocities {
-    var rigidBodyDesc = descriptor
-    rigidBodyDesc.velocities = Array(
-      repeating: SIMD3(bulkVelocity), count: parameters.atoms.count)
-    let rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
-    let computedVelocity = rigidBody.linearMomentum / rigidBody.mass
-    let expectedVelocity = (parameters.atoms.count > 0) ? bulkVelocity : .zero
-    XCTAssertEqual(computedVelocity, expectedVelocity, accuracy: 1e-5)
-  }
-  
-  // Test that the original linear velocity is zero, but a modified linear
-  // velocity is reflected in the 'velocities' property. Ensure the property is
-  // all zeroes before linear velocity changes.
-  for bulkVelocity in bulkVelocities {
-    var rigidBody = try MM4RigidBody(descriptor: descriptor)
-    XCTAssertEqual(rigidBody.linearMomentum, .zero, accuracy: 1e-5)
-    for i in parameters.atoms.indices {
-      XCTAssertEqual(rigidBody.velocities[i], .zero, accuracy: 1e-5)
-    }
-    rigidBody.linearMomentum = bulkVelocity * rigidBody.mass
-    
-    let expectedVelocity = (parameters.atoms.count > 0) ? bulkVelocity : .zero
-    XCTAssertEqual(
-      rigidBody.linearMomentum / rigidBody.mass,
-      expectedVelocity, accuracy: 1e-5)
-    for i in parameters.atoms.indices {
-      XCTAssertEqual(
-        rigidBody.velocities[i], SIMD3(bulkVelocity), accuracy: 1e-5)
-    }
-    XCTAssertEqual(
-      rigidBody.linearMomentum / rigidBody.mass,
-      expectedVelocity, accuracy: 1e-5)
-  }
-  
-  // Test what happens when you change a rigid body's velocity multiple times.
-  var rigidBodyDesc = descriptor
-  rigidBodyDesc.velocities = Array(
-    repeating: SIMD3(bulkVelocities[1]), count: parameters.atoms.count)
-  var rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
-  
-  XCTAssertEqual(
-    rigidBody.linearMomentum / rigidBody.mass,
-    (parameters.atoms.count > 0) ? bulkVelocities[1] : .zero,
-    accuracy: 1e-5)
-  for i in parameters.atoms.indices {
-    XCTAssertEqual(
-      rigidBody.velocities[i], SIMD3(bulkVelocities[1]), accuracy: 1e-5)
-  }
-  XCTAssertEqual(
-    rigidBody.linearMomentum / rigidBody.mass,
-    (parameters.atoms.count > 0) ? bulkVelocities[1] : .zero,
-    accuracy: 1e-5)
-  
-  for _ in 0..<5 {
-    // Generate a random 3D vector ranging from -200 m/s to 200 m/s.
-    let velocity = SIMD3<Double>.random(in: -0.2...0.2)
-    rigidBody.linearMomentum = velocity * rigidBody.mass
-    
-    XCTAssertEqual(
-      rigidBody.linearMomentum,
-      (parameters.atoms.count > 0) ? velocity * rigidBody.mass : .zero,
-      accuracy: 1e-5)
-    for i in parameters.atoms.indices {
-      XCTAssertEqual(rigidBody.velocities[i], SIMD3(velocity), accuracy: 1e-5)
-    }
-    XCTAssertEqual(
-      rigidBody.linearMomentum,
-      (parameters.atoms.count > 0) ? velocity * rigidBody.mass : .zero,
-      accuracy: 1e-5)
-  }
-}
-
-// TODO: This function will likely fail because the angular velocity is w.r.t.
-// the local reference frame (diagonalized). Modify the test accordingly.
-
-private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
+private func _testAngularMomentum(
+  _ descriptor: MM4RigidBodyDescriptor
+) throws {
   let parameters = descriptor.parameters!
   
   func cross(_ a: SIMD3<Float>, _ b: SIMD3<Float>) -> SIMD3<Float> {
@@ -212,7 +255,7 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
     XCTAssertEqual(
       rigidBody.linearMomentum,
       (parameters.atoms.count > 0) ? linearVelocity * rigidBody.mass : .zero,
-      accuracy: 1e-5)
+      accuracy: 1e-5 * rigidBody.mass)
   }
   
   // Test what happens when a zero velocity becomes a nonzero angular velocity.
@@ -295,7 +338,7 @@ private func testAngularMomentum(_ descriptor: MM4RigidBodyDescriptor) throws {
       XCTAssertEqual(
         rigidBody.linearMomentum,
         (parameters.atoms.count > 0) ? expectedVelocity : .zero,
-        accuracy: 1e-5)
+        accuracy: 1e-5 * rigidBody.mass)
     }
     do {
       let w = rigidBody.angularMomentum / rigidBody.momentOfInertia

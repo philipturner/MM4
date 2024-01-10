@@ -1,67 +1,141 @@
 import XCTest
 import MM4
 
-// TODO: Most equality tests will likely fail. You need to assert they're equal
-// to within a specific tolerance. But get the test suite compiling before you
-// add more complexity.
-//
-// In addition, the tests for the empty rigid body will likely fail, because the
-// inertia tensor cannot be diagonalized.
-
 // MARK: - Test Execution
 
 final class MM4RigidBodyTests: XCTestCase {
-  func testRigidBody() throws {
-    let descriptors = try MM4RigidBodyTests.createDescriptors()
-    for descriptor in descriptors {
-      if descriptor.parameters!.atoms.count == 0 {
-        XCTAssertThrowsError(try MM4RigidBody(descriptor: descriptor))
-        continue
-      }
+  
+  // TODO: Test the rotate() function.
+  
+  func testInertia() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      // Assert that all quantities are equal within 1e-3 tolerance. This is an
+      // internally consistent unit system where the fundamental quantities are
+      // roughly 1. Therefore, absolute errors should be on the same order as
+      // what you expect for relative errors when using a multiplicative factor.
+      // Using absolute errors enables use of more ergonomic testing functions.
       
-      // Test whether the initial velocities are zero.
-      var rigidBody = try MM4RigidBody(descriptor: descriptor)
-      for i in rigidBody.parameters.atoms.indices {
+      let rigidBody = try MM4RigidBody(descriptor: descriptor)
+      let mass = deriveMass(descriptor)
+      XCTAssertEqual(mass, rigidBody.mass, accuracy: 1e-3)
+      
+      let centerOfMass = deriveCenterOfMass(descriptor)
+      XCTAssertEqual(centerOfMass, rigidBody.centerOfMass, accuracy: 1e-3)
+      
+      let I = deriveInertiaTensor(descriptor)
+      let Σ = rigidBody.principalAxes
+      let Λ = rigidBody.momentOfInertia
+      let ΣT = (
+        SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
+        SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
+        SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
+      let ΛΣT = (Λ * ΣT.0, Λ * ΣT.1, Λ * ΣT.2)
+      
+      func gemv(
+        matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>),
+        vector: SIMD3<Double>
+      ) -> SIMD3<Double> {
+        matrix.0 * vector[0] + matrix.1 * vector[1] + matrix.2 * vector[2]
+      }
+      XCTAssertEqual(I.0, gemv(matrix: Σ, vector: ΛΣT.0), accuracy: 1e-3)
+      XCTAssertEqual(I.1, gemv(matrix: Σ, vector: ΛΣT.1), accuracy: 1e-3)
+      XCTAssertEqual(I.2, gemv(matrix: Σ, vector: ΛΣT.2), accuracy: 1e-3)
+    }
+  }
+  
+  func testEmptyRigidBody() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      XCTAssertNotEqual(descriptor.parameters!.atoms.count, 0)
+      XCTAssertNoThrow(try MM4RigidBody(descriptor: descriptor))
+    }
+    do {
+      let descriptor = MM4RigidBodyTests.emptyDescriptor
+      XCTAssertEqual(descriptor.parameters!.atoms.count, 0)
+      XCTAssertThrowsError(try MM4RigidBody(descriptor: descriptor))
+    }
+  }
+  
+  func testCoW() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      var rigidBody1 = try MM4RigidBody(descriptor: descriptor)
+      var rigidBody2 = rigidBody1
+      let parameters = rigidBody1.parameters
+      
+      let centerOfMass1 = rigidBody1.centerOfMass
+      XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
+      XCTAssertEqual(centerOfMass1, rigidBody2.centerOfMass, accuracy: 1e-3)
+      XCTAssertEqual(rigidBody1.centerOfMass, rigidBody2.centerOfMass)
+      
+      let delta2 = SIMD3<Double>.random(in: -2...2)
+      do {
+        rigidBody2.centerOfMass += delta2
+        let centerOfMass2 = centerOfMass1 + delta2
+        XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
         XCTAssertEqual(
-          rigidBody.positions[i], descriptor.positions![i], accuracy: 1e-3)
-      }
-      XCTAssertEqual(rigidBody.velocities.count, descriptor.positions!.count)
-      XCTAssert(rigidBody.velocities.allSatisfy { $0 == .zero })
-      
-      rigidBody.forces = nil
-      XCTAssertNil(rigidBody.forces)
-      
-      for zeroForces in [false, true] {
-        var forces: [SIMD3<Float>] = []
-        for _ in rigidBody.parameters.atoms.indices {
-          if zeroForces {
-            forces.append(.zero)
-          } else {
-            forces.append(.random(in: -0.1...0.1))
-          }
+          (parameters.atoms.count > 0) ? centerOfMass2 : .zero,
+          rigidBody2.centerOfMass, accuracy: 1e-3)
+        XCTAssertNotEqual(centerOfMass1, centerOfMass2)
+        if parameters.atoms.count > 0 {
+          XCTAssertNotEqual(rigidBody1.centerOfMass, rigidBody2.centerOfMass)
         }
-        rigidBody.forces = forces
-        XCTAssertEqual(rigidBody.forces, forces)
+      }
+        
+      let rigidBody3 = rigidBody1
+      do {
+        let momentum1 = SIMD3<Double>.random(in: -0.2...0.2)
+        rigidBody1.linearMomentum = momentum1
+        XCTAssertEqual(
+          (parameters.atoms.count > 0) ? momentum1 : .zero,
+          rigidBody1.linearMomentum, accuracy: 1e-3)
+        
+        XCTAssertEqual(.zero, rigidBody2.linearMomentum, accuracy: 1e-3)
+        XCTAssertEqual(.zero, rigidBody3.linearMomentum, accuracy: 1e-3)
+        if parameters.atoms.count > 0 {
+          XCTAssertNotEqual(
+            rigidBody1.linearMomentum, rigidBody2.linearMomentum)
+          XCTAssertNotEqual(
+            rigidBody1.linearMomentum, rigidBody3.linearMomentum)
+        }
+        XCTAssertEqual(rigidBody2.linearMomentum, rigidBody3.linearMomentum)
       }
       
-      // TODO: Test the rotate() function.
-      // -> separate file MM4RigidBodyPositionTests
-      //
-      // TODO: Test some random forces and torques here. Create a separate
-      // function for testing force. Ensure the force becomes 'nil' when
-      // the positions are modified.
-      // -> separate file MM4RigidBodyForceTests
+      do {
+        XCTAssertEqual(rigidBody1.centerOfMass, rigidBody3.centerOfMass)
+        if parameters.atoms.count > 0 {
+          XCTAssertNotEqual(rigidBody2.centerOfMass, rigidBody3.centerOfMass)
+        }
+        for i in parameters.atoms.indices {
+          let original = descriptor.positions![i]
+          let modified = original + SIMD3<Float>(delta2)
+          XCTAssertEqual(rigidBody1.positions[i], original, accuracy: 1e-3)
+          XCTAssertEqual(rigidBody2.positions[i], modified, accuracy: 1e-3)
+          XCTAssertEqual(rigidBody3.positions[i], original, accuracy: 1e-3)
+        }
+      }
       
-      
-      
-      try testInertia(descriptor)
-      try testCoW(descriptor)
+      var rigidBody4 = rigidBody3
+      do {
+        let velocity4 = SIMD3<Double>.random(in: -0.2...0.2)
+        rigidBody4.linearMomentum = velocity4 * rigidBody4.mass
+        for i in parameters.atoms.indices {
+          XCTAssertEqual(rigidBody3.velocities[i], .zero, accuracy: 1e-5)
+          XCTAssertEqual(
+            rigidBody4.velocities[i], SIMD3(velocity4), accuracy: 1e-5)
+        }
+        XCTAssertEqual(.zero, rigidBody3.linearMomentum, accuracy: 1e-5)
+        XCTAssertEqual(
+          (parameters.atoms.count > 0) ? velocity4 : .zero,
+          rigidBody4.linearMomentum / rigidBody4.mass,
+          accuracy: 1e-5)
+      }
     }
   }
 }
 
+// MARK: - Descriptors
+
 extension MM4RigidBodyTests {
-  static func createDescriptors() throws -> [MM4RigidBodyDescriptor] {
+  static var descriptors: [MM4RigidBodyDescriptor] {
     var output: [MM4RigidBodyDescriptor] = []
     for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
       let adamantane = Adamantane(atomCode: atomCode)
@@ -69,138 +143,26 @@ extension MM4RigidBodyTests {
       var paramsDesc = MM4ParametersDescriptor()
       paramsDesc.atomicNumbers = adamantane.atomicNumbers
       paramsDesc.bonds = adamantane.bonds
-      let params = try MM4Parameters(descriptor: paramsDesc)
+      let params = try! MM4Parameters(descriptor: paramsDesc)
       
       var rigidBodyDesc = MM4RigidBodyDescriptor()
       rigidBodyDesc.parameters = params
       rigidBodyDesc.positions = adamantane.positions
       output.append(rigidBodyDesc)
     }
-    
-    do {
-      var paramsDesc = MM4ParametersDescriptor()
-      paramsDesc.atomicNumbers = []
-      paramsDesc.bonds = []
-      let params = try MM4Parameters(descriptor: paramsDesc)
-      
-      var rigidBodyDesc = MM4RigidBodyDescriptor()
-      rigidBodyDesc.parameters = params
-      rigidBodyDesc.positions = []
-      output.append(rigidBodyDesc)
-    }
     return output
   }
-}
-
-// MARK: - Inertia
-
-// This function does not validate whether the inertia is correct after
-// modification. Another function should mutate some inertia properties and
-// determine whether they behave correctly.
-private func testInertia(_ descriptor: MM4RigidBodyDescriptor) throws {
-  // Assert that all quantities are equal within 1e-3 tolerance. This is an
-  // internally consistent unit system where the fundamental quantities are
-  // roughly 1. Therefore, absolute errors should be on the same order as what
-  // you expect for relative errors when using a multiplicative factor. Using
-  // absolute errors enables use of more ergonomic testing functions.
   
-  let rigidBody = try MM4RigidBody(descriptor: descriptor)
-  let mass = deriveMass(descriptor)
-  XCTAssertEqual(mass, rigidBody.mass, accuracy: 1e-3)
-  
-  let centerOfMass = deriveCenterOfMass(descriptor)
-  XCTAssertEqual(centerOfMass, rigidBody.centerOfMass, accuracy: 1e-3)
-  
-  let I = deriveInertiaTensor(descriptor)
-  let Σ = rigidBody.principalAxes
-  let Λ = rigidBody.momentOfInertia
-  let ΣT = (
-    SIMD3(Σ.0[0], Σ.1[0], Σ.2[0]),
-    SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
-    SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
-  let ΛΣT = (Λ * ΣT.0, Λ * ΣT.1, Λ * ΣT.2)
-  
-  func gemv(
-    matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>),
-    vector: SIMD3<Double>
-  ) -> SIMD3<Double> {
-    matrix.0 * vector[0] + matrix.1 * vector[1] + matrix.2 * vector[2]
-  }
-  XCTAssertEqual(I.0, gemv(matrix: Σ, vector: ΛΣT.0), accuracy: 1e-3)
-  XCTAssertEqual(I.1, gemv(matrix: Σ, vector: ΛΣT.1), accuracy: 1e-3)
-  XCTAssertEqual(I.2, gemv(matrix: Σ, vector: ΛΣT.2), accuracy: 1e-3)
-}
-
-// MARK: - Copy on Write
-
-private func testCoW(_ descriptor: MM4RigidBodyDescriptor) throws {
-  var rigidBody1 = try MM4RigidBody(descriptor: descriptor)
-  var rigidBody2 = rigidBody1
-  let parameters = rigidBody1.parameters
-  
-  let centerOfMass1 = rigidBody1.centerOfMass
-  XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
-  XCTAssertEqual(centerOfMass1, rigidBody2.centerOfMass, accuracy: 1e-3)
-  XCTAssertEqual(rigidBody1.centerOfMass, rigidBody2.centerOfMass)
-  
-  let delta2 = SIMD3<Double>.random(in: -2...2)
-  do {
-    rigidBody2.centerOfMass += delta2
-    let centerOfMass2 = centerOfMass1 + delta2
-    XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
-    XCTAssertEqual(
-      (parameters.atoms.count > 0) ? centerOfMass2 : .zero,
-      rigidBody2.centerOfMass, accuracy: 1e-3)
-    XCTAssertNotEqual(centerOfMass1, centerOfMass2)
-    if parameters.atoms.count > 0 {
-      XCTAssertNotEqual(rigidBody1.centerOfMass, rigidBody2.centerOfMass)
-    }
-  }
+  static var emptyDescriptor: MM4RigidBodyDescriptor {
+    var paramsDesc = MM4ParametersDescriptor()
+    paramsDesc.atomicNumbers = []
+    paramsDesc.bonds = []
+    let params = try! MM4Parameters(descriptor: paramsDesc)
     
-  let rigidBody3 = rigidBody1
-  do {
-    let momentum1 = SIMD3<Double>.random(in: -0.2...0.2)
-    rigidBody1.linearMomentum = momentum1
-    XCTAssertEqual(
-      (parameters.atoms.count > 0) ? momentum1 : .zero,
-      rigidBody1.linearMomentum, accuracy: 1e-3)
-    
-    XCTAssertEqual(.zero, rigidBody2.linearMomentum, accuracy: 1e-3)
-    XCTAssertEqual(.zero, rigidBody3.linearMomentum, accuracy: 1e-3)
-    if parameters.atoms.count > 0 {
-      XCTAssertNotEqual(rigidBody1.linearMomentum, rigidBody2.linearMomentum)
-      XCTAssertNotEqual(rigidBody1.linearMomentum, rigidBody3.linearMomentum)
-    }
-    XCTAssertEqual(rigidBody2.linearMomentum, rigidBody3.linearMomentum)
-  }
-  
-  do {
-    XCTAssertEqual(rigidBody1.centerOfMass, rigidBody3.centerOfMass)
-    if parameters.atoms.count > 0 {
-      XCTAssertNotEqual(rigidBody2.centerOfMass, rigidBody3.centerOfMass)
-    }
-    for i in parameters.atoms.indices {
-      let original = descriptor.positions![i]
-      let modified = original + SIMD3<Float>(delta2)
-      XCTAssertEqual(rigidBody1.positions[i], original, accuracy: 1e-3)
-      XCTAssertEqual(rigidBody2.positions[i], modified, accuracy: 1e-3)
-      XCTAssertEqual(rigidBody3.positions[i], original, accuracy: 1e-3)
-    }
-  }
-  
-  var rigidBody4 = rigidBody3
-  do {
-    let velocity4 = SIMD3<Double>.random(in: -0.2...0.2)
-    rigidBody4.linearMomentum = velocity4 * rigidBody4.mass
-    for i in parameters.atoms.indices {
-      XCTAssertEqual(rigidBody3.velocities[i], .zero, accuracy: 1e-5)
-      XCTAssertEqual(rigidBody4.velocities[i], SIMD3(velocity4), accuracy: 1e-5)
-    }
-    XCTAssertEqual(.zero, rigidBody3.linearMomentum, accuracy: 1e-5)
-    XCTAssertEqual(
-      (parameters.atoms.count > 0) ? velocity4 : .zero,
-      rigidBody4.linearMomentum / rigidBody4.mass,
-      accuracy: 1e-5)
+    var rigidBodyDesc = MM4RigidBodyDescriptor()
+    rigidBodyDesc.parameters = params
+    rigidBodyDesc.positions = []
+    return rigidBodyDesc
   }
 }
 
