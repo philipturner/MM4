@@ -5,11 +5,6 @@ import MM4
 
 final class MM4RigidBodyTests: XCTestCase {
   
-  // TODO: Test the rotate() function.
-  //
-  // After adding the test for rotate(), this should be ready to merge into the
-  // main branch.
-  
   func testInertia() throws {
     for descriptor in MM4RigidBodyTests.descriptors {
       // Assert that all quantities are equal within 1e-3 tolerance. This is an
@@ -133,12 +128,21 @@ final class MM4RigidBodyTests: XCTestCase {
       }
     }
   }
+  
+  func testRotate() throws {
+    for descriptor in MM4RigidBodyTests.descriptors {
+      
+    }
+  }
 }
 
 // MARK: - Descriptors
 
 extension MM4RigidBodyTests {
-  static var descriptors: [MM4RigidBodyDescriptor] {
+  // Lazily cache this property because reinitializing the MM4Parameters takes
+  // a long time in debug mode (0.087 seconds -> 0.300 seconds for the entire
+  // test suite).
+  static let descriptors: [MM4RigidBodyDescriptor] = {
     var output: [MM4RigidBodyDescriptor] = []
     for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
       let adamantane = Adamantane(atomCode: atomCode)
@@ -154,7 +158,7 @@ extension MM4RigidBodyTests {
       output.append(rigidBodyDesc)
     }
     return output
-  }
+  }()
   
   static var emptyDescriptor: MM4RigidBodyDescriptor {
     var paramsDesc = MM4ParametersDescriptor()

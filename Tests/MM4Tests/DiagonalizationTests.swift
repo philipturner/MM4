@@ -13,6 +13,7 @@ import MM4
 
 #if DEBUG
 final class DiagonalizationTests: XCTestCase {
+  
   func testFactorCubicPolynomial() throws {
     do {
       let coefficients: SIMD4<Double> = [1, -6, 11, -6]

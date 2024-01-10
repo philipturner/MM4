@@ -20,6 +20,19 @@ typealias MM4UInt16Vector = SIMD4<UInt16>
 typealias MM4UInt32Vector = SIMD4<UInt32>
 typealias MM4UInt64Vector = SIMD4<UInt64>
 
+// MARK: - Parallel Dot Product
+
+// Measure the similarity between the vector and the scalars.
+@_transparent
+func dot(
+  vector: SIMD3<Float>,
+  scalars: (MM4FloatVector, MM4FloatVector, MM4FloatVector)
+) -> MM4FloatVector {
+  vector.x * scalars.0 +
+  vector.y * scalars.1 +
+  vector.z * scalars.2
+}
+
 // MARK: - Looping Over Vectors
 
 extension MM4RigidBodyStorage {
@@ -88,17 +101,4 @@ extension MM4RigidBodyStorage {
       closure(loopStart..<loopEnd)
     }
   }
-}
-
-// MARK: - Parallel Dot Product
-
-// Measure the similarity between the eigenvector and the scalars.
-@_transparent
-func dot(
-  vector: SIMD3<Float>,
-  scalars: (MM4FloatVector, MM4FloatVector, MM4FloatVector)
-) -> MM4FloatVector {
-  vector.x * scalars.0 +
-  vector.y * scalars.1 +
-  vector.z * scalars.2
 }
