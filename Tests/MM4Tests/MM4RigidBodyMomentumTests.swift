@@ -138,16 +138,37 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
         rigidBody.forces = forces
         XCTAssertNotNil(rigidBody.forces)
         XCTAssertEqual(rigidBody.forces, forces)
+        XCTAssertNotNil(rigidBody.netForce)
+        XCTAssertNotNil(rigidBody.netTorque)
+        
+        if zeroForces {
+          XCTAssertEqual(rigidBody.netForce, SIMD3<Double>.zero)
+          XCTAssertEqual(rigidBody.netTorque, SIMD3<Double>.zero)
+          rigidBody.centerOfMass.y += 0.001
+        } else {
+          XCTAssertNotEqual(rigidBody.netForce, SIMD3<Double>.zero)
+          XCTAssertNotEqual(rigidBody.netTorque, SIMD3<Double>.zero)
+          rigidBody.rotate(angle: 0.001, axis: [0, 1, 0])
+        }
+        XCTAssertNil(rigidBody.forces)
+        XCTAssertNil(rigidBody.netForce)
+        XCTAssertNil(rigidBody.netTorque)
       }
     }
   }
   
   func testNetForce() throws {
     // TODO
+    
+    // One specific, manual test case where force is computed beforehand in a
+    // calculator.
   }
   
   func testNetTorque() throws {
     // TODO
+    
+    // One specific, manual test case where force is computed beforehand in a
+    // calculator. Also, transformed from world space to the reference frame.
   }
 }
 
