@@ -2,8 +2,6 @@
 
 Molecular Mechanics force field, version 4. The simulator used to create _Nanosystems (1992)_, but updated with modern ab initio parameters.
 
-Molecular mechanics simulator for molecular nanotechnology. The simulator offloads force computations to the GPU. It also contains high-performance CPU primitives for rigid body mechanics.
-
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
 ### Atoms
