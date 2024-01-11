@@ -57,8 +57,7 @@ class MM4Force {
       print("- added a force")
       force.forceGroup = forceGroup
     }
-//    self.forces = activeForces
-    self.forces = []
+    self.forces = activeForces
     self.forceGroup = forceGroup
   }
   
@@ -68,7 +67,8 @@ class MM4Force {
   
   func addForces(to system: OpenMM_System) {
     for force in forces {
-      system.addForce(force)
+//      force.transfer()
+//      system.addForce(force)
     }
   }
 }
