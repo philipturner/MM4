@@ -48,18 +48,15 @@ class MM4Force {
   /// The OpenMM objects containing the forces.
   var forces: [OpenMM_Force]
   
-  /// Whether each force contains any particles.
-  var forcesActive: [Bool]
-  
   /// How many times to evaluate this force per timestep.
   var forceGroup: Int
   
-  init(forces: [OpenMM_Force], forcesActive: [Bool], forceGroup: Int) {
-    for force in forces {
+  init(forces: [OpenMM_Force?], forceGroup: Int) {
+    let activeForces = forces.compactMap { $0 }
+    for force in activeForces {
       force.forceGroup = forceGroup
     }
-    self.forces = forces
-    self.forcesActive = forcesActive
+    self.forces = activeForces
     self.forceGroup = forceGroup
   }
   
@@ -68,7 +65,7 @@ class MM4Force {
   }
   
   func addForces(to system: OpenMM_System) {
-    for (force, forceActive) in zip(forces, forcesActive) where forceActive {
+    for force in forces {
       system.addForce(force)
     }
   }

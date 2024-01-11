@@ -59,6 +59,17 @@ class MM4ElectrostaticForce: MM4Force {
   }
   
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeElectrostatic = false
+    for params in system.parameters.atoms.parameters {
+      if params.charge != 0 {
+        includeElectrostatic = true
+      }
+    }
+    guard includeElectrostatic else {
+      super.init(forces: [], forceGroup: 2)
+      return
+    }
+    
     // Minimized code from OpenMM reaction field kernel. Note that the r^-3
     // scaling force term becomes r^-2 in the calling kernel.
     /*
@@ -87,7 +98,6 @@ class MM4ElectrostaticForce: MM4Force {
     force.nonbondedMethod = .cutoffNonPeriodic
     force.cutoffDistance = Double(descriptor.cutoffDistance)
     
-    var forceActive = false
     let array = OpenMM_DoubleArray(size: 1)
     let atoms = system.parameters.atoms
     for atomID in system.originalIndices {
@@ -96,13 +106,10 @@ class MM4ElectrostaticForce: MM4Force {
       // Units: elementary charge
       array[0] = Double(parameters.charge)
       force.addParticle(parameters: array)
-      if parameters.charge != 0 {
-        forceActive = true
-      }
     }
     
     system.createExceptions(force: force)
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 1)
   }
 }
 
@@ -191,6 +198,20 @@ class MM4ElectrostaticForce: MM4Force {
 /// charge interactions to "undo" the regular electrostatic force.
 class MM4ElectrostaticExceptionForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeElectrostaticException = false
+    for params in system.parameters.atoms.parameters {
+      if params.charge != 0 {
+        includeElectrostaticException = true
+      }
+    }
+    if system.parameters.nonbondedExceptions14.count == 0 {
+      includeElectrostaticException = false
+    }
+    guard includeElectrostaticException else {
+      super.init(forces: [], forceGroup: 2)
+      return
+    }
+    
     // Equation for dipole-dipole interaction:
     // https://janheyda.files.wordpress.com/2015/08/electrostatics-multipoles.pdf
     //
@@ -259,7 +280,6 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     #endif
     force.addPerBondParameter(name: "dipoleDipoleProduct")
     force.addPerBondParameter(name: "chargeChargeProduct")
-    var forceActive = false
     
     // Collect all the torsions that exist between a 1,4 pair.
     var pairsToTorsionsMap: [SIMD2<UInt32>: SIMD8<Int32>] = [:]
@@ -374,10 +394,9 @@ class MM4ElectrostaticExceptionForce: MM4Force {
             particles[lane] = reordered[lane]
           }
           force.addBond(particles: particles, parameters: array)
-          forceActive = true
         }
       }
     }
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 1)
   }
 }

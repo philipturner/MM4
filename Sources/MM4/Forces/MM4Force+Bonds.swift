@@ -20,15 +20,18 @@ class MM4StretchForce: MM4Force {
     // decreases the absolute value of total potential energy by multiple orders
     // of magnitude. Relative differences between different energies are
     // unchanged.
-    let force = OpenMM_CustomBondForce(energy: """
-      potentialWellDepth * (
-        1 - exp(-beta * (r - equilibriumLength))
-      )^2;
-      """)
-    force.addPerBondParameter(name: "potentialWellDepth")
-    force.addPerBondParameter(name: "beta")
-    force.addPerBondParameter(name: "equilibriumLength")
-    var forceActive = false
+    func createForce() -> OpenMM_CustomBondForce {
+      let force = OpenMM_CustomBondForce(energy: """
+        potentialWellDepth * (
+          1 - exp(-beta * (r - equilibriumLength))
+        )^2;
+        """)
+      force.addPerBondParameter(name: "potentialWellDepth")
+      force.addPerBondParameter(name: "beta")
+      force.addPerBondParameter(name: "equilibriumLength")
+      return force
+    }
+    var force: OpenMM_CustomBondForce!
     
     let array = OpenMM_DoubleArray(size: 3)
     let bonds = system.parameters.bonds
@@ -68,9 +71,12 @@ class MM4StretchForce: MM4Force {
       array[0] = potentialWellDepth
       array[1] = beta
       array[2] = equilibriumLength
+      
+      if force == nil {
+        force = createForce()
+      }
       force.addBond(particles: particles, parameters: array)
-      forceActive = true
     }
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 2)
+    super.init(forces: [force], forceGroup: 2)
   }
 }
