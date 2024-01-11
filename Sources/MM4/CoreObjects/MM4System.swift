@@ -44,7 +44,7 @@ extension MM4System {
   func reorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
     var output: SIMD2<UInt32> = .zero
     for i in 0..<indices.scalarCount {
-      output[i] = reorderedIndices[Int(output[i])]
+      output[i] = reorderedIndices[Int(indices[i])]
     }
     return SIMD2(truncatingIfNeeded: output)
   }
@@ -53,7 +53,7 @@ extension MM4System {
   func reorder(_ indices: SIMD3<UInt32>) -> SIMD3<Int> {
     var output: SIMD3<UInt32> = .zero
     for i in 0..<indices.scalarCount {
-      output[i] = reorderedIndices[Int(output[i])]
+      output[i] = reorderedIndices[Int(indices[i])]
     }
     return SIMD3(truncatingIfNeeded: output)
   }
@@ -62,7 +62,7 @@ extension MM4System {
   func reorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
     var output: SIMD4<UInt32> = .zero
     for i in 0..<indices.scalarCount {
-      output[i] = reorderedIndices[Int(output[i])]
+      output[i] = reorderedIndices[Int(indices[i])]
     }
     return SIMD4(truncatingIfNeeded: output)
   }
