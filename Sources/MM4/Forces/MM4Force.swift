@@ -121,6 +121,6 @@ class MM4Forces {
 //    bend.addForces(to: system)
 //    bendBend.addForces(to: system)
 //    bendExtended.addForces(to: system)
-//    stretch.addForces(to: system)
+    stretch.addForces(to: system)
   }
 }
