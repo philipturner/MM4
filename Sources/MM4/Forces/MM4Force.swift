@@ -111,8 +111,8 @@ class MM4Forces {
     // Force Group 1
 //    electrostatic.addForces(to: system)
 //    electrostaticException.addForces(to: system)
-    external.addForces(to: system)
-//    nonbonded.addForces(to: system)
+//    external.addForces(to: system)
+    nonbonded.addForces(to: system)
 //    nonbondedException.addForces(to: system)
 //    torsion.addForces(to: system)
 //    torsionExtended.addForces(to: system)
@@ -121,6 +121,6 @@ class MM4Forces {
 //    bend.addForces(to: system)
 //    bendBend.addForces(to: system)
 //    bendExtended.addForces(to: system)
-    stretch.addForces(to: system)
+//    stretch.addForces(to: system)
   }
 }
