@@ -65,8 +65,8 @@ extension MM4System {
       let indices = self.virtualSiteReorder(particles)
       force.addExclusion(particles: indices)
       
-      let atomicNumber0 = parameters.atoms.atomicNumbers[indices[0]]
-      let atomicNumber1 = parameters.atoms.atomicNumbers[indices[1]]
+      let atomicNumber0 = parameters.atoms.atomicNumbers[Int(particles[0])]
+      let atomicNumber1 = parameters.atoms.atomicNumbers[Int(particles[1])]
       if atomicNumber0 == 1 {
         var copy = indices
         copy[0] &+= 1
