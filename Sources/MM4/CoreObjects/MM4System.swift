@@ -23,6 +23,9 @@ class MM4System {
   /// The backing OpenMM system object.
   var system: OpenMM_System
   
+  /// The number of virtual sites in the system.
+  var virtualSiteCount: Int = 0
+  
   init(parameters: MM4Parameters, descriptor: MM4ForceFieldDescriptor) {
     // Initialize base properties.
     self.system = OpenMM_System()

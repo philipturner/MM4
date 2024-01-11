@@ -9,13 +9,12 @@ import OpenMM
 
 extension MM4System {
   func createReorderedIndices() {
-    var particleCount = 0
     for atomID in parameters.atoms.indices {
-      reorderedIndices.append(UInt32(truncatingIfNeeded: particleCount))
-      particleCount += 1
+      let reorderedID = atomID + virtualSiteCount
+      reorderedIndices.append(UInt32(truncatingIfNeeded: reorderedID))
       
       if parameters.atoms.atomicNumbers[atomID] == 1 {
-        particleCount += 1
+        virtualSiteCount += 1
       }
     }
   }
