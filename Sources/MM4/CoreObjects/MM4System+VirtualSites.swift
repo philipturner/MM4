@@ -12,9 +12,11 @@ extension MM4System {
     var particleCount = 0
     for atomID in parameters.atoms.indices {
       reorderedIndices.append(UInt32(truncatingIfNeeded: particleCount))
+      print("\(atomID)/\(particleCount): not virtual site")
       particleCount += 1
       
       if parameters.atoms.atomicNumbers[atomID] == 1 {
+        print("\(atomID)/\(particleCount): virtual site")
         particleCount += 1
       }
     }
@@ -33,7 +35,10 @@ extension MM4System {
   }
   
   func createVirtualSites() {
+    var particleCount = 0
     for hydrogenID in parameters.atoms.indices {
+      print("\(hydrogenID)/\(particleCount): not virtual site")
+      particleCount += 1
       guard parameters.atoms.atomicNumbers[hydrogenID] == 1 else {
         continue
       }
@@ -56,6 +61,8 @@ extension MM4System {
       let virtualSite = OpenMM_TwoParticleAverageSite(
         particles: reordered, weights: weights)
       let virtualSiteID = reordered[1] &+ 1
+      print("\(hydrogenID)/\(virtualSiteID): virtual site - \(reordered)")
+      particleCount += 1
       system.setVirtualSite(virtualSite, index: Int(virtualSiteID))
     }
   }
