@@ -78,7 +78,7 @@ public struct MM4TorsionParameters {
   /// > WARNING: Convert kcal/mol to kJ/mol.
   public var V3: Float
   
-  /// The factor to multiply the angle with inside the cosine term for Vn.
+  /// The factor to multiply the angle with, inside the cosine term for Vn.
   ///
   /// The value of `n` is most often 2. It must be an even integer.
   public var n: Float
