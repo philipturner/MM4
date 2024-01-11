@@ -150,8 +150,8 @@ class MM4NonbondedForce: MM4Force {
       
       // Units: kcal/mol -> kJ/mol
       let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      array[0] = Double(epsilon) * OpenMM_KJPerKcal
-      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal
+      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       
       // Units: angstrom -> nm
       let (radius, hydrogenRadius) = parameters.radius
