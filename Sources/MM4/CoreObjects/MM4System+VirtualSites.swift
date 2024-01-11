@@ -61,15 +61,6 @@ extension MM4System {
 
 extension MM4System {
   func createExceptions(force: OpenMM_CustomNonbondedForce) {
-//    for bond in parameters.bonds.indices {
-//      let reordered = SIMD2<Int>(truncatingIfNeeded: bond)
-//      force.addExclusion(particles: reordered)
-//    }
-//    for exception in parameters.nonbondedExceptions13 {
-//      let reordered = SIMD2<Int>(truncatingIfNeeded: exception)
-//      force.addExclusion(particles: reordered)
-//    }
-    
     func addExclusion(particles: SIMD2<UInt32>) {
       let indices = self.reorder(particles)
       force.addExclusion(particles: indices)
