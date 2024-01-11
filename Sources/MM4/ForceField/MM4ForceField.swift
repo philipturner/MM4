@@ -87,23 +87,8 @@ public class MM4ForceField {
       fatalError("No force field parameters were specified.")
     }
     
-    let checkpoint0 = cross_platform_media_time()
-    
-    let checkpoint1 = cross_platform_media_time()
-    
     system = MM4System(parameters: parameters, descriptor: descriptor)
-    
-    let checkpoint2 = cross_platform_media_time()
-    
     context = MM4Context(system: system, platform: descriptor.platform)
-    
-    let checkpoint3 = cross_platform_media_time()
-    
-    print("startup latency report:")
-    print("-", checkpoint1 - checkpoint0)
-    print("-", checkpoint2 - checkpoint1)
-    print("-", checkpoint3 - checkpoint2)
-    
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
     _energy = MM4ForceFieldEnergy(forceField: self)

@@ -66,7 +66,6 @@ class MM4Force {
   
   func addForces(to system: OpenMM_System) {
     for force in forces {
-      print("- added a force")
       force.transfer()
       system.addForce(force)
     }
@@ -109,18 +108,18 @@ class MM4Forces {
   
   func addForces(to system: OpenMM_System) {
     // Force Group 1
-//    electrostatic.addForces(to: system)
-//    electrostaticException.addForces(to: system)
-//    external.addForces(to: system)
+    electrostatic.addForces(to: system)
+    electrostaticException.addForces(to: system)
+    external.addForces(to: system)
     nonbonded.addForces(to: system)
-//    nonbondedException.addForces(to: system)
-//    torsion.addForces(to: system)
-//    torsionExtended.addForces(to: system)
+    nonbondedException.addForces(to: system)
+    torsion.addForces(to: system)
+    torsionExtended.addForces(to: system)
     
     // Force Group 2
-//    bend.addForces(to: system)
-//    bendBend.addForces(to: system)
-//    bendExtended.addForces(to: system)
-//    stretch.addForces(to: system)
+    bend.addForces(to: system)
+    bendBend.addForces(to: system)
+    bendExtended.addForces(to: system)
+    stretch.addForces(to: system)
   }
 }

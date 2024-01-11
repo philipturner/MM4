@@ -66,27 +66,34 @@ class MM4NonbondedForce: MM4Force {
     force.addPerParticleParameter(name: "hydrogenRadius")
     
     force.nonbondedMethod = .noCutoff
-//    force.nonbondedMethod = .cutoffNonPeriodic
-//    force.useSwitchingFunction = true
-//    force.cutoffDistance = Double(descriptor.cutoffDistance)
-//    force.switchingDistance = Double(
-//      descriptor.cutoffDistance * pow(1.0 / 3, 1.0 / 6))
+    force.nonbondedMethod = .cutoffNonPeriodic
+    force.useSwitchingFunction = true
+    force.cutoffDistance = Double(descriptor.cutoffDistance)
+    force.switchingDistance = Double(
+      descriptor.cutoffDistance * pow(1.0 / 3, 1.0 / 6))
     
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
-    for atomID in system.originalIndices {
+    for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
+      
+      // Units: angstrom -> nm
+      let (radius, hydrogenRadius) = parameters.radius
+      array[2] = Double(radius) * OpenMM_NmPerAngstrom
+      array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
+      
+      // Give the original hydrogens zero vdW energy.
+      if atoms.atomicNumbers[atomID] == 1 {
+        array[0] = 0
+        array[1] = 0
+        force.addParticle(parameters: array)
+      }
       
       // Units: kcal/mol -> kJ/mol
       //          kJ/mol -> zJ
       let (epsilon, hydrogenEpsilon) = parameters.epsilon
       array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      
-      // Units: angstrom -> nm
-      let (radius, hydrogenRadius) = parameters.radius
-      array[2] = Double(radius) * OpenMM_NmPerAngstrom
-      array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
       force.addParticle(parameters: array)
     }
     

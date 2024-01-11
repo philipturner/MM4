@@ -14,9 +14,6 @@ class MM4System {
   /// The forces used by the system.
   var forces: MM4Forces!
   
-  /// Map from reordered indices to original indices.
-  var originalIndices: [UInt32] = []
-  
   /// The location where the parameters are owned.
   var parameters: MM4Parameters
   
@@ -25,12 +22,6 @@ class MM4System {
   
   /// The backing OpenMM system object.
   var system: OpenMM_System
-  
-  /// The number of virtual sites.
-  var virtualSiteCount: Int = 0
-  
-  /// Whether each atom is a virtual site.
-  var virtualSiteMask: [Bool] = []
   
   init(parameters: MM4Parameters, descriptor: MM4ForceFieldDescriptor) {
     // Initialize base properties.
@@ -41,7 +32,6 @@ class MM4System {
     self.createReorderedIndices()
     self.createMasses()
     self.createVirtualSites()
-    self.createVirtualSiteMask()
     
     // Create force objects.
     self.forces = MM4Forces(system: self, descriptor: descriptor)

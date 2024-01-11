@@ -100,8 +100,14 @@ class MM4ElectrostaticForce: MM4Force {
     
     let array = OpenMM_DoubleArray(size: 1)
     let atoms = system.parameters.atoms
-    for atomID in system.originalIndices {
+    for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
+      
+      // Give the original hydrogens zero charge.
+      if atoms.atomicNumbers[atomID] == 1 {
+        array[0] = 0
+        force.addParticle(parameters: array)
+      }
       
       // Units: elementary charge
       array[0] = Double(parameters.charge)
