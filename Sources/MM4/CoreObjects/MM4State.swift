@@ -66,6 +66,10 @@ extension MM4ForceField {
   /// `positions`, `velocities`, or either of the energies in isolation.
   /// However, the API is less expressive.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
+    if updateRecord.active() {
+      flushUpdateRecord()
+    }
+    
     var dataTypes: OpenMM_State.DataType = []
     if descriptor.energy {
       dataTypes = [dataTypes, .energy]
