@@ -16,8 +16,8 @@ class MM4Context {
   init(system: MM4System, platform: OpenMM_Platform?) {
     self.compoundIntegrator = OpenMM_CompoundIntegrator()
     
-    for start in [false, true] {
-      for end in [false, true] {
+    for start in [true] {
+      for end in [true] {
         var descriptor = MM4IntegratorDescriptor()
         descriptor.start = start
         descriptor.end = end

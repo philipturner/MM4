@@ -89,14 +89,6 @@ public class MM4ForceField {
     
     let checkpoint0 = cross_platform_media_time()
     
-    // Load available plugins before doing anything that might require them.
-    guard let directory = OpenMM_Platform.defaultPluginsDirectory else {
-      fatalError("Could not load OpenMM plugins directory.")
-    }
-    guard OpenMM_Platform.loadPlugins(directory: directory) != nil else {
-      fatalError("Could not load OpenMM plugins.")
-    }
-    
     let checkpoint1 = cross_platform_media_time()
     
     system = MM4System(parameters: parameters, descriptor: descriptor)
