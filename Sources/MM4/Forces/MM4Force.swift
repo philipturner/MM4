@@ -54,7 +54,6 @@ class MM4Force {
   init(forces: [OpenMM_Force?], forceGroup: Int) {
     let activeForces = forces.compactMap { $0 }
     for force in activeForces {
-      print("- added a force")
       force.forceGroup = forceGroup
     }
     self.forces = activeForces
@@ -67,8 +66,9 @@ class MM4Force {
   
   func addForces(to system: OpenMM_System) {
     for force in forces {
-//      force.transfer()
-//      system.addForce(force)
+      print("- added a force")
+      force.transfer()
+      system.addForce(force)
     }
   }
 }
@@ -109,18 +109,18 @@ class MM4Forces {
   
   func addForces(to system: OpenMM_System) {
     // Force Group 1
-    electrostatic.addForces(to: system)
-    electrostaticException.addForces(to: system)
+//    electrostatic.addForces(to: system)
+//    electrostaticException.addForces(to: system)
     external.addForces(to: system)
-    nonbonded.addForces(to: system)
-    nonbondedException.addForces(to: system)
-    torsion.addForces(to: system)
-    torsionExtended.addForces(to: system)
+//    nonbonded.addForces(to: system)
+//    nonbondedException.addForces(to: system)
+//    torsion.addForces(to: system)
+//    torsionExtended.addForces(to: system)
     
     // Force Group 2
-    bend.addForces(to: system)
-    bendBend.addForces(to: system)
-    bendExtended.addForces(to: system)
-    stretch.addForces(to: system)
+//    bend.addForces(to: system)
+//    bendBend.addForces(to: system)
+//    bendExtended.addForces(to: system)
+//    stretch.addForces(to: system)
   }
 }
