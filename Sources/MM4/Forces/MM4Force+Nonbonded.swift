@@ -57,6 +57,7 @@ class MM4NonbondedForce: MM4Force {
     // minimum of the vdW well is ~0.1 zJ, the crossover with the clamped region
     // occurs on the scale of attojoules. This can be seen by changing the 1000x
     // multiplier for every equation to 1x.
+    /*
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
         -2.25 * (min(2, radius / r))^6 +
@@ -88,6 +89,12 @@ class MM4NonbondedForce: MM4Force {
     for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
       
+      // Units: kcal/mol -> kJ/mol
+      //          kJ/mol -> zJ
+      let (epsilon, hydrogenEpsilon) = parameters.epsilon
+      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+      
       // Units: angstrom -> nm
       let (radius, hydrogenRadius) = parameters.radius
       array[2] = Double(radius) * OpenMM_NmPerAngstrom
@@ -99,16 +106,62 @@ class MM4NonbondedForce: MM4Force {
 //        array[1] = 0
 //        force.addParticle(parameters: array)
 //      }
-      
-      // Units: kcal/mol -> kJ/mol
-      //          kJ/mol -> zJ
-      let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       force.addParticle(parameters: array)
     }
-    system.createExceptions(force: force)
-    super.init(forces: [force], forceGroup: 1)
+    */
+    
+    var cutoff: Double {
+      // Since germanium will rarely be used, use the cutoff for silicon. The
+      // slightly greater sigma for carbon allows greater accuracy in vdW forces
+      // for bulk diamond. 1.020 nm also accomodates charge-charge interactions.
+//      let siliconRadius = 2.290 * OpenMM_NmPerAngstrom
+//      return siliconRadius * 2.5 * OpenMM_SigmaPerVdwRadius
+      return 1.0
+    }
+    
+    let nonbondedForce = OpenMM_CustomNonbondedForce(energy: """
+      epsilon * (
+        -2.25 * (min(2, radius / r))^6 +
+        1.84e5 * exp(-12.00 * (r / radius))
+      );
+      epsilon = select(isHydrogenBond, heteroatomEpsilon, hydrogenEpsilon);
+      radius = select(isHydrogenBond, heteroatomRadius, hydrogenRadius);
+      
+      isHydrogenBond = step(hydrogenEpsilon1 * hydrogenEpsilon2);
+      heteroatomEpsilon = sqrt(epsilon1 * epsilon2);
+      hydrogenEpsilon = max(hydrogenEpsilon1, hydrogenEpsilon2);
+      heteroatomRadius = radius1 + radius2;
+      hydrogenRadius = max(hydrogenRadius1, hydrogenRadius2);
+      """)
+    nonbondedForce.addPerParticleParameter(name: "epsilon")
+    nonbondedForce.addPerParticleParameter(name: "hydrogenEpsilon")
+    nonbondedForce.addPerParticleParameter(name: "radius")
+    nonbondedForce.addPerParticleParameter(name: "hydrogenRadius")
+    
+    nonbondedForce.nonbondedMethod = .cutoffNonPeriodic
+    nonbondedForce.useSwitchingFunction = true
+    nonbondedForce.cutoffDistance = cutoff
+    nonbondedForce.switchingDistance = cutoff * pow(1.0 / 3, 1.0 / 6)
+    
+    let array = OpenMM_DoubleArray(size: 4)
+    let atoms = system.parameters.atoms
+    for atomID in system.parameters.atoms.indices {
+      let parameters = atoms.parameters[Int(atomID)]
+      
+      // Units: kcal/mol -> kJ/mol
+      let (epsilon, hydrogenEpsilon) = parameters.epsilon
+      array[0] = Double(epsilon) * OpenMM_KJPerKcal
+      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal
+      
+      // Units: angstrom -> nm
+      let (radius, hydrogenRadius) = parameters.radius
+      array[2] = Double(radius) * OpenMM_NmPerAngstrom
+      array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
+      nonbondedForce.addParticle(parameters: array)
+    }
+    
+    system.createExceptions(force: nonbondedForce)
+    super.init(forces: [nonbondedForce], forceGroup: 1)
   }
 }
 
