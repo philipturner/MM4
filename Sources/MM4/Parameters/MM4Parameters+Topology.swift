@@ -144,8 +144,8 @@ extension MM4Parameters {
     let torsionCounts =  UnsafeMutablePointer<UInt16>(
       OpaquePointer(torsionAtomics))
     
-    angleCounts.initialize(repeating: .zero, count: atoms.count)
-    torsionCounts.initialize(repeating: .zero, count: atoms.count)
+    angleCounts.initialize(repeating: .zero, count: angleCapacity)
+    torsionCounts.initialize(repeating: .zero, count: torsionCapacity)
     defer {
       angleAtomics.deallocate()
       angleBuckets.deallocate()
@@ -333,26 +333,30 @@ extension MM4Parameters {
     }
     
     for atomID in atoms.indices {
-      var angleBucket = UnsafeMutableBufferPointer(
-        start: angleBuckets.advanced(by: 6 &* atomID),
-        count: Int(angleCounts[atomID]))
-      angleBucket.sort(by: { x, y in
-        if x[0] != y[0] { return x[0] < y[0] }
-        if x[2] != y[2] { return x[2] < y[2] }
-        return true
-      })
-      angles.indices += angleBucket
+      if includeAngles {
+        var angleBucket = UnsafeMutableBufferPointer(
+          start: angleBuckets.advanced(by: 6 &* atomID),
+          count: Int(angleCounts[atomID]))
+        angleBucket.sort(by: { x, y in
+          if x[0] != y[0] { return x[0] < y[0] }
+          if x[2] != y[2] { return x[2] < y[2] }
+          return true
+        })
+        angles.indices += angleBucket
+      }
       
-      var torsionBucket = UnsafeMutableBufferPointer(
-        start: torsionBuckets.advanced(by: 36 &* atomID),
-        count: Int(torsionCounts[atomID]))
-      torsionBucket.sort(by: { x, y in
-        if x[2] != y[2] { return x[2] < y[2] }
-        if x[0] != y[0] { return x[0] < y[0] }
-        if x[3] != y[3] { return x[3] < y[3] }
-        return true
-      })
-      torsions.indices += torsionBucket
+      if includeTorsions {
+        var torsionBucket = UnsafeMutableBufferPointer(
+          start: torsionBuckets.advanced(by: 36 &* atomID),
+          count: Int(torsionCounts[atomID]))
+        torsionBucket.sort(by: { x, y in
+          if x[2] != y[2] { return x[2] < y[2] }
+          if x[0] != y[0] { return x[0] < y[0] }
+          if x[3] != y[3] { return x[3] < y[3] }
+          return true
+        })
+        torsions.indices += torsionBucket
+      }
     }
     
     rings.indices = ringsMap.keys.map { $0 }
