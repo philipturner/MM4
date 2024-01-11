@@ -61,13 +61,47 @@ extension MM4System {
 
 extension MM4System {
   func createExceptions(force: OpenMM_CustomNonbondedForce) {
+    func addExclusion(particles indices: SIMD2<Int>) {
+      force.addExclusion(particles: indices)
+      
+      let atomicNumber0 = parameters.atoms.atomicNumbers[indices[0]]
+      let atomicNumber1 = parameters.atoms.atomicNumbers[indices[1]]
+      if atomicNumber0 == 1 && atomicNumber1 == 1 {
+        fatalError("Catching edge case.")
+      }
+      
+      if atomicNumber0 == 1 {
+        var copy = indices
+        copy[0] &+= 1
+        force.addExclusion(particles: copy)
+      }
+      if atomicNumber1 == 1 {
+        var copy = indices
+        copy[1] &+= 1
+        force.addExclusion(particles: copy)
+      }
+    }
+    
+    
     for bond in parameters.bonds.indices {
       let reordered = self.virtualSiteReorder(bond)
-      force.addExclusion(particles: reordered)
+      addExclusion(particles: reordered)
     }
     for exception in parameters.nonbondedExceptions13 {
       let reordered = self.virtualSiteReorder(exception)
-      force.addExclusion(particles: reordered)
+      addExclusion(particles: reordered)
+    }
+    
+    // Stop the virtual sites from interfering with themselves.
+    for atomID in parameters.atoms.indices {
+      let atomicNumber = parameters.atoms.atomicNumbers[atomID]
+      guard atomicNumber == 1 else {
+        continue
+      }
+      
+      let reordered = Int(self.reorderedIndices[atomID])
+      let exclusion = SIMD2(reordered, reordered &+ 1)
+      force.addExclusion(particles: exclusion)
     }
   }
   
