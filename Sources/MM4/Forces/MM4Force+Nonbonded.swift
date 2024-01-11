@@ -57,7 +57,7 @@ class MM4NonbondedForce: MM4Force {
     // minimum of the vdW well is ~0.1 zJ, the crossover with the clamped region
     // occurs on the scale of attojoules. This can be seen by changing the 1000x
     // multiplier for every equation to 1x.
-    /*
+    
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
         -2.25 * (min(2, radius / r))^6 +
@@ -89,12 +89,6 @@ class MM4NonbondedForce: MM4Force {
     for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
       
-      // Units: kcal/mol -> kJ/mol
-      //          kJ/mol -> zJ
-      let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      
       // Units: angstrom -> nm
       let (radius, hydrogenRadius) = parameters.radius
       array[2] = Double(radius) * OpenMM_NmPerAngstrom
@@ -106,10 +100,17 @@ class MM4NonbondedForce: MM4Force {
 //        array[1] = 0
 //        force.addParticle(parameters: array)
 //      }
+      
+      // Units: kcal/mol -> kJ/mol
+      //          kJ/mol -> zJ
+      let (epsilon, hydrogenEpsilon) = parameters.epsilon
+      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       force.addParticle(parameters: array)
     }
-    */
     
+    
+    /*
 //    var cutoff: Double {
 //      // Since germanium will rarely be used, use the cutoff for silicon. The
 //      // slightly greater sigma for carbon allows greater accuracy in vdW forces
@@ -163,9 +164,10 @@ class MM4NonbondedForce: MM4Force {
       array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
       nonbondedForce.addParticle(parameters: array)
     }
+     */
     
-    system.createExceptions(force: nonbondedForce)
-    super.init(forces: [nonbondedForce], forceGroup: 1)
+    system.createExceptions(force: force)
+    super.init(forces: [force], forceGroup: 1)
   }
 }
 
