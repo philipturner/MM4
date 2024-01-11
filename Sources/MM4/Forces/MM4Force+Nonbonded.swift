@@ -138,10 +138,12 @@ class MM4NonbondedForce: MM4Force {
     nonbondedForce.addPerParticleParameter(name: "radius")
     nonbondedForce.addPerParticleParameter(name: "hydrogenRadius")
     
-    nonbondedForce.nonbondedMethod = .cutoffNonPeriodic
-    nonbondedForce.useSwitchingFunction = true
-    nonbondedForce.cutoffDistance = cutoff
-    nonbondedForce.switchingDistance = cutoff * pow(1.0 / 3, 1.0 / 6)
+    nonbondedForce.nonbondedMethod = .noCutoff
+    nonbondedForce.useSwitchingFunction = false
+//    nonbondedForce.nonbondedMethod = .cutoffNonPeriodic
+//    nonbondedForce.useSwitchingFunction = true
+//    nonbondedForce.cutoffDistance = cutoff
+//    nonbondedForce.switchingDistance = cutoff * pow(1.0 / 3, 1.0 / 6)
     
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
