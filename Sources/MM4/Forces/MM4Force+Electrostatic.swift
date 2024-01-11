@@ -66,7 +66,7 @@ class MM4ElectrostaticForce: MM4Force {
       }
     }
     guard includeElectrostatic else {
-      super.init(forces: [], forceGroup: 2)
+      super.init(forces: [], forceGroup: 1)
       return
     }
     
@@ -214,7 +214,7 @@ class MM4ElectrostaticExceptionForce: MM4Force {
       includeElectrostaticException = false
     }
     guard includeElectrostaticException else {
-      super.init(forces: [], forceGroup: 2)
+      super.init(forces: [], forceGroup: 1)
       return
     }
     

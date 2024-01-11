@@ -17,7 +17,7 @@ class MM4NonbondedForce: MM4Force {
       }
     }
     guard includeNonbonded else {
-      super.init(forces: [], forceGroup: 2)
+      super.init(forces: [], forceGroup: 1)
       return
     }
     
@@ -107,8 +107,6 @@ class MM4NonbondedForce: MM4Force {
       array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       force.addParticle(parameters: array)
     }
-    
-    // The nonbonded force is always initialized, even if unused.
     system.createExceptions(force: force)
     super.init(forces: [force], forceGroup: 1)
   }
@@ -122,6 +120,17 @@ class MM4NonbondedForce: MM4Force {
 /// exp(-12) term is omitted.
 class MM4NonbondedExceptionForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeNonbonded = false
+    for params in system.parameters.atoms.parameters {
+      if params.epsilon.default != 0 || params.epsilon.hydrogen != 0 {
+        includeNonbonded = true
+      }
+    }
+    guard includeNonbonded else {
+      super.init(forces: [], forceGroup: 1)
+      return
+    }
+    
     // It seems like "disfac" was the dispersion factor, similar to the DISP-14
     // keyword in Tinker. Keep the Pauli repulsion force the same though.
     func createForce() -> OpenMM_CustomBondForce {
