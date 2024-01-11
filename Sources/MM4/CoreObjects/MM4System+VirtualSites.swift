@@ -32,37 +32,37 @@ extension MM4System {
   }
   
   func createVirtualSites() {
-//    for hydrogenID in parameters.atoms.indices {
-//      guard parameters.atoms.atomicNumbers[hydrogenID] == 1 else {
-//        continue
-//      }
-//      let map = parameters.atomsToBondsMap[Int(hydrogenID)]
-//      guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
-//        fatalError("Invalid virtual site.")
-//      }
-//      
-//      let bondID = map[0]
-//      let bond = parameters.bonds.indices[Int(bondID)]
-//      let otherID = (bond[0] == hydrogenID) ? bond[1] : bond[0]
-//      
-//      let otherParameters = parameters.atoms.parameters[Int(otherID)]
-//      let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
-//      let weights = SIMD2(1 - reductionFactor, reductionFactor)
-//      
-//      let reordered = self.reorder(SIMD2(
-//        UInt32(truncatingIfNeeded: otherID),
-//        UInt32(truncatingIfNeeded: hydrogenID)))
-//      let virtualSite = OpenMM_TwoParticleAverageSite(
-//        particles: reordered, weights: weights)
-//      system.setVirtualSite(virtualSite, index: Int(reordered[1] &+ 1))
-//    }
+    for hydrogenID in parameters.atoms.indices {
+      guard parameters.atoms.atomicNumbers[hydrogenID] == 1 else {
+        continue
+      }
+      let map = parameters.atomsToBondsMap[Int(hydrogenID)]
+      guard map[0] != -1, map[1] == -1, map[2] == -1, map[3] == -1 else {
+        fatalError("Invalid virtual site.")
+      }
+      
+      let bondID = map[0]
+      let bond = parameters.bonds.indices[Int(bondID)]
+      let otherID = (bond[0] == hydrogenID) ? bond[1] : bond[0]
+      
+      let otherParameters = parameters.atoms.parameters[Int(otherID)]
+      let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
+      let weights = SIMD2(1 - reductionFactor, reductionFactor)
+      
+      let reordered = self.reorder(SIMD2(
+        UInt32(truncatingIfNeeded: otherID),
+        UInt32(truncatingIfNeeded: hydrogenID)))
+      let virtualSite = OpenMM_TwoParticleAverageSite(
+        particles: reordered, weights: weights)
+      system.setVirtualSite(virtualSite, index: Int(reordered[1] &+ 1))
+    }
   }
 }
 
 extension MM4System {
   func createExceptions(force: OpenMM_CustomNonbondedForce) {
     func addExclusion(particles: SIMD2<UInt32>) {
-      let indices = self.reorder(particles)
+      let indices = self.virtualSiteReorder(particles)
       force.addExclusion(particles: indices)
       
 //      let atomicNumber0 = parameters.atoms.atomicNumbers[Int(particles[0])]
