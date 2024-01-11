@@ -10,6 +10,17 @@ import OpenMM
 
 class MM4NonbondedForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeNonbonded = false
+    for params in system.parameters.atoms.parameters {
+      if params.epsilon.default != 0 || params.epsilon.hydrogen != 0 {
+        includeNonbonded = true
+      }
+    }
+    guard includeNonbonded else {
+      super.init(forces: [], forceGroup: 2)
+      return
+    }
+    
     // WARNING
     //
     // The hydrogens needs to be shifted toward C/Si/Ge by a factor of 0.94.
