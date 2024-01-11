@@ -90,6 +90,15 @@ class MM4BendForce: MM4Force {
     for angleID in angles.indices.indices {
       let angle = angles.indices[angleID]
       let parameters = angles.parameters[angleID]
+      guard parameters.bendingStiffness != 0 else {
+        precondition(
+          parameters.bendBendStiffness == 0,
+          "Cannot have bend-bend force without bend force.")
+        precondition(
+          parameters.stretchBendStiffness == 0,
+          "Cannot have stretch-bend force without bend force.")
+        continue
+      }
       
       // Units: millidyne-angstrom/rad^2 -> kJ/mol/rad^2
       //                    kJ/mol/rad^2 -> zJ/rad^2
@@ -212,7 +221,21 @@ class MM4BendBendForce: MM4Force {
     ]
     let atoms = system.parameters.atoms
     let angles = system.parameters.angles
+    
+    // Check whether there are any angles with a nonzero bend-bend term. If not,
+    // don't spent time checking each atom's neighbors.
+    var includeBendBend = false
+    for params in angles.parameters {
+      if params.bendBendStiffness != 0 {
+        includeBendBend = true
+      }
+    }
+    
     for atomID in atoms.indices {
+      guard includeBendBend else {
+        continue
+      }
+      
       let atomicNumber = atoms.atomicNumbers[atomID]
       var valenceCount: Int
       switch atomicNumber {
@@ -243,6 +266,7 @@ class MM4BendBendForce: MM4Force {
       }
       
       let array = parameterArrays[arrayIndex]
+      var includeParticles = false
       for i in 0..<angleCount {
         let sequence = indexSequence[i]
         var angle = SIMD3(
@@ -266,9 +290,15 @@ class MM4BendBendForce: MM4Force {
         var equilibriumAngle = Double(parameters.equilibriumAngle)
         equilibriumAngle *= OpenMM_RadiansPerDegree
         array[2 * i + 1] = equilibriumAngle
+        
+        if bendBendStiffness != 0 {
+          includeParticles = true
+        }
       }
-      forces[arrayIndex].addBond(particles: particles, parameters: array)
-      forcesActive[arrayIndex] = true
+      if includeParticles {
+        forces[arrayIndex].addBond(particles: particles, parameters: array)
+        forcesActive[arrayIndex] = true
+      }
     }
     super.init(forces: forces, forcesActive: forcesActive, forceGroup: 2)
   }

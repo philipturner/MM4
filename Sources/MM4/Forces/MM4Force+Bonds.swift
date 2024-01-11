@@ -39,6 +39,10 @@ class MM4StretchForce: MM4Force {
       // force execution.
       let bond = bonds.indices[bondID]
       let parameters = bonds.parameters[bondID]
+      guard parameters.potentialWellDepth != 0,
+            parameters.stretchingStiffness != 0 else {
+        continue
+      }
       
       // Units: millidyne-angstrom -> kJ/mol
       //                    kJ/mol -> zJ

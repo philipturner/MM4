@@ -5,11 +5,6 @@ import MM4
 
 final class MM4ParametersTests: XCTestCase {
   
-  // TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
-  // - Particularly, avoid computing the bend-bend force. This may be a bit
-  //   convoluted to optimize away, as you have to check multiple parameters and
-  //   record whether they're all zero.
-  //
   // TODO: Enhance the XTBProcess code to launch a programmatic process. It
   // might still write to disk and require a directory, but it enables much
   // faster feedback loops to quickly compare different structures. Maybe

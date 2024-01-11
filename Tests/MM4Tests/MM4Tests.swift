@@ -1,10 +1,6 @@
 import XCTest
 import MM4
 
-final class MM4Tests: XCTestCase {
-  
-}
-
 // TODO: Debug nonbonded forces with hydrogen reductions. Examine how the
 // distances between surfaces change as hydrogen reductions are enabled.
 //
@@ -16,6 +12,9 @@ final class MM4Tests: XCTestCase {
 // much latency to initialize OpenCL kernels. Plus, this is the point where
 // validation can proceed visually, with the results recorded in code for
 // further review.
+// - You can re-evaluate this decision after finishing the experiments. Whether
+//   it is worthwhile to include validation tests, which could be time-consuming
+//   to build.
 
 // MARK: - Tests for Non-Carbon Elements
 

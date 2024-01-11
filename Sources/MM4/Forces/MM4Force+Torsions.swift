@@ -52,6 +52,12 @@ class MM4TorsionForce: MM4Force {
         // Compute heteroatom V1/V2/V3 terms in the extended force.
         continue
       }
+      if parameters.V1 == 0,
+         parameters.Vn == 0,
+         parameters.V3 == 0,
+         parameters.Kts3 == 0 {
+        continue
+      }
       
       // Units: kcal/mol -> kJ/mol
       //          kJ/mol -> zJ
