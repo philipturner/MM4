@@ -6,7 +6,7 @@
 //
 
 extension MM4RigidBody {
-  /// The force (in piconewtons) on each atom.
+  /// The force (in piconewtons) exerted on each atom.
   ///
   /// Force is a function of position and the surrounding environment. When the
   /// rigid body changes position, the forces change as well. Therefore, the
