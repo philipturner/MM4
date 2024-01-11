@@ -66,10 +66,6 @@ extension MM4System {
       
       let atomicNumber0 = parameters.atoms.atomicNumbers[indices[0]]
       let atomicNumber1 = parameters.atoms.atomicNumbers[indices[1]]
-      if atomicNumber0 == 1 && atomicNumber1 == 1 {
-        fatalError("Catching edge case.")
-      }
-      
       if atomicNumber0 == 1 {
         var copy = indices
         copy[0] &+= 1
@@ -80,8 +76,12 @@ extension MM4System {
         copy[1] &+= 1
         force.addExclusion(particles: copy)
       }
+      if atomicNumber0 == 1 && atomicNumber1 == 1 {
+        var copy = indices
+        copy &+= 1
+        force.addExclusion(particles: copy)
+      }
     }
-    
     
     for bond in parameters.bonds.indices {
       let reordered = self.virtualSiteReorder(bond)
