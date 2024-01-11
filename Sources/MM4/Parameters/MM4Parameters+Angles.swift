@@ -395,9 +395,6 @@ extension MM4Parameters {
           continueAttempt = true
         }
       }
-      if !forces.contains(.bend) {
-        bendingStiffnesses = .zero
-      }
       guard let bendingStiffnesses,
             let equilibriumAngles else {
         throw createAngleError()
