@@ -5,6 +5,11 @@ import PackageDescription
 
 let package = Package(
   name: "MM4",
+  platforms: [
+    // Supposedly, this permits deployment to non-Apple platforms?
+    .macOS(.v13),
+    .iOS(.v15),
+  ],
   products: [
     // Products define the executables and libraries a package produces, making them visible to other packages.
     .library(

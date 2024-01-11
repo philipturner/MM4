@@ -7,6 +7,17 @@
 
 import OpenMM
 
+import System
+
+fileprivate let startTime = ContinuousClock.now
+
+func cross_platform_media_time() -> Double {
+  let duration = ContinuousClock.now.duration(to: startTime)
+  let seconds = duration.components.seconds
+  let attoseconds = duration.components.attoseconds
+  return -(Double(seconds) + Double(attoseconds) * 1e-18)
+}
+
 /// A configuration for a force field.
 public struct MM4ForceFieldDescriptor {
   /// Required. The cutoff to use for nonbonded interactions.
@@ -76,6 +87,8 @@ public class MM4ForceField {
       fatalError("No force field parameters were specified.")
     }
     
+    let checkpoint0 = cross_platform_media_time()
+    
     // Load available plugins before doing anything that might require them.
     guard let directory = OpenMM_Platform.defaultPluginsDirectory else {
       fatalError("Could not load OpenMM plugins directory.")
@@ -84,8 +97,21 @@ public class MM4ForceField {
       fatalError("Could not load OpenMM plugins.")
     }
     
+    let checkpoint1 = cross_platform_media_time()
+    
     system = MM4System(parameters: parameters, descriptor: descriptor)
+    
+    let checkpoint2 = cross_platform_media_time()
+    
     context = MM4Context(system: system, platform: descriptor.platform)
+    
+    let checkpoint3 = cross_platform_media_time()
+    
+    print("startup latency report:")
+    print("-", checkpoint1 - checkpoint0)
+    print("-", checkpoint2 - checkpoint1)
+    print("-", checkpoint3 - checkpoint2)
+    
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
     _energy = MM4ForceFieldEnergy(forceField: self)
