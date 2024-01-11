@@ -13,9 +13,9 @@ extension MM4System {
       let reorderedID = atomID + virtualSiteCount
       reorderedIndices.append(UInt32(truncatingIfNeeded: reorderedID))
       
-//      if parameters.atoms.atomicNumbers[atomID] == 1 {
-//        virtualSiteCount += 1
-//      }
+      if parameters.atoms.atomicNumbers[atomID] == 1 {
+        virtualSiteCount += 1
+      }
     }
   }
   
@@ -24,10 +24,10 @@ extension MM4System {
       let mass = parameters.atoms.masses[atomID]
       system.addParticle(mass: Double(mass))
       
-//      let atomicNumber = parameters.atoms.atomicNumbers[atomID]
-//      if atomicNumber == 1 {
-//        system.addParticle(mass: 0)
-//      }
+      let atomicNumber = parameters.atoms.atomicNumbers[atomID]
+      if atomicNumber == 1 {
+        system.addParticle(mass: 0)
+      }
     }
   }
   

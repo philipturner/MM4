@@ -105,11 +105,11 @@ class MM4NonbondedForce: MM4Force {
       force.addParticle(parameters: array)
       
       // Give the original hydrogens zero vdW energy.
-//      if atoms.atomicNumbers[atomID] == 1 {
-//        array[0] = 0
-//        array[1] = 0
-//        force.addParticle(parameters: array)
-//      }
+      if atoms.atomicNumbers[atomID] == 1 {
+        array[0] = 0
+        array[1] = 0
+        force.addParticle(parameters: array)
+      }
     }
     
     system.createExceptions(force: force)
