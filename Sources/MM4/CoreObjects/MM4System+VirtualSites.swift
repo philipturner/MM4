@@ -115,7 +115,7 @@ extension MM4System {
       let reordered = self.virtualSiteReorder(atomID)
       group.insert(reordered)
     }
-    force.addInteractionGroup(set1: group, set2: group)
+    //force.addInteractionGroup(set1: group, set2: group)
   }
   
   @_transparent
