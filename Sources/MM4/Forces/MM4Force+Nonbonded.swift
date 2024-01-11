@@ -110,14 +110,16 @@ class MM4NonbondedForce: MM4Force {
     }
     */
     
-    var cutoff: Double {
-      // Since germanium will rarely be used, use the cutoff for silicon. The
-      // slightly greater sigma for carbon allows greater accuracy in vdW forces
-      // for bulk diamond. 1.020 nm also accomodates charge-charge interactions.
-//      let siliconRadius = 2.290 * OpenMM_NmPerAngstrom
-//      return siliconRadius * 2.5 * OpenMM_SigmaPerVdwRadius
-      return 1.0
-    }
+//    var cutoff: Double {
+//      // Since germanium will rarely be used, use the cutoff for silicon. The
+//      // slightly greater sigma for carbon allows greater accuracy in vdW forces
+//      // for bulk diamond. 1.020 nm also accomodates charge-charge interactions.
+////      let siliconRadius = 2.290 * OpenMM_NmPerAngstrom
+////      return siliconRadius * 2.5 * OpenMM_SigmaPerVdwRadius
+//      return 1.0
+//    }
+    
+    let cutoff = Double(descriptor.cutoffDistance)
     
     let nonbondedForce = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
@@ -138,12 +140,12 @@ class MM4NonbondedForce: MM4Force {
     nonbondedForce.addPerParticleParameter(name: "radius")
     nonbondedForce.addPerParticleParameter(name: "hydrogenRadius")
     
-    nonbondedForce.nonbondedMethod = .noCutoff
-    nonbondedForce.useSwitchingFunction = false
-//    nonbondedForce.nonbondedMethod = .cutoffNonPeriodic
-//    nonbondedForce.useSwitchingFunction = true
-//    nonbondedForce.cutoffDistance = cutoff
-//    nonbondedForce.switchingDistance = cutoff * pow(1.0 / 3, 1.0 / 6)
+//    nonbondedForce.nonbondedMethod = .noCutoff
+//    nonbondedForce.useSwitchingFunction = false
+    nonbondedForce.nonbondedMethod = .cutoffNonPeriodic
+    nonbondedForce.useSwitchingFunction = true
+    nonbondedForce.cutoffDistance = cutoff
+    nonbondedForce.switchingDistance = cutoff * pow(1.0 / 3, 1.0 / 6)
     
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
