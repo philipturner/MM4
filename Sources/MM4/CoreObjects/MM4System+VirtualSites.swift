@@ -62,7 +62,7 @@ extension MM4System {
 extension MM4System {
   func createExceptions(force: OpenMM_CustomNonbondedForce) {
     func addExclusion(particles: SIMD2<UInt32>) {
-      let indices = self.virtualSiteReorder(particles)
+      let indices = self.reorder(particles)
       force.addExclusion(particles: indices)
       
       let atomicNumber0 = parameters.atoms.atomicNumbers[Int(particles[0])]
