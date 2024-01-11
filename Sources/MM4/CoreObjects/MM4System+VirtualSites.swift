@@ -61,7 +61,8 @@ extension MM4System {
 
 extension MM4System {
   func createExceptions(force: OpenMM_CustomNonbondedForce) {
-    func addExclusion(particles indices: SIMD2<Int>) {
+    func addExclusion(particles: SIMD2<UInt32>) {
+      let indices = self.virtualSiteReorder(particles)
       force.addExclusion(particles: indices)
       
       let atomicNumber0 = parameters.atoms.atomicNumbers[indices[0]]
@@ -84,12 +85,10 @@ extension MM4System {
     }
     
     for bond in parameters.bonds.indices {
-      let reordered = self.virtualSiteReorder(bond)
-      addExclusion(particles: reordered)
+      addExclusion(particles: bond)
     }
     for exception in parameters.nonbondedExceptions13 {
-      let reordered = self.virtualSiteReorder(exception)
-      addExclusion(particles: reordered)
+      addExclusion(particles: exception)
     }
     
     // Stop the virtual sites from interfering with themselves.
