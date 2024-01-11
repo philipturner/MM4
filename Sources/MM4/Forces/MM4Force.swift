@@ -54,9 +54,11 @@ class MM4Force {
   init(forces: [OpenMM_Force?], forceGroup: Int) {
     let activeForces = forces.compactMap { $0 }
     for force in activeForces {
+      print("- added a force")
       force.forceGroup = forceGroup
     }
-    self.forces = activeForces
+//    self.forces = activeForces
+    self.forces = []
     self.forceGroup = forceGroup
   }
   
