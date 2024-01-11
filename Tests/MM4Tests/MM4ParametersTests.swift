@@ -71,16 +71,9 @@ final class MM4ParametersTests: XCTestCase {
     
     // After testing execution speed, recycle this unit test to judge whether
     // parameters were omitted correctly. There should be no (1,4) nonbonded
-    // exceptions for the NCFParts without torsions.
-    //
-    // We also need to figure out what to do about nonbonded exceptions. Do
-    // we include (1,4) exceptions when torsion are omitted but torsion-bend is
-    // included (for whatever wierd reason you'd want to do that)? What about
-    // when bend forces are omitted? Do we still include (1,3) exceptions?
-    // - Restrict what combinations of forces are accepted
-    // - If the tier of forces belonging to bond angle is omitted, also omit
-    //   (1,3) exceptions. I don't know whether the FF would be stable with
-    //   forces done this way.
+    // exceptions for the NCFParts without torsions. Also check that (1,3)
+    // exceptions appear where they should and don't appear where they
+    // shouldn't.
   }
   #endif
   

@@ -58,7 +58,7 @@ extension MM4ForceField {
   /// The default value is zero for every atom.
   ///
   /// > WARNING: There is no getter for this property. You must assign an entire
-  /// array to it at once. Otherwise, there will be a runtime crash.
+  ///   array to it at once. Otherwise, there will be a runtime crash.
   public var externalForces: [SIMD3<Float>] {
     get {
       fatalError("You cannot retrieve the values of external forces.")

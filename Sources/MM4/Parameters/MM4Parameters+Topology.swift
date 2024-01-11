@@ -126,34 +126,23 @@ extension MM4Parameters {
       (vAtomsToAtomsMap - 1).deallocate()
     }
     
-    let includeTorsions =
-    forces.contains(.torsion) ||
-    forces.contains(.torsionBend) ||
-    forces.contains(.torsionStretch)
-    
-    // Use a conservative metric to determine whether angles are included. If
-    // torsions are included but angles aren't, there's still some torsion
-    // cross-terms that depend on equilibrium angle.
-    let includeAngles =
-    forces.contains(.bend) ||
-    forces.contains(.bendBend) ||
-    forces.contains(.stretchBend) ||
-    forces.contains(.stretchStretch) ||
-    includeTorsions
-    
+    let includeAngles = forces.contains(.bend)
+    let angleCapacity = includeAngles ? atoms.count : 1
+    let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
+      .allocate(capacity: 6 * angleCapacity)
     let angleAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
-      .allocate(capacity: atoms.count)
+      .allocate(capacity: angleCapacity)
     let angleCounts = UnsafeMutablePointer<UInt16>(
       OpaquePointer(angleAtomics))
-    let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
-      .allocate(capacity: 6 * atoms.count)
     
+    let includeTorsions = forces.contains(.torsion)
+    let torsionCapacity = includeTorsions ? atoms.count : 1
+    let torsionBuckets: UnsafeMutablePointer<SIMD4<UInt32>> =
+      .allocate(capacity: 36 * torsionCapacity)
     let torsionAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
-      .allocate(capacity: atoms.count)
+      .allocate(capacity: torsionCapacity)
     let torsionCounts =  UnsafeMutablePointer<UInt16>(
       OpaquePointer(torsionAtomics))
-    let torsionBuckets: UnsafeMutablePointer<SIMD4<UInt32>> =
-      .allocate(capacity: 36 * atoms.count)
     
     angleCounts.initialize(repeating: .zero, count: atoms.count)
     torsionCounts.initialize(repeating: .zero, count: atoms.count)

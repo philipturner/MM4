@@ -83,11 +83,7 @@ public struct MM4Parameters {
           let descriptorBonds = descriptor.bonds else {
       fatalError("Descriptor did not have the required properties.")
     }
-    
-//    if !descriptor.forces.contains(.stretch) {
-//      guard !descriptor.forces.contains(.bend),
-//            !descriptor.forces.contains(.)
-//    }
+    Self.checkForces(descriptor.forces)
     
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.
@@ -140,6 +136,50 @@ public struct MM4Parameters {
     atomsToAtomsMap += other.atomsToAtomsMap.map {
       let modified = $0 &+ Int32(truncatingIfNeeded: atomOffset)
       return $0.replacing(with: modified, where: $0 .>= 0)
+    }
+  }
+  
+  // Validate that the specified combination of forces is okay. Otherwise,
+  // cause a runtime crash.
+  static func checkForces(_ forces: MM4ForceOptions) {
+    let includeTorsions =
+    forces.contains(.torsion) ||
+    forces.contains(.torsionBend) ||
+    forces.contains(.torsionStretch)
+    
+    // Use a conservative metric to determine whether angles are included. If
+    // torsions are included but angles aren't, there's still some torsion
+    // cross-terms that depend on equilibrium angle.
+    let includeAngles =
+    forces.contains(.bend) ||
+    forces.contains(.bendBend) ||
+    forces.contains(.stretchBend) ||
+    forces.contains(.stretchStretch) ||
+    includeTorsions
+    
+    // None of the other bonded forces will be stable without bond stretching.
+    let includeBonds =
+    forces.contains(.stretch) ||
+    includeAngles ||
+    includeTorsions
+    
+    if includeBonds {
+      guard forces.contains(.stretch) else {
+        fatalError(
+          "The specified forces cannot be evaluated without '.stretch'.")
+      }
+    }
+    if includeAngles {
+      guard forces.contains(.bend) else {
+        fatalError(
+          "The specified forces cannot be evaluated without '.bend'.")
+      }
+    }
+    if includeTorsions {
+      guard forces.contains(.torsion) else {
+        fatalError(
+          "The specified forces cannot be evaluated without '.torsion'.")
+      }
     }
   }
 }

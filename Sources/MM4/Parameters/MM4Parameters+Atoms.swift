@@ -361,11 +361,9 @@ extension MM4Parameters {
     // Create nonbonded exceptions.
     var nonbondedExceptions13Map: [SIMD2<UInt32>: Bool] = [:]
     var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
-    if forces.contains(.torsion) {
-      for torsion in torsions.indices {
-        let pair = sortBond(SIMD2(torsion[0], torsion[3]))
-        nonbondedExceptions14Map[pair] = true
-      }
+    for torsion in torsions.indices {
+      let pair = sortBond(SIMD2(torsion[0], torsion[3]))
+      nonbondedExceptions14Map[pair] = true
     }
     for angle in angles.indices {
       let pair = sortBond(SIMD2(angle[0], angle[2]))
