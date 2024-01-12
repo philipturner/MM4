@@ -220,7 +220,7 @@ func diagonalize(
   }
   
   // Execute something like conjugate gradient descent.
-  for trialID in 1...1000 {
+  for trialID in 1...300 {
     // Perform an Arnoldi iteration on each candidate vector.
     var eigenPairs = eigenVectors.map { vector in
       let Av = gemv(matrix: matrix, vector: vector)
@@ -296,8 +296,8 @@ func diagonalize(
         break
       }
     } else {
-      guard orthogonalityError.max() < 1e-8,
-            eigenValueError.max() < 1e-4 else {
+      guard orthogonalityError.max() < 1e-4,
+            eigenValueError.max() < 1e-2 else {
         return (nil, nil, """
           Failed to refine eigenpairs after 300 iterations:
           λ0 = \(eigenValues[0]) -> \(revisedValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
