@@ -32,6 +32,17 @@ public struct MM4ForceFieldDescriptor {
   /// is somewhere in the middle, at ~5.
   public var dielectricConstant: Float = 5.7
   
+  /// Required. Whether to enable hydrogen reductions.
+  ///
+  /// The default value is `true`.
+  ///
+  /// Hydrogen reductions are implemented through virtual sites. In OpenMM, this
+  /// adds a harmonic position constraint to the energy minimizer. There are
+  /// situations where it has harmed performance during minimization. It also
+  /// adds a small increase to compute cost during integration, and gives every
+  /// hydrogen atom twice the compute cost for nonbonded forces.
+  public var useHydrogenReductions: Bool = true
+  
   /// Required. The parameters that define internal forces.
   ///
   /// If there are multiple rigid bodies, you can combine their parameters with
@@ -74,6 +85,13 @@ public class MM4ForceField {
   public init(descriptor: MM4ForceFieldDescriptor) throws {
     guard let parameters = descriptor.parameters else {
       fatalError("No force field parameters were specified.")
+    }
+    
+    if !descriptor.useHydrogenReductions {
+      // This is mostly a performance feature. It doesn't affect the results
+      // if you explicitly set the reduction factors to 1. Therefore, it is
+      // not going to be prioritized right now.
+      fatalError("Need to allow hydrogen reductions to be disabled.")
     }
     
     system = MM4System(parameters: parameters, descriptor: descriptor)

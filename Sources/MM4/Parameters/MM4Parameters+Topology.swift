@@ -126,8 +126,8 @@ extension MM4Parameters {
       (vAtomsToAtomsMap - 1).deallocate()
     }
     
-    let includeAngles = forces.contains(.bend)
-    let angleCapacity = includeAngles ? atoms.count : 1
+    let includeAngles = true
+    let angleCapacity = atoms.count
     let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
       .allocate(capacity: 6 * angleCapacity)
     let angleAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =

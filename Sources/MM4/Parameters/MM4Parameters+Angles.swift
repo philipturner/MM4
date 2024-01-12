@@ -98,9 +98,15 @@ extension MM4Parameters {
       
       var bendingStiffnesses: SIMD3<Float>?
       var equilibriumAngles: SIMD3<Float>?
+      var attemptCount = 2
+      if !forces.contains(.bend) {
+        bendingStiffnesses = .zero
+        equilibriumAngles = .zero
+        attemptCount = 0
+      }
       
       var continueAttempt = false
-      for attemptID in 0..<2 {
+      for attemptID in 0..<attemptCount {
         var codes: SIMD3<UInt8>
         if attemptID == 0 {
           codes = sortedCodes
@@ -604,6 +610,7 @@ extension MM4Parameters {
         bendBendStiffness = 0
         stretchBendStiffness = 0
       }
+      
       if !forces.contains(.bendBend) {
         bendBendStiffness = 0
       }
