@@ -44,79 +44,53 @@ extension MM4ForceField {
     }
     
     // Create rough estimate of step count.
-    var quotient = (time / timeStep).rounded(.down)
-    var remainder = (time / timeStep) - quotient
+    var stepCountQuotient = (time / timeStep).rounded(.down)
+    var stepCountRemainder = (time / timeStep) - stepCountQuotient
     
-    guard quotient >= 0, remainder >= 0 else {
+    guard stepCountQuotient >= 0, stepCountRemainder >= 0 else {
       fatalError("This should never happen.")
     }
     
     // Correct for overshoot and undershoot from floating-point error.
     let epsilon: Double = 1e-4
-    if remainder < epsilon {
-      if quotient > 0 {
-        quotient -= 1
-        remainder += 1
+    if stepCountRemainder < epsilon {
+      if stepCountQuotient > 0 {
+        stepCountQuotient -= 1
+        stepCountRemainder += 1
       }
-    } else if remainder > 1 + epsilon {
+    } else if stepCountRemainder > 1 + epsilon {
       fatalError("This should never happen.")
     }
     
-    var descriptor = MM4IntegratorDescriptor()
-    descriptor.start = true
-    descriptor.end = false
-    context.currentIntegrator = descriptor
-    context.step(1, timeStep: timeStep)
-    
-    descriptor.start = false
-    descriptor.end = false
-    context.currentIntegrator = descriptor
-    context.step(9, timeStep: timeStep)
-    
-    descriptor.start = false
-    descriptor.end = true
-    context.currentIntegrator = descriptor
-    context.step(1, timeStep: 0)
-    
-    /*
-    if quotient == 0 {
-      print("block 1")
+    if stepCountQuotient == 0 {
       var descriptor = MM4IntegratorDescriptor()
       descriptor.start = true
-      descriptor.end = false
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: 0.002)
-      
-      descriptor.start = false
-      descriptor.end = false
-      context.currentIntegrator = descriptor
-      context.step(9, timeStep: 0.002)
-      
-      descriptor.start = false
       descriptor.end = true
       context.currentIntegrator = descriptor
-      context.step(1, timeStep: 0)
+      context.step(1, timeStep: time)
     } else {
-      print("block 2")
+      let conservativeStepCount = Int(exactly: (time / timeStep).rounded(.up))!
+      let conservativeStepSize = time / Double(conservativeStepCount)
+      print("step size: \(conservativeStepSize), step count: \(conservativeStepCount)")
+      
       var descriptor = MM4IntegratorDescriptor()
       descriptor.start = true
       descriptor.end = false
       context.currentIntegrator = descriptor
-      context.step(1, timeStep: timeStep)
+      context.step(1, timeStep: conservativeStepSize)
       
-      if quotient > 1 {
+      if conservativeStepCount > 2 {
         descriptor.start = false
         descriptor.end = false
         context.currentIntegrator = descriptor
-        context.step(Int(quotient - 1), timeStep: timeStep)
+        context.step(conservativeStepCount - 2, timeStep: conservativeStepSize)
       }
       
       descriptor.start = false
       descriptor.end = true
       context.currentIntegrator = descriptor
-      context.step(1, timeStep: remainder)
+      context.step(1, timeStep: conservativeStepSize)
     }
-     */
   }
   
   /// Minimize the system's potential energy.
