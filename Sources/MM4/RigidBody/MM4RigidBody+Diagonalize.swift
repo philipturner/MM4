@@ -290,7 +290,6 @@ func diagonalize(
         break
       }
     } else if trialID < 300 {
-      print("Iteration \(trialID): \(eigenValues) -> \(revisedValues)")
       if orthogonalityError.max() < 1e-8,
          eigenValueError.max() < 1e-4 {
         break
