@@ -55,6 +55,26 @@ final class DiagonalizationTests: XCTestCase {
         XCTAssertEqual(root2, 106430.8046875, accuracy: root2 * 1e-5)
       }
     }
+    
+    do {
+      let coefficients: SIMD4<Double> = [
+        -1.0, 681.8423500061035, -154951.57960266608, 11736402.461415779
+      ]
+      let (root0, root1, root2) = factorCubicPolynomial(
+        coefficients: coefficients)
+      XCTAssertNotNil(root0)
+      XCTAssertNotNil(root1)
+      XCTAssertNotNil(root2)
+      if let root0 {
+        XCTAssertEqual(root0, 229.73597, accuracy: root0 * 1e-5)
+      }
+      if let root1 {
+        XCTAssertEqual(root1, 222.37041, accuracy: root1 * 1e-5)
+      }
+      if let root2 {
+        XCTAssertEqual(root2, 229.73597, accuracy: root2 * 1e-5)
+      }
+    }
   }
   
   func testInvert() throws {
@@ -214,6 +234,22 @@ final class DiagonalizationTests: XCTestCase {
         matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
+    // This test case had a tricky characteristic polynomial.
+    do {
+      let matrix = (
+        SIMD3(229.7359676361084, -1.7881393432617188e-07, 2.3543834686279297e-06),
+        SIMD3(-1.7881393432617188e-07, 229.73597145080566, -2.1904706954956055e-06),
+        SIMD3(2.3543834686279297e-06, -2.1904706954956055e-06, 222.37041091918945))
+      let expectedEigenValues = SIMD3(
+        229.73596954351274, 229.73596954351274, 222.37041091907804)
+      let expectedEigenVectors = (
+        SIMD3(-0.6539075673671945, 0.7565518951375797, 0.005841515527202881),
+        SIMD3(0.756307039626987, 0.6538622261567238, -0.02153720074745753),
+        SIMD3(-0.020113556388193437, -0.009665359233354986, -0.9997509818351312))
+      checkEigenPairs(
+        matrix, (expectedEigenValues, expectedEigenVectors))
+    }
+    
     // This test case caused convergence issues.
     do {
       let matrix = (
@@ -247,6 +283,7 @@ final class DiagonalizationTests: XCTestCase {
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
+    // This test case caused convergence issues.
     do {
       let matrix = (
         SIMD3(229.30638122558594, 0.00022840499877929688, 0.00021526217460632324),

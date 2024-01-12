@@ -52,7 +52,7 @@ func factorCubicPolynomial(coefficients: SIMD4<Double>) -> (
     let numerator = Complex(b) + cubeRoot + Complex(Δ0) / cubeRoot
     
     let imaginaryProportion = numerator.imaginary / numerator.real
-    guard imaginaryProportion.magnitude < 1e-8 else {
+    guard imaginaryProportion.magnitude < 1e-4 else {
       return nil
     }
     return numerator.real / Double(-3 * a)
