@@ -48,7 +48,7 @@ extension MM4System {
       let otherParameters = parameters.atoms.parameters[Int(otherID)]
       let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
 //      let weights = SIMD2(1 - reductionFactor, reductionFactor)
-      let weights = SIMD2<Double>(0.999, 0.001)
+      let weights = SIMD2<Double>(0.001, 0.999)
       
       let reordered = self.reorder(SIMD2(
         UInt32(truncatingIfNeeded: otherID),
