@@ -274,12 +274,12 @@ func diagonalize(
         break
       }
     } else if trialID < 100 {
-      if orthogonalityError.max() < 1e-16,
+      if orthogonalityError.max() < 1e-12,
          eigenValueError.max() < 1e-6 {
         break
       }
     } else {
-      guard orthogonalityError.max() < 1e-16,
+      guard orthogonalityError.max() < 1e-8,
             eigenValueError.max() < 1e-4 else {
         return (nil, nil, """
           Failed to refine eigenpairs after 100 iterations:
