@@ -62,6 +62,23 @@ extension MM4ForceField {
       fatalError("This should never happen.")
     }
     
+    var descriptor = MM4IntegratorDescriptor()
+    descriptor.start = true
+    descriptor.end = false
+    context.currentIntegrator = descriptor
+    context.step(1, timeStep: 0.002)
+    
+    descriptor.start = false
+    descriptor.end = false
+    context.currentIntegrator = descriptor
+    context.step(9, timeStep: 0.002)
+    
+    descriptor.start = false
+    descriptor.end = true
+    context.currentIntegrator = descriptor
+    context.step(1, timeStep: 0)
+    
+    /*
     if quotient == 0 {
       print("block 1")
       var descriptor = MM4IntegratorDescriptor()
@@ -99,6 +116,7 @@ extension MM4ForceField {
       context.currentIntegrator = descriptor
       context.step(1, timeStep: remainder)
     }
+     */
   }
   
   /// Minimize the system's potential energy.
