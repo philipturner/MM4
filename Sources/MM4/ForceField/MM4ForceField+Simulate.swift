@@ -71,7 +71,6 @@ extension MM4ForceField {
     } else {
       let conservativeStepCount = Int(exactly: (time / timeStep).rounded(.up))!
       let conservativeStepSize = time / Double(conservativeStepCount)
-      print("step size: \(conservativeStepSize), step count: \(conservativeStepCount)")
       
       var descriptor = MM4IntegratorDescriptor()
       descriptor.start = true
