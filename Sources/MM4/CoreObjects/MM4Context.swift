@@ -9,26 +9,26 @@ import OpenMM
 
 /// Stores an OpenMM context generated from an integrator variant.
 class MM4Context {
-  var compoundIntegrator: OpenMM_VerletIntegrator//OpenMM_CompoundIntegrator
+  var compoundIntegrator: OpenMM_CompoundIntegrator
   var context: OpenMM_Context
   var integrators: [MM4IntegratorDescriptor: Int] = [:]
   
   init(system: MM4System, platform: OpenMM_Platform?) {
-    self.compoundIntegrator = OpenMM_VerletIntegrator(stepSize: 0)
-//    self.compoundIntegrator = OpenMM_CompoundIntegrator()
+//    self.compoundIntegrator = OpenMM_VerletIntegrator(stepSize: 0)
+    self.compoundIntegrator = OpenMM_CompoundIntegrator()
 //    
-//    for start in [false, true] {
-//      for end in [false, true] {
-//        var descriptor = MM4IntegratorDescriptor()
-//        descriptor.start = start
-//        descriptor.end = end
-//        
-//        let integrator = MM4Integrator(descriptor: descriptor)
-//        integrator.integrator.transfer()
-//        let index = compoundIntegrator.addIntegrator(integrator.integrator)
-//        integrators[descriptor] = index
-//      }
-//    }
+    for start in [false, true] {
+      for end in [false, true] {
+        var descriptor = MM4IntegratorDescriptor()
+        descriptor.start = start
+        descriptor.end = end
+        
+        let integrator = MM4Integrator(descriptor: descriptor)
+        integrator.integrator.transfer()
+        let index = compoundIntegrator.addIntegrator(integrator.integrator)
+        integrators[descriptor] = index
+      }
+    }
     
     if let platform {
       self.context = OpenMM_Context(
@@ -45,10 +45,10 @@ class MM4Context {
   var currentIntegrator: MM4IntegratorDescriptor {
     get { fatalError("Not implemented.") }
     set {
-//      guard let index = integrators[newValue] else {
-//        fatalError("This should never happen.")
-//      }
-//      compoundIntegrator.currentIntegrator = index
+      guard let index = integrators[newValue] else {
+        fatalError("This should never happen.")
+      }
+      compoundIntegrator.currentIntegrator = index
     }
   }
   
