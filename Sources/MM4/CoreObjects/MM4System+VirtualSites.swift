@@ -65,23 +65,23 @@ extension MM4System {
       let indices = self.virtualSiteReorder(particles)
       force.addExclusion(particles: indices)
       
-//      let atomicNumber0 = parameters.atoms.atomicNumbers[Int(particles[0])]
-//      let atomicNumber1 = parameters.atoms.atomicNumbers[Int(particles[1])]
-//      if atomicNumber0 == 1 {
-//        var copy = indices
-//        copy[0] &+= 1
-//        force.addExclusion(particles: copy)
-//      }
-//      if atomicNumber1 == 1 {
-//        var copy = indices
-//        copy[1] &+= 1
-//        force.addExclusion(particles: copy)
-//      }
-//      if atomicNumber0 == 1 && atomicNumber1 == 1 {
-//        var copy = indices
-//        copy &+= 1
-//        force.addExclusion(particles: copy)
-//      }
+      let atomicNumber0 = parameters.atoms.atomicNumbers[Int(particles[0])]
+      let atomicNumber1 = parameters.atoms.atomicNumbers[Int(particles[1])]
+      if atomicNumber0 == 1 {
+        var copy = indices
+        copy[0] &+= 1
+        force.addExclusion(particles: copy)
+      }
+      if atomicNumber1 == 1 {
+        var copy = indices
+        copy[1] &+= 1
+        force.addExclusion(particles: copy)
+      }
+      if atomicNumber0 == 1 && atomicNumber1 == 1 {
+        var copy = indices
+        copy &+= 1
+        force.addExclusion(particles: copy)
+      }
     }
     
     for bond in parameters.bonds.indices {
