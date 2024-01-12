@@ -10,24 +10,24 @@ import OpenMM
 extension MM4System {
   func createReorderedIndices() {
     for atomID in parameters.atoms.indices {
-      let reorderedID = atomID + virtualSiteCount
-      reorderedIndices.append(UInt32(truncatingIfNeeded: reorderedID))
-      
       if parameters.atoms.atomicNumbers[atomID] == 1 {
         virtualSiteCount += 1
       }
+      
+      let reorderedID = atomID + virtualSiteCount
+      reorderedIndices.append(UInt32(truncatingIfNeeded: reorderedID))
     }
   }
   
   func createMasses() {
     for atomID in parameters.atoms.indices {
-      let mass = parameters.atoms.masses[atomID]
-      system.addParticle(mass: Double(mass))
-      
       let atomicNumber = parameters.atoms.atomicNumbers[atomID]
       if atomicNumber == 1 {
         system.addParticle(mass: 0)
       }
+      
+      let mass = parameters.atoms.masses[atomID]
+      system.addParticle(mass: Double(mass))
     }
   }
   
@@ -54,7 +54,7 @@ extension MM4System {
         UInt32(truncatingIfNeeded: hydrogenID)))
       let virtualSite = OpenMM_TwoParticleAverageSite(
         particles: reordered, weights: weights)
-      system.setVirtualSite(virtualSite, index: Int(reordered[1] &+ 1))
+      system.setVirtualSite(virtualSite, index: Int(reordered[1] &- 1))
     }
   }
 }
