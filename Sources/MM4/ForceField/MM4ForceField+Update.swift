@@ -80,6 +80,7 @@ extension MM4ForceField {
       }
       context.context.positions = arrayP
       context.context.velocities = arrayV
+      context.context.computeVirtualSites()
     }
     
     updateRecord.erase()

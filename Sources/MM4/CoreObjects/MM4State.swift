@@ -12,22 +12,22 @@ public struct MM4StateDescriptor {
   /// Required. Whether to report the system's total kinetic and potential
   /// energy.
   ///
-  /// The default is `false`.
+  /// The default value is `false`.
   public var energy: Bool = false
   
   /// Required. Whether to report the force exerted on each atom.
   ///
-  /// The default is `false`.
+  /// The default value is `false`.
   public var forces: Bool = false
   
   /// Required. Whether to report each atom's position.
   ///
-  /// The default is `false`.
+  /// The default value is `false`.
   public var positions: Bool = false
   
   /// Required. Whether to report each atom's velocity.
   ///
-  /// The default is `false`.
+  /// The default value is `false`.
   public var velocities: Bool = false
   
   public init() {
@@ -38,8 +38,6 @@ public struct MM4StateDescriptor {
 /// A frame of a simulation.
 public struct MM4State {
   /// The net varying force (in piconewtons) exerted on each atom.
-  ///
-  /// This is converted from kJ/mol/nm to piconewtons.
   public var forces: [SIMD3<Float>]?
   
   /// The system's total kinetic energy, in zeptojoules.
@@ -61,10 +59,6 @@ public struct MM4State {
 
 extension MM4ForceField {
   /// Retrieve a frame of the simulation.
-  ///
-  /// This can be efficient than using the getters for `forces`,
-  /// `positions`, `velocities`, or either of the energies in isolation.
-  /// However, the API is less expressive.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
     if updateRecord.active() {
       flushUpdateRecord()
