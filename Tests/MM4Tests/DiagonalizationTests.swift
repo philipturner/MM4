@@ -314,9 +314,20 @@ final class DiagonalizationTests: XCTestCase {
     // This test case caused convergence issues.
     do {
       let matrix = (
-        SIMD3<Double>(230.0067958831787, 2.384185791015625e-07, 2.562999725341797e-06),
-        SIMD3<Double>(2.384185791015625e-07, 230.00679206848145, -1.2218952178955078e-06),
-        SIMD3<Double>(2.562999725341797e-06, -1.2218952178955078e-06, 222.01723098754883))
+        SIMD3(230.0067958831787, 2.384185791015625e-07, 2.562999725341797e-06),
+        SIMD3(2.384185791015625e-07, 230.00679206848145, -1.2218952178955078e-06),
+        SIMD3(2.562999725341797e-06, -1.2218952178955078e-06, 222.01723098754883))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(230.44046783447266, -7.748603820800781e-07, -1.9371509552001953e-06),
+        SIMD3(-7.748603820800781e-07, 230.4404697418213, -2.6226043701171875e-06),
+        SIMD3(-1.9371509552001953e-06, -2.6226043701171875e-06, 223.87350273132324))
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")

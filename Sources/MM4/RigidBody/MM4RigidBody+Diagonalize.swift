@@ -199,7 +199,18 @@ func diagonalize(
   
   // If we cannot find all eigenvectors through direct matrix inversion, start
   // with the slow path that rotates the cardinal axes into the eigenbasis.
-  let preconditioningSucceeded = (eigenVectors.count == 3)
+  var preconditioningSucceeded = (eigenVectors.count == 3)
+  var preconditioningActuallySucceeded = false
+  if eigenVectors.count == 3 {
+    let x = eigenVectors[0]
+    let y = eigenVectors[1]
+    let z = eigenVectors[2]
+    if (x * y).sum().magnitude < 1e-2,
+       (x * z).sum().magnitude < 1e-2,
+       (y * z).sum().magnitude < 1e-2 {
+      preconditioningActuallySucceeded = true
+    }
+  }
   if !preconditioningSucceeded {
     eigenVectors = [
       SIMD3(0.0, 0.0, 1.0),
@@ -209,7 +220,7 @@ func diagonalize(
   }
   
   // Execute something like conjugate gradient descent.
-  for trialID in 1...100 {
+  for trialID in 1...1000 {
     // Perform an Arnoldi iteration on each candidate vector.
     var eigenPairs = eigenVectors.map { vector in
       let Av = gemv(matrix: matrix, vector: vector)
@@ -242,6 +253,9 @@ func diagonalize(
             (z * x).sum().magnitude < 1e-3 else {
         fatalError("Could not use z as a reference to fix y.")
       }
+      if trialID >= 50 {
+        print("Trial \(trialID): restarted y")
+      }
       y = cross(leftVector: z, rightVector: x)
     }
     
@@ -253,6 +267,9 @@ func diagonalize(
       guard (y * y).sum().magnitude > 1e-3,
             (x * y).sum().magnitude < 1e-3 else {
         fatalError("Could not use y as a reference to fix z.")
+      }
+      if trialID >= 50 {
+        print("Trial \(trialID): restarted z")
       }
       z = cross(leftVector: x, rightVector: y)
     }
@@ -278,16 +295,23 @@ func diagonalize(
          eigenValueError.max() < 1e-6 {
         break
       }
+    } else if trialID < 1000 {
+      print("Iteration \(trialID): \(eigenValues) -> \(revisedValues)")
+      if orthogonalityError.max() < 1e-8,
+         eigenValueError.max() < 1e-4 {
+        break
+      }
     } else {
       guard orthogonalityError.max() < 1e-8,
             eigenValueError.max() < 1e-4 else {
         return (nil, nil, """
-          Failed to refine eigenpairs after 100 iterations:
+          Failed to refine eigenpairs after 1000 iterations:
           λ0 = \(eigenValues[0]) -> \(revisedValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
           λ1 = \(eigenValues[1]) -> \(revisedValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
           λ2 = \(eigenValues[2]) -> \(revisedValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
           Orthogonality error: \(orthogonalityError)
           Preconditioning succeeded: \(preconditioningSucceeded)
+          Preconditioning actually succeeded: \(preconditioningActuallySucceeded)
           """)
       }
     }
