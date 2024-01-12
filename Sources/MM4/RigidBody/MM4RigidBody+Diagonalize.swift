@@ -289,7 +289,7 @@ func diagonalize(
          eigenValueError.max() < 1e-6 {
         break
       }
-    } else if trialID < 1000 {
+    } else if trialID < 300 {
       print("Iteration \(trialID): \(eigenValues) -> \(revisedValues)")
       if orthogonalityError.max() < 1e-8,
          eigenValueError.max() < 1e-4 {
@@ -299,7 +299,7 @@ func diagonalize(
       guard orthogonalityError.max() < 1e-8,
             eigenValueError.max() < 1e-4 else {
         return (nil, nil, """
-          Failed to refine eigenpairs after 1000 iterations:
+          Failed to refine eigenpairs after 300 iterations:
           λ0 = \(eigenValues[0]) -> \(revisedValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
           λ1 = \(eigenValues[1]) -> \(revisedValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
           λ2 = \(eigenValues[2]) -> \(revisedValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
