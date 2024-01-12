@@ -45,9 +45,9 @@ class MM4Context {
   var currentIntegrator: MM4IntegratorDescriptor {
     get { fatalError("Not implemented.") }
     set {
-      guard let index = integrators[newValue] else {
-        fatalError("This should never happen.")
-      }
+//      guard let index = integrators[newValue] else {
+//        fatalError("This should never happen.")
+//      }
 //      compoundIntegrator.currentIntegrator = index
     }
   }
