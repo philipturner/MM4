@@ -218,7 +218,7 @@ func diagonalize(
   }
   
   // Execute something like conjugate gradient descent.
-  for trialID in 1...300 {
+  for trialID in 1...160 {
     // Perform an Arnoldi iteration on each candidate vector.
     @_transparent
     func createEigenPair(_ vector: SIMD3<Double>) -> SIMD4<Double> {
@@ -298,12 +298,12 @@ func diagonalize(
          eigenValueError.max() < 1e-8 {
         break
       }
-    } else if trialID < 100 {
+    } else if trialID < 40 {
       if orthogonalityError.max() < 1e-12,
          eigenValueError.max() < 1e-6 {
         break
       }
-    } else if trialID < 300 {
+    } else if trialID < 160 {
       if orthogonalityError.max() < 1e-8,
          eigenValueError.max() < 1e-4 {
         break
@@ -312,7 +312,7 @@ func diagonalize(
       guard orthogonalityError.max() < 1e-4,
             eigenValueError.max() < 1e-2 else {
         return (nil, nil, """
-          Failed to refine eigenpairs after 300 iterations:
+          Failed to refine eigenpairs after 160 iterations:
           λ0 = \(eigenValues[0]) -> \(revisedValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
           λ1 = \(eigenValues[1]) -> \(revisedValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
           λ2 = \(eigenValues[2]) -> \(revisedValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
