@@ -46,7 +46,15 @@ extension MM4System {
       let otherID = (bond[0] == hydrogenID) ? bond[1] : bond[0]
       
       let otherParameters = parameters.atoms.parameters[Int(otherID)]
-      let reductionFactor = Double(otherParameters.hydrogenReductionFactor)
+      var reductionFactor = Double(otherParameters.hydrogenReductionFactor)
+      
+      // There is a bug where setting a virtual site's weight to zero makes the
+      // forces go haywire.
+      if reductionFactor < 0 || reductionFactor > 1 {
+        fatalError(
+          "Hydrogen reduction factor \(reductionFactor) is outside the range 0...1.")
+      }
+      reductionFactor = max(0.0001, min(0.9999, reductionFactor))
       let weights = SIMD2(1 - reductionFactor, reductionFactor)
       
       let reordered = self.reorder(SIMD2(
