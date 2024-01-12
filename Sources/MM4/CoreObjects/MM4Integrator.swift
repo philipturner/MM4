@@ -39,48 +39,49 @@ struct MM4IntegratorDescriptor: Hashable {
 }
 
 class MM4Integrator {
-  var integrator: OpenMM_CustomIntegrator
+  var integrator: OpenMM_VerletIntegrator//OpenMM_CustomIntegrator
   
   /// Create an integrator using the specified configuration.
   init(descriptor: MM4IntegratorDescriptor) {
-    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
-    
-    if descriptor.start {
-      integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * f1 / m
-        """)
-      integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.25 * dt * f2 / m
-        """)
-    } else {
-      integrator.addComputePerDof(variable: "v", expression: """
-        v + 1.0 * dt * f1 / m
-        """)
-      integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * f2 / m
-        """)
-    }
-    
-    integrator.addComputePerDof(variable: "x", expression: """
-      x + 0.5 * dt * v
-      """)
-    integrator.addConstrainPositions()
-    
-    integrator.addComputePerDof(variable: "v", expression: """
-      v + 0.5 * dt * f2 / m
-      """)
-    integrator.addComputePerDof(variable: "x", expression: """
-      x + 0.5 * dt * v
-      """)
-    integrator.addConstrainPositions()
-    
-    if descriptor.end {
-      integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.25 * dt * f2 / m
-        """)
-      integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * f1 / m
-        """)
-    }
+    self.integrator = OpenMM_VerletIntegrator(stepSize: 0)
+//    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
+//    
+//    if descriptor.start {
+//      integrator.addComputePerDof(variable: "v", expression: """
+//        v + 0.5 * dt * f1 / m
+//        """)
+//      integrator.addComputePerDof(variable: "v", expression: """
+//        v + 0.25 * dt * f2 / m
+//        """)
+//    } else {
+//      integrator.addComputePerDof(variable: "v", expression: """
+//        v + 1.0 * dt * f1 / m
+//        """)
+//      integrator.addComputePerDof(variable: "v", expression: """
+//        v + 0.5 * dt * f2 / m
+//        """)
+//    }
+//    
+//    integrator.addComputePerDof(variable: "x", expression: """
+//      x + 0.5 * dt * v
+//      """)
+//    integrator.addConstrainPositions()
+//    
+//    integrator.addComputePerDof(variable: "v", expression: """
+//      v + 0.5 * dt * f2 / m
+//      """)
+//    integrator.addComputePerDof(variable: "x", expression: """
+//      x + 0.5 * dt * v
+//      """)
+//    integrator.addConstrainPositions()
+//    
+//    if descriptor.end {
+//      integrator.addComputePerDof(variable: "v", expression: """
+//        v + 0.25 * dt * f2 / m
+//        """)
+//      integrator.addComputePerDof(variable: "v", expression: """
+//        v + 0.5 * dt * f1 / m
+//        """)
+//    }
   }
 }
