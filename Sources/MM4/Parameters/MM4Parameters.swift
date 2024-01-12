@@ -15,7 +15,8 @@ public struct MM4ParametersDescriptor {
   
   /// Required. The forces to assign parameters for.
   ///
-  /// The default value includes all available forces.
+  /// The default value includes stretch, bend, stretch-bend, stretch-stretch,
+  /// and nonbonded forces.
   ///
   /// Disabling certain forces may reduce the execution time required to
   /// generate parameters. For example, if torsion forces are excluded, the
@@ -23,14 +24,10 @@ public struct MM4ParametersDescriptor {
   /// also be an empty array.
   public var forces: MM4ForceOptions = [
     .bend,
-    .bendBend,
     .nonbonded,
     .stretch,
     .stretchBend,
     .stretchStretch,
-    .torsion,
-    .torsionBend,
-    .torsionStretch,
   ]
   
   /// Required. The factor to multiply hydrogen mass by.

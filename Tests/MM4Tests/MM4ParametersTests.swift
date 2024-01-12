@@ -186,6 +186,15 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   var paramsDesc = MM4ParametersDescriptor()
   paramsDesc.atomicNumbers = adamantane.atomicNumbers
   paramsDesc.bonds = adamantane.bonds
+  paramsDesc.forces = [
+    .bend,
+    .bendBend,
+    .nonbonded,
+    .stretch,
+    .stretchBend,
+    .torsion,
+    .torsionStretch,
+  ]
   
   // Check that the number of atoms and their elements are the same.
   let params = try MM4Parameters(descriptor: paramsDesc)
