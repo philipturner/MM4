@@ -75,7 +75,7 @@ extension MM4System {
   func virtualSiteReorder(_ index: UInt32) -> Int {
     var reorderedID = reorderedIndices[Int(index)]
     if parameters.atoms.atomicNumbers[Int(index)] == 1 {
-      reorderedID &+= 1
+//      reorderedID &+= 1
     }
     return Int(reorderedID)
   }
