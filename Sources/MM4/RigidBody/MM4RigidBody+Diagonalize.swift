@@ -200,8 +200,6 @@ func diagonalize(
     }
   }
   
-  let start = cross_platform_media_time()
-  
   // If we cannot find all eigenvectors through direct matrix inversion, start
   // with the slow path that rotates the cardinal axes into the eigenbasis.
   var x: SIMD3<Double>
@@ -331,9 +329,6 @@ func diagonalize(
     y = -y
   }
   z = cross(leftVector: x, rightVector: y)
-  
-  let end = cross_platform_media_time()
-  print("eigensolver iteration time: \((end - start) * 1e6) μs")
   
   return (eigenValues, (x, y, z), nil)
 }
