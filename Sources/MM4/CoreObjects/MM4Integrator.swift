@@ -39,11 +39,15 @@ struct MM4IntegratorDescriptor: Hashable {
 }
 
 class MM4Integrator {
-  var integrator: OpenMM_VerletIntegrator//OpenMM_CustomIntegrator
+  var integrator: OpenMM_VerletIntegrator
   
   /// Create an integrator using the specified configuration.
   init(descriptor: MM4IntegratorDescriptor) {
+    // There is a performance issue with custom integrators right now. So, we
+    // are relying on the Verlet integrator instead. We take the timestep
+    // entered into the simulator, and divide by 2.
     self.integrator = OpenMM_VerletIntegrator(stepSize: 0)
+    
 //    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
 //    
 //    if descriptor.start {

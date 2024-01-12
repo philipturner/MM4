@@ -21,7 +21,11 @@ public struct MM4ForceFieldDescriptor {
   /// slightly greater sigma for carbon allows greater accuracy in vdW forces
   /// for bulk diamond. 1.0 nm is also sufficient for charge-charge
   /// interactions.
-  public var cutoffDistance: Float = 1.0
+  ///
+  /// If the cutoff distance is `nil`, nonbonded forces are computed with the
+  /// full O(n^2) cost. This may increase simulation speed for small-enough
+  /// systems and large-enough GPUs.
+  public var cutoffDistance: Float? = 1.0
   
   /// Required. The dielectric constant for the reaction field approximation to
   /// long-range electrostatic interactions.

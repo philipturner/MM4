@@ -85,9 +85,14 @@ class MM4ElectrostaticForce: MM4Force {
      */
     
     let prefactor = MM4ElectrostaticForce.prefactor
-    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
-      cutoffDistance: descriptor.cutoffDistance,
-      dielectricConstant: descriptor.dielectricConstant)
+    var K, C: Float
+    if let cutoffDistance = descriptor.cutoffDistance {
+      (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
+        cutoffDistance: cutoffDistance,
+        dielectricConstant: descriptor.dielectricConstant)
+    } else {
+      (K, C) = (.zero, .zero)
+    }
     
     let force = OpenMM_CustomNonbondedForce(energy: """
       \(prefactor) * charge1 * charge2 * (
@@ -95,8 +100,13 @@ class MM4ElectrostaticForce: MM4Force {
       );
       """)
     force.addPerParticleParameter(name: "charge")
-    force.nonbondedMethod = .cutoffNonPeriodic
-    force.cutoffDistance = Double(descriptor.cutoffDistance)
+    
+    if let cutoffDistance = descriptor.cutoffDistance {
+      force.nonbondedMethod = .cutoffNonPeriodic
+      force.cutoffDistance = Double(cutoffDistance)
+    } else {
+      force.nonbondedMethod = .noCutoff
+    }
     
     let array = OpenMM_DoubleArray(size: 1)
     let atoms = system.parameters.atoms
@@ -229,9 +239,14 @@ class MM4ElectrostaticExceptionForce: MM4Force {
     // For each bond-bond interaction, compute the projected charge onto each
     // 1,4 atom and undo it.
     let prefactor = MM4ElectrostaticForce.prefactor
-    let (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
-      cutoffDistance: descriptor.cutoffDistance,
-      dielectricConstant: descriptor.dielectricConstant)
+    var K, C: Float
+    if let cutoffDistance = descriptor.cutoffDistance {
+      (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
+        cutoffDistance: cutoffDistance,
+        dielectricConstant: descriptor.dielectricConstant)
+    } else {
+      (K, C) = (.zero, .zero)
+    }
     
     // It is currently unknown whether MM4 includes the 1-2,3-4 dipole-dipole
     // interaction. This must be resolved through testing.
