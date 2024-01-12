@@ -225,6 +225,48 @@ final class DiagonalizationTests: XCTestCase {
       checkEigenPairs(
         eigenPairs, (expectedEigenValues, expectedEigenVectors))
     }
+    
+    // This test case failed before.
+    do {
+      let matrix = (
+        SIMD3(35702.36472773552, -1.3455748558044434e-05, 7.459503173828125),
+        SIMD3(-1.3455748558044434e-05, 82421.14924621582, -5.0455331802368164e-05),
+        SIMD3(7.459503173828125, -5.0455331802368164e-05, 47511.179409742355))
+      
+      let eigenPairs = diagonalize(matrix: matrix)
+      XCTAssertNotNil(eigenPairs)
+    }
+    
+    // This test case failed before.
+    do {
+      let matrix = (
+        SIMD3(35702.347987532616, 0.007739812135696411, 7.47467041015625),
+        SIMD3(0.007739812135696411, 82421.11811828613, 0.007063537836074829),
+        SIMD3(7.47467041015625, 0.007063537836074829, 47511.16352403164))
+      
+      let eigenPairs = diagonalize(matrix: matrix)
+      XCTAssertNotNil(eigenPairs)
+    }
+    
+    do {
+      let matrix = (
+        SIMD3(1.0, 0, 0),
+        SIMD3(0, 1.0, 0),
+        SIMD3(0, 0, 1.0))
+      
+      let eigenPairs = diagonalize(matrix: matrix)
+      XCTAssertNotNil(eigenPairs)
+    }
+    
+    do {
+      let matrix = (
+        SIMD3(2.0, 0, 0),
+        SIMD3(0, 2.0, 0),
+        SIMD3(0, 0, 1.0))
+      
+      let eigenPairs = diagonalize(matrix: matrix)
+      XCTAssertNotNil(eigenPairs)
+    }
   }
 }
 #endif
