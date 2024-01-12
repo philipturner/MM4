@@ -175,7 +175,7 @@ func diagonalize(
   
   // Find the eigenvector corresponding to each eigenvalue. Start by
   // preconditioning the eigensolver with direct matrix inversion, if possible.
-  var eigenVectors: [SIMD3<Double>] = []
+  var candidateEigenVectors: [SIMD3<Double>] = []
   for i in 0..<3 {
     let eigenValue = eigenValues[i]
     var B = (SIMD3<Double>(SIMD3<Float>(matrix.0)),
@@ -190,7 +190,7 @@ func diagonalize(
     for _ in 0..<2 {
       if let inverseB = invert(matrix: B),
          let column = normalize(vector: inverseB.2) {
-        eigenVectors.append(column)
+        candidateEigenVectors.append(column)
         break
       } else {
         B.0[0] *= 1 + 1e-10
@@ -200,75 +200,72 @@ func diagonalize(
     }
   }
   
+  let start = cross_platform_media_time()
+  
   // If we cannot find all eigenvectors through direct matrix inversion, start
   // with the slow path that rotates the cardinal axes into the eigenbasis.
-  let preconditioningSucceeded = (eigenVectors.count == 3)
-  var preconditioningActuallySucceeded = false
-  if eigenVectors.count == 3 {
-    let x = eigenVectors[0]
-    let y = eigenVectors[1]
-    let z = eigenVectors[2]
-    if (x * y).sum().magnitude < 1e-2,
-       (x * z).sum().magnitude < 1e-2,
-       (y * z).sum().magnitude < 1e-2 {
-      preconditioningActuallySucceeded = true
-    }
-  }
-  if !preconditioningSucceeded {
-    eigenVectors = [
-      SIMD3(0.0, 0.0, 1.0),
-      SIMD3(0.0, 1.0, 0.0),
-      SIMD3(1.0, 0.0, 0.0),
-    ]
+  var x: SIMD3<Double>
+  var y: SIMD3<Double>
+  var z: SIMD3<Double>
+  if candidateEigenVectors.count == 3 {
+    x = candidateEigenVectors[0]
+    y = candidateEigenVectors[1]
+    z = candidateEigenVectors[2]
+  } else {
+    x = SIMD3(0.0, 0.0, 1.0)
+    y = SIMD3(0.0, 1.0, 0.0)
+    z = SIMD3(1.0, 0.0, 0.0)
   }
   
   // Execute something like conjugate gradient descent.
-  var eigenPairs: [SIMD4<Double>] = Array(repeating: .zero, count: 3)
   for trialID in 1...300 {
     // Perform an Arnoldi iteration on each candidate vector.
     @_transparent
-    func createEigenPair(_ i: Int) -> SIMD4<Double> {
-      let vector = eigenVectors[i]
+    func createEigenPair(_ vector: SIMD3<Double>) -> SIMD4<Double> {
       let Av = gemv(matrix: matrix, vector: vector)
       let λ = (Av * Av).sum().squareRoot()
-      return SIMD4(Av / λ, λ)
+      return SIMD4(Av, λ)
     }
-    eigenPairs[0] = createEigenPair(0)
-    eigenPairs[1] = createEigenPair(1)
-    eigenPairs[2] = createEigenPair(2)
+    var eigenPair0 = createEigenPair(x)
+    var eigenPair1 = createEigenPair(y)
+    var eigenPair2 = createEigenPair(z)
     
     // Sort the eigenpairs in descending order.
-    if eigenPairs[1].w > eigenPairs[0].w {
-      var temp = eigenPairs[1]
-      eigenPairs[1] = eigenPairs[0]
-      eigenPairs[0] = temp
+    if eigenPair1.w > eigenPair0.w {
+      let temp = eigenPair1
+      eigenPair1 = eigenPair0
+      eigenPair0 = temp
     }
-    if eigenPairs[2].w > eigenPairs[0].w {
-      var temp = eigenPairs[2]
-      eigenPairs[2] = eigenPairs[0]
-      eigenPairs[0] = temp
+    if eigenPair2.w > eigenPair0.w {
+      let temp = eigenPair2
+      eigenPair2 = eigenPair0
+      eigenPair0 = temp
     }
-    if eigenPairs[2].w > eigenPairs[1].w {
-      var temp = eigenPairs[2]
-      eigenPairs[2] = eigenPairs[1]
-      eigenPairs[1] = temp
+    if eigenPair2.w > eigenPair1.w {
+      let temp = eigenPair2
+      eigenPair2 = eigenPair1
+      eigenPair1 = temp
     }
     
     // Check how close we are to the solution.
-    let revisedValues = SIMD3(eigenPairs[0].w, eigenPairs[1].w, eigenPairs[2].w)
+    let revisedValues = SIMD3(eigenPair0.w, eigenPair1.w, eigenPair2.w)
     var eigenValueError = revisedValues / eigenValues
     eigenValueError -= 1
-    eigenValueError.replace(with: -eigenValueError, where: eigenValueError .< 0)
+    eigenValueError = SIMD3(
+      eigenValueError[0].magnitude,
+      eigenValueError[1].magnitude,
+      eigenValueError[2].magnitude)
     
     // Orthonormalize with the Gram-Schmidt method.
-    let x = unsafeBitCast(eigenPairs[0], to: SIMD3<Double>.self)
-    var y = unsafeBitCast(eigenPairs[1], to: SIMD3<Double>.self)
-    var z = unsafeBitCast(eigenPairs[2], to: SIMD3<Double>.self)
+    x = unsafeBitCast(eigenPair0, to: SIMD3<Double>.self)
+    y = unsafeBitCast(eigenPair1, to: SIMD3<Double>.self)
+    z = unsafeBitCast(eigenPair2, to: SIMD3<Double>.self)
+    x /= revisedValues[0]
     y -= (y * x).sum() * x
     z -= (z * x).sum() * x
     
     // Handle the case of a 2-fold repeated root.
-    if (y * y).sum().squareRoot() < 1e-3 {
+    if (y * y).sum() < 1e-3 * 1e-3 {
       guard (z * z).sum().magnitude > 1e-3,
             (z * x).sum().magnitude < 1e-3 else {
         fatalError("Could not use z as a reference to fix y.")
@@ -276,11 +273,11 @@ func diagonalize(
       y = cross(leftVector: z, rightVector: x)
     }
     
-    y = normalize(vector: y)!
+    y /= (y * y).sum().squareRoot()
     z -= (z * y).sum() * y
     
     // Handle the case of a 2-fold repeated root.
-    if (z * z).sum().squareRoot() < 1e-3 {
+    if (z * z).sum() < 1e-3 * 1e-3 {
       guard (y * y).sum().magnitude > 1e-3,
             (x * y).sum().magnitude < 1e-3 else {
         fatalError("Could not use y as a reference to fix z.")
@@ -288,10 +285,7 @@ func diagonalize(
       z = cross(leftVector: x, rightVector: y)
     }
     
-    z = normalize(vector: z)!
-    eigenVectors[0] = x
-    eigenVectors[1] = y
-    eigenVectors[2] = z
+    z /= (z * z).sum().squareRoot()
     
     // Check how close we are to orthonormal.
     let orthogonalityError = SIMD3(
@@ -325,8 +319,6 @@ func diagonalize(
           λ1 = \(eigenValues[1]) -> \(revisedValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
           λ2 = \(eigenValues[2]) -> \(revisedValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
           Orthogonality error: \(orthogonalityError)
-          Preconditioning succeeded: \(preconditioningSucceeded)
-          Preconditioning actually succeeded: \(preconditioningActuallySucceeded)
           """)
       }
       print("Converged after 300 iterations.")
@@ -335,16 +327,16 @@ func diagonalize(
   
   // Flip the first two vectors so they're close to the original space's
   // cardinal axes. Flip the last vector so it forms a right-handed basis.
-  for i in 0..<2 {
-    var vector = eigenVectors[i]
-    if (vector * SIMD3(1, 1, 1)).sum() < 0 {
-      vector = -vector
-    }
-    eigenVectors[i] = vector
+  if (x * SIMD3(1, 1, 1)).sum() < 0 {
+    x = -x
   }
-  eigenVectors[2] = cross(
-    leftVector: eigenVectors[0], rightVector: eigenVectors[1])
-  return (
-    SIMD3(eigenValues[0], eigenValues[1], eigenValues[2]),
-    (eigenVectors[0], eigenVectors[1], eigenVectors[2]), nil)
+  if (y * SIMD3(1, 1, 1)).sum() < 0 {
+    y = -y
+  }
+  z = cross(leftVector: x, rightVector: y)
+  
+  let end = cross_platform_media_time()
+  print("eigensolver iteration time: \((end - start) * 1e6) μs")
+  
+  return (eigenValues, (x, y, z), nil)
 }

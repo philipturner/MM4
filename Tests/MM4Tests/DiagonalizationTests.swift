@@ -119,10 +119,7 @@ final class DiagonalizationTests: XCTestCase {
       file: StaticString = #filePath,
       line: UInt = #line
     ) {
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       guard let Λ, let Σ else {
         XCTAssert(
           false, "Matrix failed to diagonalize: \(failureReason!)",
@@ -243,10 +240,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(35702.36472773552, -1.3455748558044434e-05, 7.459503173828125),
         SIMD3(-1.3455748558044434e-05, 82421.14924621582, -5.0455331802368164e-05),
         SIMD3(7.459503173828125, -5.0455331802368164e-05, 47511.179409742355))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -257,10 +251,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(35702.347987532616, 0.007739812135696411, 7.47467041015625),
         SIMD3(0.007739812135696411, 82421.11811828613, 0.007063537836074829),
         SIMD3(7.47467041015625, 0.007063537836074829, 47511.16352403164))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -271,10 +262,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(229.3068447113037, -9.5367431640625e-07, 3.2782554626464844e-07),
         SIMD3(-9.5367431640625e-07, 229.3068389892578, -9.685754776000977e-07),
         SIMD3(3.2782554626464844e-07, -9.685754776000977e-07, 222.27340507507324))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -285,10 +273,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(229.30638122558594, 0.00022840499877929688, 0.00021526217460632324),
         SIMD3(0.00022840499877929688, 229.30638122558594, 0.00021557509899139404),
         SIMD3(0.00021526217460632324, 0.00021557509899139404, 222.27295684814453))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -299,10 +284,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(1.0, 0, 0),
         SIMD3(0, 1.0, 0),
         SIMD3(0, 0, 1.0))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -313,10 +295,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(2.0, 0, 0),
         SIMD3(0, 2.0, 0),
         SIMD3(0, 0, 1.0))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -327,10 +306,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(229.7359676361084, -1.7881393432617188e-07, 2.3543834686279297e-06),
         SIMD3(-1.7881393432617188e-07, 229.73597145080566, -2.1904706954956055e-06),
         SIMD3(2.3543834686279297e-06, -2.1904706954956055e-06, 222.37041091918945))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -341,10 +317,7 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(230.0067958831787, 2.384185791015625e-07, 2.562999725341797e-06),
         SIMD3(2.384185791015625e-07, 230.00679206848145, -1.2218952178955078e-06),
         SIMD3(2.562999725341797e-06, -1.2218952178955078e-06, 222.01723098754883))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
@@ -355,13 +328,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(230.44046783447266, -7.748603820800781e-07, -1.9371509552001953e-06),
         SIMD3(-7.748603820800781e-07, 230.4404697418213, -2.6226043701171875e-06),
         SIMD3(-1.9371509552001953e-06, -2.6226043701171875e-06, 223.87350273132324))
-      let start = cross_platform_media_time()
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
-      let end = cross_platform_media_time()
-      print("diagonalization time: \((end - start) * 1e6) μs")
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
-      print("HELLO WORLD>>>>>>>>>")
     }
   }
 }
