@@ -90,50 +90,50 @@ class MM4NonbondedForce: MM4Force {
     for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
       
-      // Units: angstrom -> nm
-      let (radius, hydrogenRadius) = parameters.radius
-      array[2] = Double(radius) * OpenMM_NmPerAngstrom
-      array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
+//      // Units: angstrom -> nm
+//      let (radius, hydrogenRadius) = parameters.radius
+//      array[2] = Double(radius) * OpenMM_NmPerAngstrom
+//      array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
+//      
+//      let (epsilon, hydrogenEpsilon) = parameters.epsilon
+//      if atoms.atomicNumbers[atomID] == 1 {
+//        //        array[0] = 0
+//        //        array[1] = 0
+//        array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+//        array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+//        force.addParticle(parameters: array)
+//        
+//        array[0] = 0
+//        array[1] = 0
+//        force.addParticle(parameters: array)
+//      } else {
+//        
+//        // Units: kcal/mol -> kJ/mol
+//        //          kJ/mol -> zJ
+//        array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+//        array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+//        force.addParticle(parameters: array)
+//      }
       
-      let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      if atoms.atomicNumbers[atomID] == 1 {
-        //        array[0] = 0
-        //        array[1] = 0
-        array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-        array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-        force.addParticle(parameters: array)
-        
-        array[0] = 0
-        array[1] = 0
-        force.addParticle(parameters: array)
-      } else {
-        
-        // Units: kcal/mol -> kJ/mol
-        //          kJ/mol -> zJ
-        array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-        array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-        force.addParticle(parameters: array)
-      }
       
-      
-      //      // Units: kcal/mol -> kJ/mol
-      //      //          kJ/mol -> zJ
-      //      let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      //      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      //      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      //      
-      //      // Units: angstrom -> nm
-      //      let (radius, hydrogenRadius) = parameters.radius
-      //      array[2] = Double(radius) * OpenMM_NmPerAngstrom
-      //      array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
-      //      force.addParticle(parameters: array)
-      //      
-      //      // Give the original hydrogens zero vdW energy.
-      //      if atoms.atomicNumbers[atomID] == 1 {
-      //        array[0] = 0
-      //        array[1] = 0
-      //        force.addParticle(parameters: array)
-      //      }
+            // Units: kcal/mol -> kJ/mol
+            //          kJ/mol -> zJ
+            let (epsilon, hydrogenEpsilon) = parameters.epsilon
+            array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+            array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+            
+            // Units: angstrom -> nm
+            let (radius, hydrogenRadius) = parameters.radius
+            array[2] = Double(radius) * OpenMM_NmPerAngstrom
+            array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
+            force.addParticle(parameters: array)
+            
+            // Give the original hydrogens zero vdW energy.
+            if atoms.atomicNumbers[atomID] == 1 {
+              array[0] = 0
+              array[1] = 0
+              force.addParticle(parameters: array)
+            }
     }
     
     system.createExceptions(force: force)
