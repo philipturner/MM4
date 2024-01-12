@@ -45,6 +45,8 @@ class MM4Integrator {
   init(descriptor: MM4IntegratorDescriptor) {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
+    integrator.addUpdateContextState()
+    
     if descriptor.start {
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.5 * dt * f1 / m
