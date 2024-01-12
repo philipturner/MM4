@@ -96,9 +96,12 @@ class MM4NonbondedForce: MM4Force {
       array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
       
       // Give the original hydrogens zero vdW energy.
+      let (epsilon, hydrogenEpsilon) = parameters.epsilon
       if atoms.atomicNumbers[atomID] == 1 {
-        array[0] = 0
-        array[1] = 0
+//        array[0] = 0
+//        array[1] = 0
+        array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+        array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
         force.addParticle(parameters: array)
         
         array[0] = 0
@@ -108,7 +111,6 @@ class MM4NonbondedForce: MM4Force {
         
         // Units: kcal/mol -> kJ/mol
         //          kJ/mol -> zJ
-        let (epsilon, hydrogenEpsilon) = parameters.epsilon
         array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
         array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
         force.addParticle(parameters: array)
