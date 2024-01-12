@@ -112,6 +112,7 @@ public struct MM4Parameters {
     try createTorsionParameters(forces: descriptor.forces)
     createElectronegativityEffectCorrections()
     createPartialCharges()
+    removeBondLengths(forces: descriptor.forces)
   }
   
   public mutating func append(contentsOf other: Self) {

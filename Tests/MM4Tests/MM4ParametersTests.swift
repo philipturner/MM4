@@ -95,36 +95,39 @@ final class MM4ParametersTests: XCTestCase {
       XCTAssertGreaterThan(parameters.bonds.indices.count, 0)
       for bondID in parameters.bonds.indices.indices {
         let params = parameters.bonds.parameters[bondID]
-        XCTAssertNotEqual(params.equilibriumLength, 0)
         if partID >= 2 {
           XCTAssertNotEqual(params.potentialWellDepth, 0)
           XCTAssertNotEqual(params.stretchingStiffness, 0)
+          XCTAssertNotEqual(params.equilibriumLength, 0)
         } else {
           XCTAssertEqual(params.potentialWellDepth, 0)
           XCTAssertEqual(params.stretchingStiffness, 0)
+          XCTAssertEqual(params.equilibriumLength, 0)
         }
       }
       
-      if partID >= 2 {
-        XCTAssertGreaterThan(parameters.angles.indices.count, 0)
-        for angleID in parameters.angles.indices.indices {
-          let params = parameters.angles.parameters[angleID]
+      XCTAssertGreaterThan(parameters.angles.indices.count, 0)
+      for angleID in parameters.angles.indices.indices {
+        let params = parameters.angles.parameters[angleID]
+        if partID >= 2 {
           XCTAssertNotEqual(params.bendingStiffness, 0)
           XCTAssertNotEqual(params.equilibriumAngle, 0)
-          
-          let angle = parameters.angles.indices[angleID]
-          let code0 = parameters.atoms.codes[Int(angle[0])]
-          let code2 = parameters.atoms.codes[Int(angle[2])]
-          if partID >= 3, code0 != .hydrogen || code2 != .hydrogen {
-            XCTAssertNotEqual(params.bendBendStiffness, 0)
-            XCTAssertNotEqual(params.stretchBendStiffness, 0)
-          } else {
-            XCTAssertEqual(params.bendBendStiffness, 0)
-            XCTAssertEqual(params.stretchBendStiffness, 0)
-          }
+        } else {
+          XCTAssertEqual(params.bendingStiffness, 0)
+          XCTAssertEqual(params.equilibriumAngle, 0)
         }
-      } else {
-        XCTAssertEqual(parameters.angles.indices.count, 0)
+        
+        let angle = parameters.angles.indices[angleID]
+        let code0 = parameters.atoms.codes[Int(angle[0])]
+        let code2 = parameters.atoms.codes[Int(angle[2])]
+        let expectParameters = (code0 != .hydrogen || code2 != .hydrogen)
+        if partID >= 3, expectParameters {
+          XCTAssertNotEqual(params.bendBendStiffness, 0)
+          XCTAssertNotEqual(params.stretchBendStiffness, 0)
+        } else {
+          XCTAssertEqual(params.bendBendStiffness, 0)
+          XCTAssertEqual(params.stretchBendStiffness, 0)
+        }
       }
       
       if partID >= 3 {
