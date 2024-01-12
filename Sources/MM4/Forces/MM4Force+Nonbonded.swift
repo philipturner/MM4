@@ -100,14 +100,19 @@ class MM4NonbondedForce: MM4Force {
         array[0] = 0
         array[1] = 0
         force.addParticle(parameters: array)
+        
+        array[0] = 0
+        array[1] = 0
+        force.addParticle(parameters: array)
+      } else {
+        
+        // Units: kcal/mol -> kJ/mol
+        //          kJ/mol -> zJ
+        let (epsilon, hydrogenEpsilon) = parameters.epsilon
+        array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+        array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
+        force.addParticle(parameters: array)
       }
-      
-      // Units: kcal/mol -> kJ/mol
-      //          kJ/mol -> zJ
-      let (epsilon, hydrogenEpsilon) = parameters.epsilon
-      array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      array[1] = Double(hydrogenEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
-      force.addParticle(parameters: array)
     }
     
     system.createExceptions(force: force)
