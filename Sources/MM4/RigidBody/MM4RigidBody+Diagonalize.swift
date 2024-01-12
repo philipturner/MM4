@@ -236,6 +236,11 @@ func diagonalize(
     x /= eigenPairs[0].w
     y -= (y * x).sum() * x
     z -= (z * x).sum() * x
+    guard normalize(vector: y) != nil else {
+      print("Caught problematic case.")
+      print(matrix)
+      exit(0)
+    }
     y = normalize(vector: y)!
     z -= (z * y).sum() * y
     z = normalize(vector: z)!
