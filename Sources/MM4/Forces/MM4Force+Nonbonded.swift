@@ -60,9 +60,10 @@ class MM4NonbondedForce: MM4Force {
     
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
-        -2.25 * (min(2, radius / r))^6 +
-        1.84e5 * exp(-12.00 * (r / radius))
+        -2.25 * (min(2, radius / safe_r))^6 +
+        1.84e5 * exp(-12.00 * (safe_r / radius))
       );
+      safe_r = max(0.001, r);
       epsilon = select(isHydrogenBond, heteroatomEpsilon, hydrogenEpsilon);
       radius = select(isHydrogenBond, heteroatomRadius, hydrogenRadius);
       
