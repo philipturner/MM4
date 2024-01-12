@@ -64,7 +64,7 @@ class MM4Integrator {
     integrator.addComputePerDof(variable: "x", expression: """
       x + 0.5 * dt * v
       """)
-//    integrator.addConstrainPositions()
+    integrator.addConstrainPositions()
     
     integrator.addComputePerDof(variable: "v", expression: """
       v + 0.5 * dt * f2 / m
@@ -72,7 +72,7 @@ class MM4Integrator {
     integrator.addComputePerDof(variable: "x", expression: """
       x + 0.5 * dt * v
       """)
-//    integrator.addConstrainPositions()
+    integrator.addConstrainPositions()
     
     if descriptor.end {
       integrator.addComputePerDof(variable: "v", expression: """
