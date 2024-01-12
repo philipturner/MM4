@@ -88,12 +88,15 @@ extension MM4ForceField {
 //      context.step(1, timeStep: remainder)
 //    }
     
+    print("integrating:", time, timeStep, quotient, remainder)
     var descriptor = MM4IntegratorDescriptor()
     descriptor.start = true
     descriptor.end = true
     context.currentIntegrator = descriptor
     context.step(Int(quotient), timeStep: timeStep)
-    context.step(1, timeStep: remainder)
+    if remainder > 0 {
+      context.step(1, timeStep: remainder)
+    }
   }
   
   /// Minimize the system's potential energy.
