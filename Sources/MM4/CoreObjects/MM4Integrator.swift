@@ -43,7 +43,7 @@ class MM4Integrator {
   
   /// Create an integrator using the specified configuration.
   init(descriptor: MM4IntegratorDescriptor) {
-    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
+    self.integrator = OpenMM_CustomIntegrator(stepSize: 0.002)
     
 //    integrator.addUpdateContextState()
     

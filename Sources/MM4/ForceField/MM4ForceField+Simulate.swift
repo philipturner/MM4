@@ -93,7 +93,9 @@ extension MM4ForceField {
     descriptor.start = true
     descriptor.end = true
     context.currentIntegrator = descriptor
-    context.step(Int(quotient), timeStep: timeStep)
+    if quotient > 0 {
+      context.step(Int(quotient), timeStep: timeStep)
+    }
     if remainder > 0 {
       context.step(1, timeStep: remainder)
     }
