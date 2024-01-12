@@ -62,31 +62,38 @@ extension MM4ForceField {
       fatalError("This should never happen.")
     }
     
-    if quotient == 0 {
-      var descriptor = MM4IntegratorDescriptor()
-      descriptor.start = true
-      descriptor.end = true
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: time)
-    } else {
-      var descriptor = MM4IntegratorDescriptor()
-      descriptor.start = true
-      descriptor.end = false
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: timeStep)
-      
-      if quotient > 1 {
-        descriptor.start = false
-        descriptor.end = false
-        context.currentIntegrator = descriptor
-        context.step(Int(quotient - 1), timeStep: timeStep)
-      }
-      
-      descriptor.start = false
-      descriptor.end = true
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: remainder)
-    }
+//    if quotient == 0 {
+//      var descriptor = MM4IntegratorDescriptor()
+//      descriptor.start = true
+//      descriptor.end = true
+//      context.currentIntegrator = descriptor
+//      context.step(1, timeStep: time)
+//    } else {
+//      var descriptor = MM4IntegratorDescriptor()
+//      descriptor.start = true
+//      descriptor.end = false
+//      context.currentIntegrator = descriptor
+//      context.step(1, timeStep: timeStep)
+//      
+//      if quotient > 1 {
+//        descriptor.start = false
+//        descriptor.end = false
+//        context.currentIntegrator = descriptor
+//        context.step(Int(quotient - 1), timeStep: timeStep)
+//      }
+//      
+//      descriptor.start = false
+//      descriptor.end = true
+//      context.currentIntegrator = descriptor
+//      context.step(1, timeStep: remainder)
+//    }
+    
+    var descriptor = MM4IntegratorDescriptor()
+    descriptor.start = true
+    descriptor.end = true
+    context.currentIntegrator = descriptor
+    context.step(Int(quotient), timeStep: timeStep)
+    context.step(1, timeStep: remainder)
   }
   
   /// Minimize the system's potential energy.
