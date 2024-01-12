@@ -62,12 +62,21 @@ extension MM4System {
 extension MM4System {
   func createExceptions(force: OpenMM_CustomNonbondedForce) {
     for bond in parameters.bonds.indices {
-      let indices = self.virtualSiteReorder(bond)
-      force.addExclusion(particles: indices)
+      let reordered = self.reorder(bond)
+      let virtualSiteReordered = self.virtualSiteReorder(bond)
+      force.addExclusion(particles: reordered)
+      
+      if virtualSiteReordered != reordered {
+        guard any(virtualSiteReordered .== reordered) else {
+          fatalError("This edge case should never happen.")
+        }
+        force.addExclusion(particles: virtualSiteReordered)
+      }
     }
     for exception in parameters.nonbondedExceptions13 {
-      let indices = self.virtualSiteReorder(exception)
-      force.addExclusion(particles: indices)
+      let reordered = self.reorder(exception)
+      let virtualSiteReordered = self.virtualSiteReorder(exception)
+      force.addExclusion(particles: reordered)
     }
   }
   
@@ -75,7 +84,7 @@ extension MM4System {
   func virtualSiteReorder(_ index: UInt32) -> Int {
     var reorderedID = reorderedIndices[Int(index)]
     if parameters.atoms.atomicNumbers[Int(index)] == 1 {
-//      reorderedID &+= 1
+      reorderedID &+= 1
     }
     return Int(reorderedID)
   }
