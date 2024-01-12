@@ -92,16 +92,16 @@ extension MM4System {
     }
     
     // Stop the virtual sites from interfering with themselves.
-//    for atomID in parameters.atoms.indices {
-//      let atomicNumber = parameters.atoms.atomicNumbers[atomID]
-//      guard atomicNumber == 1 else {
-//        continue
-//      }
-//      
-//      let reordered = Int(self.reorderedIndices[atomID])
-//      let exclusion = SIMD2(reordered, reordered &+ 1)
-//      force.addExclusion(particles: exclusion)
-//    }
+    for atomID in parameters.atoms.indices {
+      let atomicNumber = parameters.atoms.atomicNumbers[atomID]
+      guard atomicNumber == 1 else {
+        continue
+      }
+      
+      let reordered = Int(self.reorderedIndices[atomID])
+      let exclusion = SIMD2(reordered, reordered &+ 1)
+      force.addExclusion(particles: exclusion)
+    }
   }
   
   @_transparent
