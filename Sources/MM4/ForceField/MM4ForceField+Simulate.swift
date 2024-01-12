@@ -68,12 +68,17 @@ extension MM4ForceField {
       descriptor.start = true
       descriptor.end = false
       context.currentIntegrator = descriptor
-      context.step(1, timeStep: time)
+      context.step(1, timeStep: timeStep)
+      
+      descriptor.start = false
+      descriptor.end = false
+      context.currentIntegrator = descriptor
+      context.step(0, timeStep: timeStep)
       
       descriptor.start = false
       descriptor.end = true
       context.currentIntegrator = descriptor
-      context.step(1, timeStep: time)
+      context.step(1, timeStep: timeStep)
     } else {
       print("block 2")
       var descriptor = MM4IntegratorDescriptor()
