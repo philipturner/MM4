@@ -103,17 +103,15 @@ class MM4ElectrostaticForce: MM4Force {
     for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
       
-      // Give the original hydrogens zero charge.
-//      if atoms.atomicNumbers[atomID] == 1 {
-//        array[0] = 0
-//        force.addParticle(parameters: array)
-//      }
-      
       // Units: elementary charge
       array[0] = Double(parameters.charge)
       force.addParticle(parameters: array)
       
-      fatalError("Re-activate virtual sites")
+      // Give the original hydrogens zero charge.
+      if atoms.atomicNumbers[atomID] == 1 {
+        array[0] = 0
+        force.addParticle(parameters: array)
+      }
     }
     
     system.createExceptions(force: force)

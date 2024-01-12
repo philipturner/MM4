@@ -71,7 +71,6 @@ extension MM4ForceField {
       let force = system.forces.external
       force.updateForces(newValue, system: system)
       force.updateParametersInContext(context)
-      fatalError("External force currently deactivated.")
     }
   }
   
