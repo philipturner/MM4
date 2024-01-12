@@ -214,47 +214,66 @@ final class DiagonalizationTests: XCTestCase {
         matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
-    // This test case failed before.
+    // This test case caused convergence issues.
     do {
       let matrix = (
         SIMD3(35702.36472773552, -1.3455748558044434e-05, 7.459503173828125),
         SIMD3(-1.3455748558044434e-05, 82421.14924621582, -5.0455331802368164e-05),
         SIMD3(7.459503173828125, -5.0455331802368164e-05, 47511.179409742355))
-      
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
-    // This test case failed before.
+    // This test case caused convergence issues.
     do {
       let matrix = (
         SIMD3(35702.347987532616, 0.007739812135696411, 7.47467041015625),
         SIMD3(0.007739812135696411, 82421.11811828613, 0.007063537836074829),
         SIMD3(7.47467041015625, 0.007063537836074829, 47511.16352403164))
-      
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(229.3068447113037, -9.5367431640625e-07, 3.2782554626464844e-07),
+        SIMD3(-9.5367431640625e-07, 229.3068389892578, -9.685754776000977e-07),
+        SIMD3(3.2782554626464844e-07, -9.685754776000977e-07, 222.27340507507324))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    do {
+      let matrix = (
+        SIMD3(229.30638122558594, 0.00022840499877929688, 0.00021526217460632324),
+        SIMD3(0.00022840499877929688, 229.30638122558594, 0.00021557509899139404),
+        SIMD3(0.00021526217460632324, 0.00021557509899139404, 222.27295684814453))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case has known repeated roots.
     do {
       let matrix = (
         SIMD3(1.0, 0, 0),
         SIMD3(0, 1.0, 0),
         SIMD3(0, 0, 1.0))
-      
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
+    // This test case has known repeated roots.
     do {
       let matrix = (
         SIMD3(2.0, 0, 0),
         SIMD3(0, 2.0, 0),
         SIMD3(0, 0, 1.0))
-      
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")

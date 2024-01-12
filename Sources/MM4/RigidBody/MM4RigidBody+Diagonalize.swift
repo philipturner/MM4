@@ -166,12 +166,9 @@ func diagonalize(
       """)
   }
   
-  // Sort the eigenvalues in descending order. These will be immutable
-  // throughout the gradient descent process.
-  var eigenValuesArray = [root0, root1, root2]
-  eigenValuesArray.sort(by: { $0 > $1 })
-  let eigenValues = SIMD3<Double>(
-    eigenValuesArray[0], eigenValuesArray[1], eigenValuesArray[2])
+  // Sort the eigenvalues in descending order.
+  var eigenValues = [root0, root1, root2]
+  eigenValues.sort(by: { $0 > $1 })
   
   // Find the eigenvector corresponding to each eigenvalue. Start by
   // preconditioning the eigensolver with direct matrix inversion, if possible.
@@ -224,13 +221,13 @@ func diagonalize(
     eigenPairs.sort { $0.w > $1.w }
     
     // Check how close we are to the solution.
-    var currentEigenValues: SIMD3<Double> = .zero
-    for i in 0..<3 {
-      currentEigenValues[i] = eigenPairs[i].w
-    }
-    var eigenValueError = currentEigenValues / eigenValues
+    let revisedValues = eigenPairs.map(\.w)
+    var eigenValueError = SIMD3(
+      revisedValues[0] / eigenValues[0],
+      revisedValues[1] / eigenValues[1],
+      revisedValues[2] / eigenValues[2])
     eigenValueError -= 1
-    eigenValueError *= eigenValueError
+    eigenValueError.replace(with: -eigenValueError, where: eigenValueError .< 0)
     
     // Orthonormalize with the Gram-Schmidt method.
     var x = unsafeBitCast(eigenPairs[0], to: SIMD3<Double>.self)
@@ -251,19 +248,29 @@ func diagonalize(
       (x * y).sum().magnitude,
       (x * z).sum().magnitude,
       (y * z).sum().magnitude)
-    if orthogonalityError.max() < 1e-16,
-       eigenValueError.max() < 1e-16 {
-      break
-    }
-    if trialID == 100 {
-      return (nil, nil, """
-        Failed to refine eigenpairs:
-        λ0 = \(eigenValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
-        λ1 = \(eigenValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
-        λ2 = \(eigenValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
-        Orthogonality error: \(orthogonalityError)
-        Preconditioning succeeded: \(preconditioningSucceeded)
-        """)
+    
+    if trialID <= 10 {
+      if orthogonalityError.max() < 1e-16,
+         eigenValueError.max() < 1e-8 {
+        break
+      }
+    } else if trialID < 100 {
+      if orthogonalityError.max() < 1e-16,
+         eigenValueError.max() < 1e-6 {
+        break
+      }
+    } else {
+      guard orthogonalityError.max() < 1e-16,
+            eigenValueError.max() < 1e-4 else {
+        return (nil, nil, """
+          Failed to refine eigenpairs after 100 iterations:
+          λ0 = \(eigenValues[0]) -> \(revisedValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
+          λ1 = \(eigenValues[1]) -> \(revisedValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
+          λ2 = \(eigenValues[2]) -> \(revisedValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
+          Orthogonality error: \(orthogonalityError)
+          Preconditioning succeeded: \(preconditioningSucceeded)
+          """)
+      }
     }
   }
   
@@ -279,5 +286,6 @@ func diagonalize(
   eigenVectors[2] = cross(
     leftVector: eigenVectors[0], rightVector: eigenVectors[1])
   return (
-    eigenValues, (eigenVectors[0], eigenVectors[1], eigenVectors[2]), nil)
+    SIMD3(eigenValues[0], eigenValues[1], eigenValues[2]),
+    (eigenVectors[0], eigenVectors[1], eigenVectors[2]), nil)
 }
