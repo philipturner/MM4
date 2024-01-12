@@ -73,7 +73,7 @@ extension MM4ForceField {
       descriptor.start = false
       descriptor.end = false
       context.currentIntegrator = descriptor
-      context.step(0, timeStep: timeStep)
+      context.step(1, timeStep: timeStep)
       
       descriptor.start = false
       descriptor.end = true
