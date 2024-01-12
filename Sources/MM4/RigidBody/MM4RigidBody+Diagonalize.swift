@@ -199,7 +199,7 @@ func diagonalize(
   
   // If we cannot find all eigenvectors through direct matrix inversion, start
   // with the slow path that rotates the cardinal axes into the eigenbasis.
-  var preconditioningSucceeded = (eigenVectors.count == 3)
+  let preconditioningSucceeded = (eigenVectors.count == 3)
   var preconditioningActuallySucceeded = false
   if eigenVectors.count == 3 {
     let x = eigenVectors[0]
@@ -253,9 +253,6 @@ func diagonalize(
             (z * x).sum().magnitude < 1e-3 else {
         fatalError("Could not use z as a reference to fix y.")
       }
-      if trialID >= 50 {
-        print("Trial \(trialID): restarted y")
-      }
       y = cross(leftVector: z, rightVector: x)
     }
     
@@ -267,9 +264,6 @@ func diagonalize(
       guard (y * y).sum().magnitude > 1e-3,
             (x * y).sum().magnitude < 1e-3 else {
         fatalError("Could not use y as a reference to fix z.")
-      }
-      if trialID >= 50 {
-        print("Trial \(trialID): restarted z")
       }
       z = cross(leftVector: x, rightVector: y)
     }
