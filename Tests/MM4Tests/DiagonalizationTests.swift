@@ -91,10 +91,7 @@ final class DiagonalizationTests: XCTestCase {
   
   func testDiagonalize() throws {
     func checkEigenPairs(
-      _ actual: (
-        eigenValues: SIMD3<Double>,
-        eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
-      )?,
+      _ matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>),
       _ expected: (
         eigenValues: SIMD3<Double>,
         eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
@@ -102,22 +99,25 @@ final class DiagonalizationTests: XCTestCase {
       file: StaticString = #filePath,
       line: UInt = #line
     ) {
-      guard let actual else {
-        XCTAssert(false, "Matrix failed to diagonalize", file: file, line: line)
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      guard let Λ, let Σ else {
+        XCTAssert(
+          false, "Matrix failed to diagonalize: \(failureReason!)",
+          file: file, line: line)
         return
       }
       
       XCTAssertEqual(
-        actual.eigenValues, expected.eigenValues, ratioAccuracy: 1e-5,
+        Λ, expected.eigenValues, ratioAccuracy: 1e-5,
         file: file, line: line)
       XCTAssertEqual(
-        actual.eigenVectors.0, expected.eigenVectors.0, accuracy: 1e-4,
+        Σ.0, expected.eigenVectors.0, accuracy: 1e-4,
         file: file, line: line)
       XCTAssertEqual(
-        actual.eigenVectors.1, expected.eigenVectors.1, accuracy: 1e-4,
+        Σ.1, expected.eigenVectors.1, accuracy: 1e-4,
         file: file, line: line)
       XCTAssertEqual(
-        actual.eigenVectors.2, expected.eigenVectors.2, accuracy: 1e-4,
+        Σ.2, expected.eigenVectors.2, accuracy: 1e-4,
         file: file, line: line)
     }
     
@@ -132,10 +132,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, 0, 1.0),
         SIMD3(-0.0076379897, 0.99997085, 0),
         SIMD3(-0.99997085, -0.0076379897, 0))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     do {
@@ -149,10 +147,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, 0, 1.0),
         SIMD3(-0.0076379897, 0.99997085, 0),
         SIMD3(-0.99997085, -0.0076379897, 0))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     do {
@@ -166,10 +162,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, -0.17364809, 0.9848078),
         SIMD3(-0.0076380027, 0.98477906, 0.17364302),
         SIMD3(-0.99997085, -0.0075219646, -0.0013263224))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 1 eigenvector.
@@ -184,10 +178,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.77459675, -0.19999957, 0.6),
         SIMD3(0.3834677, 0.90293205, -0.19407801),
         SIMD3(-0.5029437, 0.38041282, 0.7761016))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 1 eigenvector.
@@ -202,10 +194,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(-0.41388798, -0.09375615, 0.9054869),
         SIMD3(0.23297852, 0.9506457, 0.20492388),
         SIMD3(-0.88001007, 0.29577452, -0.37161765))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 2 eigenvectors.
@@ -220,10 +210,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.9168911, 0.1343581, 0.37584394),
         SIMD3(0.05351307, 0.89175814, -0.44933698),
         SIMD3(-0.39553395, 0.43210563, 0.8104552))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case failed before.
@@ -233,8 +221,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(-1.3455748558044434e-05, 82421.14924621582, -5.0455331802368164e-05),
         SIMD3(7.459503173828125, -5.0455331802368164e-05, 47511.179409742355))
       
-      let eigenPairs = diagonalize(matrix: matrix)
-      XCTAssertNotNil(eigenPairs)
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
     // This test case failed before.
@@ -244,8 +233,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.007739812135696411, 82421.11811828613, 0.007063537836074829),
         SIMD3(7.47467041015625, 0.007063537836074829, 47511.16352403164))
       
-      let eigenPairs = diagonalize(matrix: matrix)
-      XCTAssertNotNil(eigenPairs)
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
     do {
@@ -254,8 +244,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, 1.0, 0),
         SIMD3(0, 0, 1.0))
       
-      let eigenPairs = diagonalize(matrix: matrix)
-      XCTAssertNotNil(eigenPairs)
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
     }
     
     do {
@@ -264,8 +255,9 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, 2.0, 0),
         SIMD3(0, 0, 1.0))
       
-      let eigenPairs = diagonalize(matrix: matrix)
-      XCTAssertNotNil(eigenPairs)
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
     }
   }
 }

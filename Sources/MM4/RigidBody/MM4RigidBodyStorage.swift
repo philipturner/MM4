@@ -48,7 +48,7 @@ final class MM4RigidBodyStorage {
     // Linear Position
     mass = createMass()
     guard mass > .leastNormalMagnitude else {
-      throw MM4Error.defectiveInertiaTensor((.zero, .zero, .zero))
+      throw MM4Error.defectiveInertiaTensor((.zero, .zero, .zero), "Zero mass.")
     }
     centerOfMass = createCenterOfMass()
     normalizeLinearPositions(to: centerOfMass)
@@ -59,10 +59,11 @@ final class MM4RigidBodyStorage {
     
     // Angular Position
     let inertiaTensor = createInertiaTensor()
-    guard let eigenPairs = diagonalize(matrix: inertiaTensor) else {
-      throw MM4Error.defectiveInertiaTensor(inertiaTensor)
+    let (Λ, Σ, failureReason) = diagonalize(matrix: inertiaTensor)
+    guard let Λ, let Σ else {
+      throw MM4Error.defectiveInertiaTensor(inertiaTensor, failureReason!)
     }
-    (momentOfInertia, principalAxes) = eigenPairs
+    (momentOfInertia, principalAxes) = (Λ, Σ)
     normalizeOrientation(to: principalAxes)
     
     // Angular Momentum
