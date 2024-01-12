@@ -14,9 +14,8 @@ class MM4Context {
   var integrators: [MM4IntegratorDescriptor: Int] = [:]
   
   init(system: MM4System, platform: OpenMM_Platform?) {
-//    self.compoundIntegrator = OpenMM_VerletIntegrator(stepSize: 0)
     self.compoundIntegrator = OpenMM_CompoundIntegrator()
-//    
+    
     for start in [false, true] {
       for end in [false, true] {
         var descriptor = MM4IntegratorDescriptor()

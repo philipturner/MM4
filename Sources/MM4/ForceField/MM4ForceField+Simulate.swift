@@ -62,41 +62,29 @@ extension MM4ForceField {
       fatalError("This should never happen.")
     }
     
-//    if quotient == 0 {
-//      var descriptor = MM4IntegratorDescriptor()
-//      descriptor.start = true
-//      descriptor.end = true
-//      context.currentIntegrator = descriptor
-//      context.step(1, timeStep: time)
-//    } else {
-//      var descriptor = MM4IntegratorDescriptor()
-//      descriptor.start = true
-//      descriptor.end = false
-//      context.currentIntegrator = descriptor
-//      context.step(1, timeStep: timeStep)
-//      
-//      if quotient > 1 {
-//        descriptor.start = false
-//        descriptor.end = false
-//        context.currentIntegrator = descriptor
-//        context.step(Int(quotient - 1), timeStep: timeStep)
-//      }
-//      
-//      descriptor.start = false
-//      descriptor.end = true
-//      context.currentIntegrator = descriptor
-//      context.step(1, timeStep: remainder)
-//    }
-    
-    print("integrating:", time, timeStep, quotient, remainder)
-    var descriptor = MM4IntegratorDescriptor()
-    descriptor.start = true
-    descriptor.end = true
-    context.currentIntegrator = descriptor
-    if quotient > 0 {
-      context.step(Int(quotient), timeStep: timeStep)
-    }
-    if remainder > 0 {
+    if quotient == 0 {
+      var descriptor = MM4IntegratorDescriptor()
+      descriptor.start = true
+      descriptor.end = true
+      context.currentIntegrator = descriptor
+      context.step(1, timeStep: time)
+    } else {
+      var descriptor = MM4IntegratorDescriptor()
+      descriptor.start = true
+      descriptor.end = false
+      context.currentIntegrator = descriptor
+      context.step(1, timeStep: timeStep)
+      
+      if quotient > 1 {
+        descriptor.start = false
+        descriptor.end = false
+        context.currentIntegrator = descriptor
+        context.step(Int(quotient - 1), timeStep: timeStep)
+      }
+      
+      descriptor.start = false
+      descriptor.end = true
+      context.currentIntegrator = descriptor
       context.step(1, timeStep: remainder)
     }
   }
