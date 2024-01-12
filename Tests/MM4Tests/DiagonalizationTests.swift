@@ -234,22 +234,6 @@ final class DiagonalizationTests: XCTestCase {
         matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
-    // This test case had a tricky characteristic polynomial.
-    do {
-      let matrix = (
-        SIMD3(229.7359676361084, -1.7881393432617188e-07, 2.3543834686279297e-06),
-        SIMD3(-1.7881393432617188e-07, 229.73597145080566, -2.1904706954956055e-06),
-        SIMD3(2.3543834686279297e-06, -2.1904706954956055e-06, 222.37041091918945))
-      let expectedEigenValues = SIMD3(
-        229.73596954351274, 229.73596954351274, 222.37041091907804)
-      let expectedEigenVectors = (
-        SIMD3(-0.6539075673671945, 0.7565518951375797, 0.005841515527202881),
-        SIMD3(0.756307039626987, 0.6538622261567238, -0.02153720074745753),
-        SIMD3(-0.020113556388193437, -0.009665359233354986, -0.9997509818351312))
-      checkEigenPairs(
-        matrix, (expectedEigenValues, expectedEigenVectors))
-    }
-    
     // This test case caused convergence issues.
     do {
       let matrix = (
@@ -311,6 +295,28 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(2.0, 0, 0),
         SIMD3(0, 2.0, 0),
         SIMD3(0, 0, 1.0))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case had a tricky characteristic polynomial.
+    do {
+      let matrix = (
+        SIMD3(229.7359676361084, -1.7881393432617188e-07, 2.3543834686279297e-06),
+        SIMD3(-1.7881393432617188e-07, 229.73597145080566, -2.1904706954956055e-06),
+        SIMD3(2.3543834686279297e-06, -2.1904706954956055e-06, 222.37041091918945))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3<Double>(230.0067958831787, 2.384185791015625e-07, 2.562999725341797e-06),
+        SIMD3<Double>(2.384185791015625e-07, 230.00679206848145, -1.2218952178955078e-06),
+        SIMD3<Double>(2.562999725341797e-06, -1.2218952178955078e-06, 222.01723098754883))
       let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
       XCTAssertNotNil(Λ)
       XCTAssertNotNil(Σ, failureReason ?? "")

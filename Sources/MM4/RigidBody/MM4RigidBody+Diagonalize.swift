@@ -38,8 +38,8 @@ func factorCubicPolynomial(coefficients: SIMD4<Double>) -> (
   let cbrtTermSIMD = SIMD2(cubeRootTerm.real, cubeRootTerm.imaginary)
   let cbrtTermLengthSq = (cbrtTermSIMD * cbrtTermSIMD).sum()
   if cbrtTermLengthSq.magnitude < .leastNormalMagnitude {
-    // Handle the case of a triply-repeated real root. We don't yet handle the
-    // case of a doubly-repeated real root.
+    // Handle the case of a 3-fold repeated real root. We don't yet handle the
+    // case of a 2-fold repeated real root.
     if Δ0.magnitude < .leastNormalMagnitude {
       let repeatedRoot = b / Double(-3 * a)
       return (repeatedRoot, repeatedRoot, repeatedRoot)
@@ -214,7 +214,7 @@ func diagonalize(
     var eigenPairs = eigenVectors.map { vector in
       let Av = gemv(matrix: matrix, vector: vector)
       let λ = (Av * Av).sum().squareRoot()
-      return SIMD4(Av, λ)
+      return SIMD4(Av / λ, λ)
     }
     
     // Sort the eigenpairs in descending order.
@@ -230,19 +230,33 @@ func diagonalize(
     eigenValueError.replace(with: -eigenValueError, where: eigenValueError .< 0)
     
     // Orthonormalize with the Gram-Schmidt method.
-    var x = unsafeBitCast(eigenPairs[0], to: SIMD3<Double>.self)
+    let x = unsafeBitCast(eigenPairs[0], to: SIMD3<Double>.self)
     var y = unsafeBitCast(eigenPairs[1], to: SIMD3<Double>.self)
     var z = unsafeBitCast(eigenPairs[2], to: SIMD3<Double>.self)
-    x /= eigenPairs[0].w
     y -= (y * x).sum() * x
     z -= (z * x).sum() * x
-    guard normalize(vector: y) != nil else {
-      print("Caught problematic case.")
-      print(matrix)
-      exit(0)
+    
+    // Handle the case of a 2-fold repeated root.
+    if (y * y).sum().squareRoot() < 1e-3 {
+      guard (z * z).sum().magnitude > 1e-3,
+            (z * x).sum().magnitude < 1e-3 else {
+        fatalError("Could not use z as a reference to fix y.")
+      }
+      y = cross(leftVector: z, rightVector: x)
     }
+    
     y = normalize(vector: y)!
     z -= (z * y).sum() * y
+    
+    // Handle the case of a 2-fold repeated root.
+    if (z * z).sum().squareRoot() < 1e-3 {
+      guard (y * y).sum().magnitude > 1e-3,
+            (x * y).sum().magnitude < 1e-3 else {
+        fatalError("Could not use y as a reference to fix z.")
+      }
+      z = cross(leftVector: x, rightVector: y)
+    }
+    
     z = normalize(vector: z)!
     eigenVectors[0] = x
     eigenVectors[1] = y
