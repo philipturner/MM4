@@ -301,13 +301,11 @@ func diagonalize(
     } else if trialID < 100 {
       if orthogonalityError.max() < 1e-12,
          eigenValueError.max() < 1e-6 {
-        print("Converged after \(trialID) iterations.")
         break
       }
     } else if trialID < 300 {
       if orthogonalityError.max() < 1e-8,
          eigenValueError.max() < 1e-4 {
-        print("Converged after \(trialID) iterations.")
         break
       }
     } else {
@@ -321,7 +319,6 @@ func diagonalize(
           Orthogonality error: \(orthogonalityError)
           """)
       }
-      print("Converged after 300 iterations.")
     }
   }
   
