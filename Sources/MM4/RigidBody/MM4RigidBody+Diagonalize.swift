@@ -167,8 +167,11 @@ func diagonalize(
   }
   
   // Sort the eigenvalues in descending order.
-  var eigenValues = [root0, root1, root2]
-  eigenValues.sort(by: { $0 > $1 })
+  var eigenValuesArray = [root0, root1, root2]
+  eigenValuesArray.sort(by: { $0 > $1 })
+  let eigenValues = SIMD3(eigenValuesArray[0],
+                          eigenValuesArray[1],
+                          eigenValuesArray[2])
   
   // Find the eigenvector corresponding to each eigenvalue. Start by
   // preconditioning the eigensolver with direct matrix inversion, if possible.
@@ -220,23 +223,40 @@ func diagonalize(
   }
   
   // Execute something like conjugate gradient descent.
+  var eigenPairs: [SIMD4<Double>] = Array(repeating: .zero, count: 3)
   for trialID in 1...300 {
     // Perform an Arnoldi iteration on each candidate vector.
-    var eigenPairs = eigenVectors.map { vector in
+    @_transparent
+    func createEigenPair(_ i: Int) -> SIMD4<Double> {
+      let vector = eigenVectors[i]
       let Av = gemv(matrix: matrix, vector: vector)
       let λ = (Av * Av).sum().squareRoot()
       return SIMD4(Av / λ, λ)
     }
+    eigenPairs[0] = createEigenPair(0)
+    eigenPairs[1] = createEigenPair(1)
+    eigenPairs[2] = createEigenPair(2)
     
     // Sort the eigenpairs in descending order.
-    eigenPairs.sort { $0.w > $1.w }
+    if eigenPairs[1].w > eigenPairs[0].w {
+      var temp = eigenPairs[1]
+      eigenPairs[1] = eigenPairs[0]
+      eigenPairs[0] = temp
+    }
+    if eigenPairs[2].w > eigenPairs[0].w {
+      var temp = eigenPairs[2]
+      eigenPairs[2] = eigenPairs[0]
+      eigenPairs[0] = temp
+    }
+    if eigenPairs[2].w > eigenPairs[1].w {
+      var temp = eigenPairs[2]
+      eigenPairs[2] = eigenPairs[1]
+      eigenPairs[1] = temp
+    }
     
     // Check how close we are to the solution.
-    let revisedValues = eigenPairs.map(\.w)
-    var eigenValueError = SIMD3(
-      revisedValues[0] / eigenValues[0],
-      revisedValues[1] / eigenValues[1],
-      revisedValues[2] / eigenValues[2])
+    let revisedValues = SIMD3(eigenPairs[0].w, eigenPairs[1].w, eigenPairs[2].w)
+    var eigenValueError = revisedValues / eigenValues
     eigenValueError -= 1
     eigenValueError.replace(with: -eigenValueError, where: eigenValueError .< 0)
     
@@ -287,11 +307,13 @@ func diagonalize(
     } else if trialID < 100 {
       if orthogonalityError.max() < 1e-12,
          eigenValueError.max() < 1e-6 {
+        print("Converged after \(trialID) iterations.")
         break
       }
     } else if trialID < 300 {
       if orthogonalityError.max() < 1e-8,
          eigenValueError.max() < 1e-4 {
+        print("Converged after \(trialID) iterations.")
         break
       }
     } else {
@@ -307,6 +329,7 @@ func diagonalize(
           Preconditioning actually succeeded: \(preconditioningActuallySucceeded)
           """)
       }
+      print("Converged after 300 iterations.")
     }
   }
   
