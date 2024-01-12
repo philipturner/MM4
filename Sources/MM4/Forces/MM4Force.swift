@@ -117,9 +117,9 @@ class MM4Forces {
     torsionExtended.addForces(to: system)
     
     // Force Group 2
-//    bend.addForces(to: system)
+    bend.addForces(to: system)
     bendBend.addForces(to: system)
     bendExtended.addForces(to: system)
-//    stretch.addForces(to: system)
+    stretch.addForces(to: system)
   }
 }
