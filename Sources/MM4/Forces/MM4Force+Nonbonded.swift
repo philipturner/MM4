@@ -10,6 +10,17 @@ import OpenMM
 
 class MM4NonbondedForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeNonbonded = false
+    for params in system.parameters.atoms.parameters {
+      if params.epsilon.default != 0 || params.epsilon.hydrogen != 0 {
+        includeNonbonded = true
+      }
+    }
+    guard includeNonbonded else {
+      super.init(forces: [], forceGroup: 1)
+      return
+    }
+    
     // WARNING
     //
     // The hydrogens needs to be shifted toward C/Si/Ge by a factor of 0.94.
@@ -46,11 +57,13 @@ class MM4NonbondedForce: MM4Force {
     // minimum of the vdW well is ~0.1 zJ, the crossover with the clamped region
     // occurs on the scale of attojoules. This can be seen by changing the 1000x
     // multiplier for every equation to 1x.
+    
     let force = OpenMM_CustomNonbondedForce(energy: """
       epsilon * (
-        -2.25 * (min(2, radius / r))^6 +
-        1.84e5 * exp(-12.00 * (r / radius))
+        -2.25 * (min(2, radius / safe_r))^6 +
+        1.84e5 * exp(-12.00 * (safe_r / radius))
       );
+      safe_r = max(0.001, r);
       epsilon = select(isHydrogenBond, heteroatomEpsilon, hydrogenEpsilon);
       radius = select(isHydrogenBond, heteroatomRadius, hydrogenRadius);
       
@@ -65,16 +78,19 @@ class MM4NonbondedForce: MM4Force {
     force.addPerParticleParameter(name: "radius")
     force.addPerParticleParameter(name: "hydrogenRadius")
     
-    force.nonbondedMethod = .cutoffNonPeriodic
-    force.useSwitchingFunction = true
-    force.cutoffDistance = Double(descriptor.cutoffDistance)
-    force.switchingDistance = Double(
-      descriptor.cutoffDistance * pow(1.0 / 3, 1.0 / 6))
+    if let cutoffDistance = descriptor.cutoffDistance {
+      force.nonbondedMethod = .cutoffNonPeriodic
+      force.useSwitchingFunction = true
+      force.cutoffDistance = Double(cutoffDistance)
+      force.switchingDistance = Double(cutoffDistance * pow(1.0 / 3, 1.0 / 6))
+    } else {
+      force.nonbondedMethod = .noCutoff
+    }
     
-    var forceActive = false
+    
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms
-    for atomID in system.originalIndices {
+    for atomID in atoms.indices {
       let parameters = atoms.parameters[Int(atomID)]
       
       // Units: kcal/mol -> kJ/mol
@@ -88,11 +104,17 @@ class MM4NonbondedForce: MM4Force {
       array[2] = Double(radius) * OpenMM_NmPerAngstrom
       array[3] = Double(hydrogenRadius) * OpenMM_NmPerAngstrom
       force.addParticle(parameters: array)
-      forceActive = true
+      
+      // Give the original hydrogens zero vdW energy.
+      if atoms.atomicNumbers[atomID] == 1 {
+        array[0] = 0
+        array[1] = 0
+        force.addParticle(parameters: array)
+      }
     }
     
     system.createExceptions(force: force)
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 1)
   }
 }
 
@@ -104,21 +126,35 @@ class MM4NonbondedForce: MM4Force {
 /// exp(-12) term is omitted.
 class MM4NonbondedExceptionForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeNonbonded = false
+    for params in system.parameters.atoms.parameters {
+      if params.epsilon.default != 0 || params.epsilon.hydrogen != 0 {
+        includeNonbonded = true
+      }
+    }
+    guard includeNonbonded else {
+      super.init(forces: [], forceGroup: 1)
+      return
+    }
+    
     // It seems like "disfac" was the dispersion factor, similar to the DISP-14
     // keyword in Tinker. Keep the Pauli repulsion force the same though.
-    let dispersionFactor: Double = 0.550
-    let correction = dispersionFactor - 1
-    let force = OpenMM_CustomBondForce(energy: """
+    func createForce() -> OpenMM_CustomBondForce {
+      let dispersionFactor: Double = 0.550
+      let correction = dispersionFactor - 1
+      let force = OpenMM_CustomBondForce(energy: """
       epsilon * (
         \(-2.25 * correction) * (min(2, radius / r))^6
       );
       """)
-    force.addPerBondParameter(name: "epsilon")
-    force.addPerBondParameter(name: "radius")
-    var forceActive = false
+      force.addPerBondParameter(name: "epsilon")
+      force.addPerBondParameter(name: "radius")
+      return force
+    }
     
     // Separate force for (Si, Ge) to (H, C, Si, Ge) interactions.
-    let legacyForce = OpenMM_CustomBondForce(energy: """
+    func createLegacyForce() -> OpenMM_CustomBondForce {
+      let legacyForce = OpenMM_CustomBondForce(energy: """
       legacyEpsilon * (
         -2.25 * (min(2, legacyRadius / r))^6 +
         1.84e5 * exp(-12.00 * (r / legacyRadius))
@@ -127,11 +163,15 @@ class MM4NonbondedExceptionForce: MM4Force {
         1.84e5 * exp(-12.00 * (r / radius))
       );
       """)
-    legacyForce.addPerBondParameter(name: "epsilon")
-    legacyForce.addPerBondParameter(name: "radius")
-    legacyForce.addPerBondParameter(name: "legacyEpsilon")
-    legacyForce.addPerBondParameter(name: "legacyRadius")
-    var legacyForceActive = false
+      legacyForce.addPerBondParameter(name: "epsilon")
+      legacyForce.addPerBondParameter(name: "radius")
+      legacyForce.addPerBondParameter(name: "legacyEpsilon")
+      legacyForce.addPerBondParameter(name: "legacyRadius")
+      return legacyForce
+    }
+    
+    var force: OpenMM_CustomBondForce!
+    var legacyForce: OpenMM_CustomBondForce!
     
     // TODO: Test how different choices affect the accuracy of molecular
     // structures, similar to the testing of electrostatic exceptions:
@@ -162,7 +202,6 @@ class MM4NonbondedExceptionForce: MM4Force {
       // Units: kcal/mol -> zJ, angstrom -> nm
       array[0] = Double(epsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
       array[1] = Double(radius) * OpenMM_NmPerAngstrom
-      var selectedForce = force
       
       let atomicNumber1 = atoms.atomicNumbers[Int(exception[0])]
       let atomicNumber2 = atoms.atomicNumbers[Int(exception[0])]
@@ -177,6 +216,7 @@ class MM4NonbondedExceptionForce: MM4Force {
       // R=0.94 distance that MM3 was not parameterized with. The expected
       // impact is small, dwarfed by the difference in C-Si and C-Ge exceptions.
       // In addition, correcting the hydrogens would complicate the code.
+      var selectedForce: OpenMM_CustomBondForce
       if any(siliconMask .| germaniumMask),
          all(hydrogenMask .| carbonMask .| siliconMask .| germaniumMask) {
         // Change the 8-bit masks to 32-bit for selecting FP32 numbers.
@@ -202,17 +242,21 @@ class MM4NonbondedExceptionForce: MM4Force {
         // Units: kcal/mol -> zJ, angstrom -> nm
         array[2] = Double(legacyEpsilon) * OpenMM_KJPerKcal * MM4ZJPerKJPerMol
         array[3] = Double(legacyRadius) * OpenMM_NmPerAngstrom
+        
+        if legacyForce == nil {
+          legacyForce = createLegacyForce()
+        }
         selectedForce = legacyForce
-        legacyForceActive = true
       } else {
-        forceActive = true
+        if force == nil {
+          force = createForce()
+        }
+        selectedForce = force
       }
       
       let particles = system.virtualSiteReorder(exception)
       selectedForce.addBond(particles: particles, parameters: array)
     }
-    super.init(
-      forces: [force, legacyForce],
-      forcesActive: [forceActive, legacyForceActive], forceGroup: 1)
+    super.init(forces: [force, legacyForce], forceGroup: 1)
   }
 }

@@ -52,15 +52,15 @@ class MM4BendForce: MM4Force {
     // - 143.88 is the conversion factor from aJ -> kcal/mol
     // - 71.94 = 143.88 / 2
     //
-    let correction = 180 / Float.pi
-    // let bendingStiffness = /*71.94*/ 1.00 * bendingStiffness
-    let cubicTerm = 0.014 * correction
-    let quarticTerm = 5.6e-5 * pow(correction, 2)
-    let quinticTerm = 7.0e-7 * pow(correction, 3)
-    let sexticTerm = 2.2e-8 * pow(correction, 4)
-    
-    var forceActive = false
-    let force = OpenMM_CustomCompoundBondForce(numParticles: 3, energy: """
+    func createForce() -> OpenMM_CustomCompoundBondForce {
+      let correction = 180 / Float.pi
+      // let bendingStiffness = /*71.94*/ 1.00 * bendingStiffness
+      let cubicTerm = 0.014 * correction
+      let quarticTerm = 5.6e-5 * pow(correction, 2)
+      let quinticTerm = 7.0e-7 * pow(correction, 3)
+      let sexticTerm = 2.2e-8 * pow(correction, 4)
+      
+      let force = OpenMM_CustomCompoundBondForce(numParticles: 3, energy: """
       bend + stretchBend;
       bend = bendingStiffness * deltaTheta^2 * (
         1
@@ -77,11 +77,14 @@ class MM4BendForce: MM4Force {
       deltaLengthLeft = distance(p1, p2) - equilibriumLengthLeft;
       deltaLengthRight = distance(p3, p2) - equilibriumLengthRight;
       """)
-    force.addPerBondParameter(name: "bendingStiffness")
-    force.addPerBondParameter(name: "equilibriumAngle")
-    force.addPerBondParameter(name: "stretchBendStiffness")
-    force.addPerBondParameter(name: "equilibriumLengthLeft")
-    force.addPerBondParameter(name: "equilibriumLengthRight")
+      force.addPerBondParameter(name: "bendingStiffness")
+      force.addPerBondParameter(name: "equilibriumAngle")
+      force.addPerBondParameter(name: "stretchBendStiffness")
+      force.addPerBondParameter(name: "equilibriumLengthLeft")
+      force.addPerBondParameter(name: "equilibriumLengthRight")
+      return force
+    }
+    var force: OpenMM_CustomCompoundBondForce!
     
     let particles = OpenMM_IntArray(size: 3)
     let array = OpenMM_DoubleArray(size: 5)
@@ -90,6 +93,15 @@ class MM4BendForce: MM4Force {
     for angleID in angles.indices.indices {
       let angle = angles.indices[angleID]
       let parameters = angles.parameters[angleID]
+      guard parameters.bendingStiffness != 0 else {
+        precondition(
+          parameters.bendBendStiffness == 0,
+          "Cannot have bend-bend force without bend force.")
+        precondition(
+          parameters.stretchBendStiffness == 0,
+          "Cannot have stretch-bend force without bend force.")
+        continue
+      }
       
       // Units: millidyne-angstrom/rad^2 -> kJ/mol/rad^2
       //                    kJ/mol/rad^2 -> zJ/rad^2
@@ -137,18 +149,30 @@ class MM4BendForce: MM4Force {
       array[2] = stretchBendStiffness
       array[3] = createLength(bondLeft)
       array[4] = createLength(bondRight)
+      
+      if force == nil {
+        force = createForce()
+      }
       force.addBond(particles: particles, parameters: array)
-      forceActive = true
     }
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 2)
+    super.init(forces: [force], forceGroup: 2)
   }
 }
 
 /// Angle bend-bend force.
-///
-/// This object may be deleted during a future optimization.
 class MM4BendBendForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    var includeBendBend = false
+    for params in system.parameters.angles.parameters {
+      if params.bendBendStiffness != 0 {
+        includeBendBend = true
+      }
+    }
+    guard includeBendBend else {
+      super.init(forces: [], forceGroup: 2)
+      return
+    }
+    
     // Sequence of indices for both generating energy expressions and fetching
     // angles during per-atom iteration.
     let indexSequence: [SIMD2<Int>] = [
@@ -158,7 +182,7 @@ class MM4BendBendForce: MM4Force {
     
     // Make a different optimized bend-bend force for trivalent and tetravalent
     // atoms.
-    func makeForce(
+    func createForce(
       valenceCount: Int, angleCount: Int
     ) -> OpenMM_CustomCompoundBondForce {
       var energy: String = ""
@@ -197,10 +221,8 @@ class MM4BendBendForce: MM4Force {
     }
     
     // These is no bend-bend force for divalent atoms.
-    let trivalentForce = makeForce(valenceCount: 3, angleCount: 3)
-    let tetravalentForce = makeForce(valenceCount: 4, angleCount: 6)
-    let forces = [trivalentForce, tetravalentForce]
-    var forcesActive = [false, false]
+    var trivalentForce: OpenMM_CustomCompoundBondForce!
+    var tetravalentForce: OpenMM_CustomCompoundBondForce!
     
     let particleArrays = [
       OpenMM_IntArray(size: 1 + 3),
@@ -212,6 +234,7 @@ class MM4BendBendForce: MM4Force {
     ]
     let atoms = system.parameters.atoms
     let angles = system.parameters.angles
+    
     for atomID in atoms.indices {
       let atomicNumber = atoms.atomicNumbers[atomID]
       var valenceCount: Int
@@ -243,6 +266,7 @@ class MM4BendBendForce: MM4Force {
       }
       
       let array = parameterArrays[arrayIndex]
+      var includeParticles = false
       for i in 0..<angleCount {
         let sequence = indexSequence[i]
         var angle = SIMD3(
@@ -266,20 +290,36 @@ class MM4BendBendForce: MM4Force {
         var equilibriumAngle = Double(parameters.equilibriumAngle)
         equilibriumAngle *= OpenMM_RadiansPerDegree
         array[2 * i + 1] = equilibriumAngle
+        
+        if bendBendStiffness != 0 {
+          includeParticles = true
+        }
       }
-      forces[arrayIndex].addBond(particles: particles, parameters: array)
-      forcesActive[arrayIndex] = true
+      guard includeParticles else {
+        continue
+      }
+      
+      if arrayIndex == 0 {
+        if trivalentForce == nil {
+          trivalentForce = createForce(valenceCount: 3, angleCount: 3)
+        }
+        trivalentForce.addBond(particles: particles, parameters: array)
+      } else {
+        if tetravalentForce == nil {
+          tetravalentForce = createForce(valenceCount: 4, angleCount: 6)
+        }
+        tetravalentForce.addBond(particles: particles, parameters: array)
+      }
     }
-    super.init(forces: forces, forcesActive: forcesActive, forceGroup: 2)
+    super.init(forces: [trivalentForce, tetravalentForce], forceGroup: 2)
   }
 }
 
 /// Type 2 stretch-bend and stretch-stretch force.
 class MM4BendExtendedForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
-    // In the future, create a separate force, only for fluorines that have a
-    // stretch-stretch interaction.
-    let force = OpenMM_CustomCompoundBondForce(numParticles: 5, energy: """
+    func createForce() -> OpenMM_CustomCompoundBondForce {
+      let force = OpenMM_CustomCompoundBondForce(numParticles: 5, energy: """
       stretchBend + stretchStretch;
       stretchBend = stretchBendStiffness * deltaTheta * (
         deltaLength4 + deltaLength5
@@ -294,14 +334,16 @@ class MM4BendExtendedForce: MM4Force {
       deltaLength4 = distance(p1, p4) - equilibriumLength4;
       deltaLength5 = distance(p1, p5) - equilibriumLength5;
       """)
-    force.addPerBondParameter(name: "stretchBendStiffness")
-    force.addPerBondParameter(name: "stretchStretchStiffness")
-    force.addPerBondParameter(name: "equilibriumAngle")
-    force.addPerBondParameter(name: "equilibriumLength2")
-    force.addPerBondParameter(name: "equilibriumLength3")
-    force.addPerBondParameter(name: "equilibriumLength4")
-    force.addPerBondParameter(name: "equilibriumLength5")
-    var forceActive = false
+      force.addPerBondParameter(name: "stretchBendStiffness")
+      force.addPerBondParameter(name: "stretchStretchStiffness")
+      force.addPerBondParameter(name: "equilibriumAngle")
+      force.addPerBondParameter(name: "equilibriumLength2")
+      force.addPerBondParameter(name: "equilibriumLength3")
+      force.addPerBondParameter(name: "equilibriumLength4")
+      force.addPerBondParameter(name: "equilibriumLength5")
+      return force
+    }
+    var force: OpenMM_CustomCompoundBondForce!
     
     // Iterate by angles instead of by atoms this time.
     let particles = OpenMM_IntArray(size: 5)
@@ -376,9 +418,12 @@ class MM4BendExtendedForce: MM4Force {
         equilibriumLength *= OpenMM_NmPerAngstrom
         array[2 + i] = equilibriumLength
       }
+      
+      if force == nil {
+        force = createForce()
+      }
       force.addBond(particles: particles, parameters: array)
-      forceActive = true
     }
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 2)
+    super.init(forces: [force], forceGroup: 2)
   }
 }

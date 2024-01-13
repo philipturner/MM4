@@ -5,9 +5,11 @@ import MM4
 
 final class MM4ParametersTests: XCTestCase {
   
-  // TODO: Avoid the cost of computing zeroed out forces, except for nonbonded
-  // TODO: Add unit tests for omitting torsions and cross-terms
-  // TODO: Add unit tests for omitting 100% of the parameters
+  // TODO: Enhance the XTBProcess code to launch a programmatic process. It
+  // might still write to disk and require a directory, but it enables much
+  // faster feedback loops to quickly compare different structures. Maybe
+  // even multithreading - multiple CPU cores executing a different XTB
+  // processes in parallel, in different directories.
   
   func testAdamantane() throws {
     try testAdamantaneVariant(atomCode: .alkaneCarbon)
@@ -46,9 +48,16 @@ final class MM4ParametersTests: XCTestCase {
     try _testParametersCombination(descriptors)
   }
   
-  #if RELEASE
+#if RELEASE
   func testParametersSpeed() throws {
-    _ = NCFPart(forces: [
+    let part0 = NCFPart(forces: [])
+    let part1 = NCFPart(forces: [.nonbonded])
+    let part2 = NCFPart(forces: [
+      .bend,
+      .stretch,
+      .nonbonded
+    ])
+    let part3 = NCFPart(forces: [
       .bend,
       .bendBend,
       .nonbonded,
@@ -59,14 +68,80 @@ final class MM4ParametersTests: XCTestCase {
       .torsionBend,
       .torsionStretch,
     ])
-    _ = NCFPart(forces: [
-      .bend,
-      .stretch,
-      .nonbonded
-    ])
-    _ = NCFPart(forces: [.nonbonded])
+    
+    // After testing execution speed, recycle this unit test to judge whether
+    // parameters were omitted correctly. There should be no (1,4) nonbonded
+    // exceptions for the NCFParts without torsions. Also check that (1,3)
+    // exceptions appear where they should and don't appear where they
+    // shouldn't.
+    let parts = [part0, part1, part2, part3]
+    for partID in parts.indices {
+      let parameters = parts[partID].rigidBody.parameters
+      
+      XCTAssertGreaterThan(parameters.atoms.count, 0)
+      for atomID in parameters.atoms.indices {
+        let params = parameters.atoms.parameters[atomID]
+        XCTAssertNotEqual(params.radius.default, 0)
+        XCTAssertNotEqual(params.radius.hydrogen, 0)
+        if partID >= 1 {
+          XCTAssertNotEqual(params.epsilon.default, 0)
+          XCTAssertNotEqual(params.epsilon.hydrogen, 0)
+        } else {
+          XCTAssertEqual(params.epsilon.default, 0)
+          XCTAssertEqual(params.epsilon.hydrogen, 0)
+        }
+      }
+      
+      XCTAssertGreaterThan(parameters.bonds.indices.count, 0)
+      for bondID in parameters.bonds.indices.indices {
+        let params = parameters.bonds.parameters[bondID]
+        if partID >= 2 {
+          XCTAssertNotEqual(params.potentialWellDepth, 0)
+          XCTAssertNotEqual(params.stretchingStiffness, 0)
+          XCTAssertNotEqual(params.equilibriumLength, 0)
+        } else {
+          XCTAssertEqual(params.potentialWellDepth, 0)
+          XCTAssertEqual(params.stretchingStiffness, 0)
+          XCTAssertEqual(params.equilibriumLength, 0)
+        }
+      }
+      
+      XCTAssertGreaterThan(parameters.angles.indices.count, 0)
+      for angleID in parameters.angles.indices.indices {
+        let params = parameters.angles.parameters[angleID]
+        if partID >= 2 {
+          XCTAssertNotEqual(params.bendingStiffness, 0)
+          XCTAssertNotEqual(params.equilibriumAngle, 0)
+        } else {
+          XCTAssertEqual(params.bendingStiffness, 0)
+          XCTAssertEqual(params.equilibriumAngle, 0)
+        }
+        
+        let angle = parameters.angles.indices[angleID]
+        let code0 = parameters.atoms.codes[Int(angle[0])]
+        let code2 = parameters.atoms.codes[Int(angle[2])]
+        let expectParameters = (code0 != .hydrogen || code2 != .hydrogen)
+        if partID >= 3, expectParameters {
+          XCTAssertNotEqual(params.bendBendStiffness, 0)
+          XCTAssertNotEqual(params.stretchBendStiffness, 0)
+        } else {
+          XCTAssertEqual(params.bendBendStiffness, 0)
+          XCTAssertEqual(params.stretchBendStiffness, 0)
+        }
+      }
+      
+      if partID >= 3 {
+        XCTAssertGreaterThan(parameters.torsions.indices.count, 0)
+        for torsionID in parameters.torsions.indices.indices {
+          let params = parameters.torsions.parameters[torsionID]
+          XCTAssert(params.V3 != 0)
+        }
+      } else {
+        XCTAssertEqual(parameters.torsions.indices.count, 0)
+      }
+    }
   }
-  #endif
+#endif
   
   func testSilaAdamantane() throws {
     try testAdamantaneVariant(atomCode: .silicon)
@@ -111,6 +186,15 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   var paramsDesc = MM4ParametersDescriptor()
   paramsDesc.atomicNumbers = adamantane.atomicNumbers
   paramsDesc.bonds = adamantane.bonds
+  paramsDesc.forces = [
+    .bend,
+    .bendBend,
+    .nonbonded,
+    .stretch,
+    .stretchBend,
+    .torsion,
+    .torsionStretch,
+  ]
   
   // Check that the number of atoms and their elements are the same.
   let params = try MM4Parameters(descriptor: paramsDesc)

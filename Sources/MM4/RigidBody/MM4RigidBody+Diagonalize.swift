@@ -35,13 +35,24 @@ func factorCubicPolynomial(coefficients: SIMD4<Double>) -> (
   length = Double.root(length, 3)
   phase /= 3
   
+  let cbrtTermSIMD = SIMD2(cubeRootTerm.real, cubeRootTerm.imaginary)
+  let cbrtTermLengthSq = (cbrtTermSIMD * cbrtTermSIMD).sum()
+  if cbrtTermLengthSq.magnitude < .leastNormalMagnitude {
+    // Handle the case of a 3-fold repeated real root. We don't yet handle the
+    // case of a 2-fold repeated real root.
+    if Δ0.magnitude < .leastNormalMagnitude {
+      let repeatedRoot = b / Double(-3 * a)
+      return (repeatedRoot, repeatedRoot, repeatedRoot)
+    }
+  }
+  
   func x(k: Int) -> Double? {
     let phaseShift = Double(k) * (2 * .pi / 3)
     let cubeRoot = Complex(length: length, phase: phase + phaseShift)
     let numerator = Complex(b) + cubeRoot + Complex(Δ0) / cubeRoot
     
     let imaginaryProportion = numerator.imaginary / numerator.real
-    guard imaginaryProportion.magnitude < 1e-8 else {
+    guard imaginaryProportion.magnitude < 1e-4 else {
       return nil
     }
     return numerator.real / Double(-3 * a)
@@ -64,6 +75,17 @@ func determinant(
   matrix.0[0] * (matrix.1[1] * matrix.2[2] - matrix.2[1] * matrix.1[2]) -
   matrix.0[1] * (matrix.1[0] * matrix.2[2] - matrix.1[2] * matrix.2[0]) +
   matrix.0[2] * (matrix.1[0] * matrix.2[1] - matrix.1[1] * matrix.2[0])
+}
+
+@_transparent
+func cross(
+  leftVector x: SIMD3<Double>,
+  rightVector y: SIMD3<Double>
+) -> SIMD3<Double> {
+  SIMD3(
+    x[1] * y[2] - x[2] * y[1],
+    x[2] * y[0] - x[0] * y[2],
+    x[0] * y[1] - x[1] * y[0])
 }
 
 @_transparent
@@ -104,14 +126,13 @@ func invert(
   return (column0, column1, column2)
 }
 
-// The entered matrix must be diagonalizable. Otherwise, there will be a fatal
-// error that describes why it could not be diagonalized.
 func diagonalize(
   matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
 ) -> (
-  eigenValues: SIMD3<Double>,
-  eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
-)? {
+  eigenValues: SIMD3<Double>?,
+  eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)?,
+  failureReason: String?
+) {
   // Characteristic polynomial:
   // [-1, tr(A), -0.5 * [tr(A)^2 - tr(A^2)], det(A)]
   var characteristicPolynomial: SIMD4<Double> = .zero
@@ -133,16 +154,30 @@ func diagonalize(
   guard let root0,
         let root1,
         let root2 else {
-    // Could not factor the characteristic polynomial.
-    return nil
+    return (nil, nil, """
+      Failed to factor characteristic polynomial:
+      a = \(characteristicPolynomial[0])
+      b = \(characteristicPolynomial[1])
+      c = \(characteristicPolynomial[2])
+      d = \(characteristicPolynomial[3])
+      root0 = \(root0 == nil ? String(describing: root0) : "nil")
+      root1 = \(root1 == nil ? String(describing: root1) : "nil")
+      root2 = \(root2 == nil ? String(describing: root2) : "nil")
+      """)
   }
   
   // Sort the eigenvalues in descending order.
-  var eigenValues = [root0, root1, root2]
-  eigenValues.sort(by: { $0 > $1 })
+  var eigenValuesArray = [root0, root1, root2]
+  eigenValuesArray.sort(by: { $0 > $1 })
+  let eigenValues = SIMD3(eigenValuesArray[0],
+                          eigenValuesArray[1],
+                          eigenValuesArray[2])
   
-  // Find the eigenvector corresponding to each eigenvalue.
-  func createEigenVector(_ eigenValue: Double) -> SIMD3<Double>? {
+  // Find the eigenvector corresponding to each eigenvalue. Start by
+  // preconditioning the eigensolver with direct matrix inversion, if possible.
+  var candidateEigenVectors: [SIMD3<Double>] = []
+  for i in 0..<3 {
+    let eigenValue = eigenValues[i]
     var B = (SIMD3<Double>(SIMD3<Float>(matrix.0)),
              SIMD3<Double>(SIMD3<Float>(matrix.1)),
              SIMD3<Double>(SIMD3<Float>(matrix.2)))
@@ -150,86 +185,150 @@ func diagonalize(
     B.1[1] -= eigenValue
     B.2[2] -= eigenValue
     
-    // Make 10 attempts to invert the B matrix. Each attempt slightly modifies
-    // the diagonal, bringing it closer to something invertible.
-    for _ in 0..<10 {
-      guard let inverseB = invert(matrix: B) else {
+    // Make 2 attempts to invert the B matrix. The second attempt slightly
+    // modifies the diagonal, bringing it closer to something invertible.
+    for _ in 0..<2 {
+      if let inverseB = invert(matrix: B),
+         let column = normalize(vector: inverseB.2) {
+        candidateEigenVectors.append(column)
+        break
+      } else {
         B.0[0] *= 1 + 1e-10
         B.1[1] *= 1 + 1e-10
         B.2[2] *= 1 + 1e-10
-        continue
       }
-      return normalize(vector: inverseB.2)
     }
-    return nil
-  }
-  guard var x = createEigenVector(eigenValues[0]),
-        var y = createEigenVector(eigenValues[1]),
-        var z = createEigenVector(eigenValues[2]) else {
-    // Failed to generate the eigenvectors from the eigenvalues.
-    return nil
   }
   
-  func createOrthogonalityError() -> Double {
-    let xyError = (x * y).sum().magnitude
-    let xzError = (x * z).sum().magnitude
-    let yzError = (y * z).sum().magnitude
-    return SIMD3(xyError, xzError, yzError).max()
+  // If we cannot find all eigenvectors through direct matrix inversion, start
+  // with the slow path that rotates the cardinal axes into the eigenbasis.
+  var x: SIMD3<Double>
+  var y: SIMD3<Double>
+  var z: SIMD3<Double>
+  if candidateEigenVectors.count == 3 {
+    x = candidateEigenVectors[0]
+    y = candidateEigenVectors[1]
+    z = candidateEigenVectors[2]
+  } else {
+    x = SIMD3(0.0, 0.0, 1.0)
+    y = SIMD3(0.0, 1.0, 0.0)
+    z = SIMD3(1.0, 0.0, 0.0)
   }
   
-  // Ensure the eigenvectors are mutually perpendicular, then form a
-  // right-handed basis from them.
-  var orthogonalityError = createOrthogonalityError()
-  
-  let trialCount = 10
-  for trialID in 1...trialCount {
-    x = gemv(matrix: matrix, vector: x)
-    y = gemv(matrix: matrix, vector: y)
-    z = gemv(matrix: matrix, vector: z)
+  // Execute something like conjugate gradient descent.
+  for trialID in 1...160 {
+    // Perform an Arnoldi iteration on each candidate vector.
+    @_transparent
+    func createEigenPair(_ vector: SIMD3<Double>) -> SIMD4<Double> {
+      let Av = gemv(matrix: matrix, vector: vector)
+      let λ = (Av * Av).sum().squareRoot()
+      return SIMD4(Av, λ)
+    }
+    var eigenPair0 = createEigenPair(x)
+    var eigenPair1 = createEigenPair(y)
+    var eigenPair2 = createEigenPair(z)
     
-    var eigenValueError = SIMD3(
-      (x * x).sum().squareRoot(),
-      (y * y).sum().squareRoot(),
-      (z * z).sum().squareRoot())
-    eigenValueError /= SIMD3(eigenValues[0], eigenValues[1], eigenValues[2])
+    // Sort the eigenpairs in descending order.
+    if eigenPair1.w > eigenPair0.w {
+      let temp = eigenPair1
+      eigenPair1 = eigenPair0
+      eigenPair0 = temp
+    }
+    if eigenPair2.w > eigenPair0.w {
+      let temp = eigenPair2
+      eigenPair2 = eigenPair0
+      eigenPair0 = temp
+    }
+    if eigenPair2.w > eigenPair1.w {
+      let temp = eigenPair2
+      eigenPair2 = eigenPair1
+      eigenPair1 = temp
+    }
+    
+    // Check how close we are to the solution.
+    let revisedValues = SIMD3(eigenPair0.w, eigenPair1.w, eigenPair2.w)
+    var eigenValueError = revisedValues / eigenValues
     eigenValueError -= 1
-    eigenValueError *= eigenValueError
+    eigenValueError = SIMD3(
+      eigenValueError[0].magnitude,
+      eigenValueError[1].magnitude,
+      eigenValueError[2].magnitude)
     
-    x = normalize(vector: x)!
+    // Orthonormalize with the Gram-Schmidt method.
+    x = unsafeBitCast(eigenPair0, to: SIMD3<Double>.self)
+    y = unsafeBitCast(eigenPair1, to: SIMD3<Double>.self)
+    z = unsafeBitCast(eigenPair2, to: SIMD3<Double>.self)
+    x /= revisedValues[0]
     y -= (y * x).sum() * x
     z -= (z * x).sum() * x
-    y = normalize(vector: y)!
+    
+    // Handle the case of a 2-fold repeated root.
+    if (y * y).sum() < 1e-3 * 1e-3 {
+      guard (z * z).sum().magnitude > 1e-3,
+            (z * x).sum().magnitude < 1e-3 else {
+        fatalError("Could not use z as a reference to fix y.")
+      }
+      y = cross(leftVector: z, rightVector: x)
+    }
+    
+    y /= (y * y).sum().squareRoot()
     z -= (z * y).sum() * y
-    z = normalize(vector: z)!
     
-    orthogonalityError = createOrthogonalityError()
+    // Handle the case of a 2-fold repeated root.
+    if (z * z).sum() < 1e-3 * 1e-3 {
+      guard (y * y).sum().magnitude > 1e-3,
+            (x * y).sum().magnitude < 1e-3 else {
+        fatalError("Could not use y as a reference to fix z.")
+      }
+      z = cross(leftVector: x, rightVector: y)
+    }
     
-    if orthogonalityError.magnitude < 1e-16,
-       eigenValueError.max() < 1e-16 {
-      break
-    } else if trialID == trialCount {
-      // Failed to refine eigenpairs.
-      return nil
+    z /= (z * z).sum().squareRoot()
+    
+    // Check how close we are to orthonormal.
+    let orthogonalityError = SIMD3(
+      (x * y).sum().magnitude,
+      (x * z).sum().magnitude,
+      (y * z).sum().magnitude)
+    
+    if trialID <= 10 {
+      if orthogonalityError.max() < 1e-16,
+         eigenValueError.max() < 1e-8 {
+        break
+      }
+    } else if trialID < 40 {
+      if orthogonalityError.max() < 1e-12,
+         eigenValueError.max() < 1e-6 {
+        break
+      }
+    } else if trialID < 160 {
+      if orthogonalityError.max() < 1e-8,
+         eigenValueError.max() < 1e-4 {
+        break
+      }
+    } else {
+      guard orthogonalityError.max() < 1e-4,
+            eigenValueError.max() < 1e-2 else {
+        return (nil, nil, """
+          Failed to refine eigenpairs after 160 iterations:
+          λ0 = \(eigenValues[0]) -> \(revisedValues[0]) v0 = \(x) error0 = \(eigenValueError[0])
+          λ1 = \(eigenValues[1]) -> \(revisedValues[1]) v1 = \(y) error1 = \(eigenValueError[1])
+          λ2 = \(eigenValues[2]) -> \(revisedValues[2]) v2 = \(z) error2 = \(eigenValueError[2])
+          Orthogonality error: \(orthogonalityError)
+          """)
+      }
     }
   }
   
-  // Flip the eigenvectors so they're as close as possible to the original
-  // coordinate space's cardinal axes.
+  // Flip the first two vectors so they're close to the original space's
+  // cardinal axes. Flip the last vector so it forms a right-handed basis.
   if (x * SIMD3(1, 1, 1)).sum() < 0 {
     x = -x
   }
   if (y * SIMD3(1, 1, 1)).sum() < 0 {
     y = -y
   }
-  let s1 = x[1] * y[2] - x[2] * y[1]
-  let s2 = x[2] * y[0] - x[0] * y[2]
-  let s3 = x[0] * y[1] - x[1] * y[0]
-  let crossProduct = SIMD3(s1, s2, s3)
-  if (crossProduct * z).sum() < 0 {
-    z = -z
-  }
+  z = cross(leftVector: x, rightVector: y)
   
-  return (
-    SIMD3(eigenValues[0], eigenValues[1], eigenValues[2]),
-    (x, y, z))
+  return (eigenValues, (x, y, z), nil)
 }

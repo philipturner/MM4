@@ -1,17 +1,20 @@
 import XCTest
 import MM4
 
-final class MM4Tests: XCTestCase {
-  
-}
-
 // TODO: Debug nonbonded forces with hydrogen reductions. Examine how the
 // distances between surfaces change as hydrogen reductions are enabled.
 //
 // Start out with external forces only. Assert that we have an object with 100%
 // of the parameters deactivated. This allows the equations of motion to be
-// simulated and checked as 1-particle isolated systems. Afterward, we can
-// proceed with the nonbonded force unit tests outlined in molecular-renderer.
+// simulated and checked as 1-particle isolated systems.
+//
+// Avoid adding unit tests that initialize an actual MM4ForceField. There is too
+// much latency to initialize OpenCL kernels. Plus, this is the point where
+// validation can proceed visually, with the results recorded in code for
+// further review.
+// - You can re-evaluate this decision after finishing the experiments. Whether
+//   it is worthwhile to include validation tests, which could be time-consuming
+//   to build.
 
 // MARK: - Tests for Non-Carbon Elements
 

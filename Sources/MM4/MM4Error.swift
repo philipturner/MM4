@@ -20,13 +20,16 @@ public struct MM4Address {
 public enum MM4Error: Error {
   /// The inertia tensor could not be diagonalized.
   ///
+  /// Includes a description of why diagonalization failed.
+  ///
   /// This error does not exactly mean the inertia tensor was a defective
   /// matrix. For example, the null matrix is technically diagonalizable. It
   /// just means e.g. the center of mass couldn't be created because the mass
   /// was zero. Therefore, the rigid body couldn't reach the point where it
   /// generates the inertia tensor. The error may also occur if the
   /// characteristic polynomial has repeated roots or the eigensolver fails.
-  case defectiveInertiaTensor((SIMD3<Double>, SIMD3<Double>, SIMD3<Double>))
+  case defectiveInertiaTensor(
+    (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>), String)
   
   /// The force field did not have a parameter for a group of atoms.
   ///

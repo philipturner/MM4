@@ -68,8 +68,10 @@ extension MM4ForceField {
         fatalError("Positions or velocities not fetched before update.")
       }
       
-      let arrayP = OpenMM_Vec3Array(size: system.reorderedIndices.count)
-      let arrayV = OpenMM_Vec3Array(size: system.reorderedIndices.count)
+      let particleCount =
+      system.parameters.atoms.count + system.virtualSiteCount
+      let arrayP = OpenMM_Vec3Array(size: particleCount)
+      let arrayV = OpenMM_Vec3Array(size: particleCount)
       for (original, reordered) in system.reorderedIndices.enumerated() {
         let position = positions[Int(original)]
         let velocity = velocities[Int(original)]
@@ -78,6 +80,7 @@ extension MM4ForceField {
       }
       context.context.positions = arrayP
       context.context.velocities = arrayV
+      context.context.computeVirtualSites()
     }
     
     updateRecord.erase()

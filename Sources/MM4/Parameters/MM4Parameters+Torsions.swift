@@ -78,7 +78,7 @@ public struct MM4TorsionParameters {
   /// > WARNING: Convert kcal/mol to kJ/mol.
   public var V3: Float
   
-  /// The factor to multiply the angle with inside the cosine term for Vn.
+  /// The factor to multiply the angle with, inside the cosine term for Vn.
   ///
   /// The value of `n` is most often 2. It must be an even integer.
   public var n: Float
@@ -205,191 +205,185 @@ extension MM4Parameters {
       var V6: Float?
       var Kbtb: Float?
       
-      if forces.contains(.torsion) || forces.contains(.torsionBend) {
-        try with5RingAttempt { codes in
-          switch (codes[0], codes[1], codes[2], codes[3]) {
-            // Carbon
-          case (1, 1, 1, 1):   (V1, Vn, V3) = (0.239, 0.024, 0.637)
-          case (1, 1, 1, 5):             V3 = 0.290
-          case (5, 1, 1, 5):    (V3, Vn, n) = (0.260, 0.008, 6)
-          case (1, 123, 123, 1):   (V1, V3) = (0.160, 0.550)
-          case (1, 123, 123, 123): (V1, V3) = (0.160, 0.550)
-          case (5, 123, 123, 5):         V3 = 0.300
-          case (5, 123, 123, 123):       V3 = 0.290
-          case (5, 1, 123, 123):         V3 = 0.306
-          case (1, 123, 123, 5):         V3 = 0.306
-          case (5, 1, 123, 5):           V3 = 0.260
-          case (123, 123, 123, 123):
-            if ringType == 5 {     (V1, V3) = (-0.150, 0.160) }
-            else {                 (V1, V3) = (-0.120, 0.550) }
-            
-            // Nitrogen
-          case (1, 1, 1, 8):     (V1, Vn, V3) = (1.139, 1.348, 1.582)
-            /**/               (V4, V6, Kbtb) = (-0.140, 0.172, -0.05)
-          case (5, 1, 1, 8):       (V3, Kbtb) = (0.455, -0.05)
-          case (8, 1, 1, 8):     (V1, Vn, V3) = (2.545, -2.520, 3.033)
-          case (1, 1, 8, 1):     (V1, Vn, V3) = (1.193, -0.337, 0.870)
-            /**/                     (V4, V6) = (0.228, -0.028)
-          case (5, 1, 8, 1):     (V1, Vn, V3) = (0.072, -0.512, 0.562)
-            /**/                         Kbtb = 0.05
-          case (5, 1, 8, 123): (Vn, V3, Kbtb) = (-0.450, 0.170, -0.12)
-          case (1, 8, 123, 5):       (Vn, V3) = (0.550, 0.100)
-          case (1, 8, 123, 123):     (Vn, V3) = (-0.520, 0.180)
-          case (123, 8, 123, 5): (V1, Vn, V3) = (0.072, -0.012, 0.597)
-          case (5, 123, 123, 8):   (V3, Kbtb) = (0.374, -0.09)
-          case (123, 8, 123, 123):
-            if ringType == 5 {   (V1, Vn, V3) = (1.150, -0.040, 0.860) }
-            else { return false }
-          case (8, 123, 123, 123):
-            if ringType == 5 {             V3 = 0.699 }
-            else {                   (Vn, V3) = (-0.850, 0.200) }
-            
-            // Oxygen
-          case (1, 1, 1, 6):       (V1, Vn, V3) = (-0.333, 0.037, 0.552)
-          case (5, 1, 1, 6):       (V1, Vn, V3) = (-0.593, 0.554, 0.474)
-            /**/                     (V6, Kbtb) = (0.070, -0.100)
-          case (6, 1, 1, 6):       (V1, Vn, V3) = (-0.917, -0.631, 0.641)
-            /**/                             V6 = -0.100
-          case (1, 1, 6, 1):       (V1, Vn, V3) = (1.900, -0.500, 1.250)
-          case (5, 1, 6, 1):     (V3, V6, Kbtb) = (0.730, 0.028, -0.050)
-          case (6, 1, 6, 1):       (V1, Vn, V3) = (-0.350, -0.900, -0.020)
-            /**/                     (V4, Kbtb) = (0.503, -0.150)
-          case (123, 6, 123, 5): return false
-          case (123, 6, 123, 6):
-            if ringType == 5 {     (V1, Vn, V3) = (0.350, -1.900, 1.550) }
-            else {                 (V1, Vn, V3) = (-0.350, -0.900, -1.550)
-              /**/                         Kbtb = 0.150 }
-          case (5, 123, 123, 6): (V1, V3, Kbtb) = (0.200, 0.480, -0.100)
-          case (6, 123, 123, 6):
-            if ringType == 5 {     (V1, Vn, V3) = (0.846, -2.314, 1.653)
-              /**/                     (V4, V6) = (-0.101, 0.350) }
-            else {                 (V1, Vn, V3) = (-0.217, -0.851, 0.441)
-              /**/               (V4, V6, Kbtb) = (-0.101, 0.350, 0.080) }
-          case (6, 123, 123, 123):
-            if ringType == 5 {         (Vn, V3) = (0.500, 0.930) }
-            else {                 (V1, Vn, V3) = (-0.128, -0.645, 0.934) }
-          case (123, 6, 123, 123):
-            if ringType == 5 {         (V1, V3) = (-0.900, 0.460) }
-            else { return false }
-            
-            // Fluorine
-          case (1, 1, 1, 11):  (V1, Vn, V3) = (-0.360, 0.380, 0.978)
-            /**/             (V4, V6, Kbtb) = (0.240, 0.010, -0.06)
-          case (5, 1, 1, 11):  (V1, Vn, V3) = (-0.460, 1.190, 0.420)
-            /**/                       Kbtb = 0.06
-          case (11, 1, 1, 11): (V1, Vn, V3) = (-1.350, 0.305, 0.355)
-            /**/                       Kbtb = -0.06
-            
-            // Silicon
-          case (5, 1, 1, 19):   V3 = 0.200
-          case (19, 1, 1, 19):  V3 = 0.167
-          case (1, 1, 19, 5):   V3 = 0.295
-          case ( 5, 1, 19, 1):  V3 = 0.195
-          case ( 5, 1, 19, 5):  V3 = 0.177
-          case (19, 1, 19, 1):  V3 = 0.100
-          case (19, 1, 19, 5):  V3 = 0.167
-          case ( 1, 1, 19, 19): V3 = 0.300
-          case ( 5, 1, 19, 19): V3 = 0.270
-          case (1, 19, 19, 5):  V3 = 0.127
-          case (1, 19, 19, 1):  V3 = 0.107
-          case (1, 19, 19, 19): V3 = 0.350
-          case (5, 19, 19, 5):  V3 = 0.132
-          case (5, 19, 19, 19): V3 = 0.070
-          case (1, 1, 1, 19):
-            if ringType == 5 {  V3 = 0.850 }
-            else {        (Vn, V3) = (0.050, 0.240) }
-          case (1, 1, 19, 1):
-            if ringType == 5 {  Vn = 0.800 }
-            else {              V3 = 0.167 }
-          case (19, 19, 19, 19):
-            if ringType == 5 {  V3 = 0.175 }
-            else {              V3 = 0.125 }
-            
-            // Phosphorus
-          case (5, 1, 25, 1):     (V3, V6) = (0.300, -0.050)
-          case (5, 1, 1, 25):     (Vn, V3) = (0.200, 0.360)
-          case (1, 1, 25, 1): (V1, Vn, V3) = (0.800, -0.400, 0.100)
-            
-            // Sulfur
-            //
-            // Grabbing the 15-1-15-1 torsion parameters from MM3.
-          case (15, 1, 15, 1):      (Vn, V3) = (-0.900, 0.300)
-          case (5, 1, 15, 1):     (V3, Kbtb) = (0.540, 0.080)
-          case (1, 1, 15, 1): (V1, V3, Kbtb) = (0.410, 0.600, 0.004)
-          case (15, 1, 1, 15):  (V1, Vn, V3) = (0.461, 0.144, 1.511)
-            /**/                        Kbtb = 0.130
-          case (5, 1, 1, 15):     (V3, Kbtb) = (0.460, 0.050)
-          case (1, 1, 1, 15):   (V1, Vn, V3) = (0.420, 0.100, 0.200)
-            /**/                        Kbtb = 0.090
-          case (5, 123, 123, 15): (V3, Kbtb) = (0.200, 0.020)
-          case (123, 15, 123, 1):   (V1, V3) = (0.100, 0.200)
-          case (5, 1, 123, 15):     (Vn, V3) = (0.330, 0.200)
-            /**/                        Kbtb = 0.050
-          case (123, 15, 123, 5): (V3, Kbtb) = (0.450, 0.020)
-          case (15, 123, 123, 123):
-            if ringType == 5 {
-              (V1, Vn, V3, Kbtb) = (0.040, 0.200, 0.300, 0.100)
-            } else {
-              (V1, Vn, V3, Kbtb) = (0.520, 0.080, 0.250, 0.100)
-            }
-          case (123, 15, 123, 123):
-            if ringType == 5 {  (V1, Vn, V3) = (0.440, 0.300, 0.500) }
-            else { return false }
-            
-            // Germanium
-            //
-            // There are two values for 1-1-1-31 in the MM3 paper. It hints that
-            // one is from the preliminary MM3(1996), but doesn't explicitly
-            // state which. The Tinker implementation suggests the one without
-            // the "b" footnote.
-            //
-            // There are no germanium parameters for the following torsions in
-            // MM3. As with angles, it looks like silicon has the same ballpark
-            // value for torsions - neither consistently greater or smaller.
-            // Note that crystolecules are supposedly very insensitive to
-            // torsions. I wouldn't call these gold standard, just borderline
-            // okay for trying out germanium in diamondoid nanomachines.
-            // - 31-1-1-31
-            // - 31-1-31-1
-            // - 31-1-31-5
-            // - 1-1-31-31
-            // - 5-1-31-31
-            // - 1-31-31-5
-            // - 1-31-31-31
-            // - 5-31-31-31
-          case (5, 1, 1, 31):        V3 = 0.185
-          case (31, 1, 1, 31):       V3 = 0.167
-          case (1, 1, 31, 5):        V3 = 0.172
-          case (5, 1, 31, 1):        V3 = 0.127
-          case (5, 1, 31, 5):        V3 = 0.132
-          case (31, 1, 31, 1):       V3 = 0.100
-          case (31, 1, 31, 5):       V3 = 0.167
-          case (1, 1, 31, 31):       V3 = 0.300
-          case (5, 1, 31, 31):       V3 = 0.270
-          case (1, 31, 31, 5):       V3 = 0.127
-          case (1, 31, 31, 1):       V3 = 0.112
-          case (1, 31, 31, 31):      V3 = 0.350
-          case (5, 31, 31, 5):       V3 = 0.165
-          case (5, 31, 31, 31):      V3 = 0.070
-          case (31, 31, 31, 31):     V3 = 0.112
-          case (1, 1, 1, 31):
-            if ringType == 5 {       V3 = 0.520 }
-            else {             (V1, V3) = (-0.200, 0.112) }
-          case (1, 1, 31, 1):
-            if ringType == 5 { (V1, V3) = (-0.200, 0.100) }
-            else {         (V1, Vn, V3) = (-0.200, 0.085, 0.112) }
-            
-          default:
-            return false
+      try with5RingAttempt { codes in
+        switch (codes[0], codes[1], codes[2], codes[3]) {
+          // Carbon
+        case (1, 1, 1, 1):   (V1, Vn, V3) = (0.239, 0.024, 0.637)
+        case (1, 1, 1, 5):             V3 = 0.290
+        case (5, 1, 1, 5):    (V3, Vn, n) = (0.260, 0.008, 6)
+        case (1, 123, 123, 1):   (V1, V3) = (0.160, 0.550)
+        case (1, 123, 123, 123): (V1, V3) = (0.160, 0.550)
+        case (5, 123, 123, 5):         V3 = 0.300
+        case (5, 123, 123, 123):       V3 = 0.290
+        case (5, 1, 123, 123):         V3 = 0.306
+        case (1, 123, 123, 5):         V3 = 0.306
+        case (5, 1, 123, 5):           V3 = 0.260
+        case (123, 123, 123, 123):
+          if ringType == 5 {     (V1, V3) = (-0.150, 0.160) }
+          else {                 (V1, V3) = (-0.120, 0.550) }
+          
+          // Nitrogen
+        case (1, 1, 1, 8):     (V1, Vn, V3) = (1.139, 1.348, 1.582)
+          /**/               (V4, V6, Kbtb) = (-0.140, 0.172, -0.05)
+        case (5, 1, 1, 8):       (V3, Kbtb) = (0.455, -0.05)
+        case (8, 1, 1, 8):     (V1, Vn, V3) = (2.545, -2.520, 3.033)
+        case (1, 1, 8, 1):     (V1, Vn, V3) = (1.193, -0.337, 0.870)
+          /**/                     (V4, V6) = (0.228, -0.028)
+        case (5, 1, 8, 1):     (V1, Vn, V3) = (0.072, -0.512, 0.562)
+          /**/                         Kbtb = 0.05
+        case (5, 1, 8, 123): (Vn, V3, Kbtb) = (-0.450, 0.170, -0.12)
+        case (1, 8, 123, 5):       (Vn, V3) = (0.550, 0.100)
+        case (1, 8, 123, 123):     (Vn, V3) = (-0.520, 0.180)
+        case (123, 8, 123, 5): (V1, Vn, V3) = (0.072, -0.012, 0.597)
+        case (5, 123, 123, 8):   (V3, Kbtb) = (0.374, -0.09)
+        case (123, 8, 123, 123):
+          if ringType == 5 {   (V1, Vn, V3) = (1.150, -0.040, 0.860) }
+          else { return false }
+        case (8, 123, 123, 123):
+          if ringType == 5 {             V3 = 0.699 }
+          else {                   (Vn, V3) = (-0.850, 0.200) }
+          
+          // Oxygen
+        case (1, 1, 1, 6):       (V1, Vn, V3) = (-0.333, 0.037, 0.552)
+        case (5, 1, 1, 6):       (V1, Vn, V3) = (-0.593, 0.554, 0.474)
+          /**/                     (V6, Kbtb) = (0.070, -0.100)
+        case (6, 1, 1, 6):       (V1, Vn, V3) = (-0.917, -0.631, 0.641)
+          /**/                             V6 = -0.100
+        case (1, 1, 6, 1):       (V1, Vn, V3) = (1.900, -0.500, 1.250)
+        case (5, 1, 6, 1):     (V3, V6, Kbtb) = (0.730, 0.028, -0.050)
+        case (6, 1, 6, 1):       (V1, Vn, V3) = (-0.350, -0.900, -0.020)
+          /**/                     (V4, Kbtb) = (0.503, -0.150)
+        case (123, 6, 123, 5): return false
+        case (123, 6, 123, 6):
+          if ringType == 5 {     (V1, Vn, V3) = (0.350, -1.900, 1.550) }
+          else {                 (V1, Vn, V3) = (-0.350, -0.900, -1.550)
+            /**/                         Kbtb = 0.150 }
+        case (5, 123, 123, 6): (V1, V3, Kbtb) = (0.200, 0.480, -0.100)
+        case (6, 123, 123, 6):
+          if ringType == 5 {     (V1, Vn, V3) = (0.846, -2.314, 1.653)
+            /**/                     (V4, V6) = (-0.101, 0.350) }
+          else {                 (V1, Vn, V3) = (-0.217, -0.851, 0.441)
+            /**/               (V4, V6, Kbtb) = (-0.101, 0.350, 0.080) }
+        case (6, 123, 123, 123):
+          if ringType == 5 {         (Vn, V3) = (0.500, 0.930) }
+          else {                 (V1, Vn, V3) = (-0.128, -0.645, 0.934) }
+        case (123, 6, 123, 123):
+          if ringType == 5 {         (V1, V3) = (-0.900, 0.460) }
+          else { return false }
+          
+          // Fluorine
+        case (1, 1, 1, 11):  (V1, Vn, V3) = (-0.360, 0.380, 0.978)
+          /**/             (V4, V6, Kbtb) = (0.240, 0.010, -0.06)
+        case (5, 1, 1, 11):  (V1, Vn, V3) = (-0.460, 1.190, 0.420)
+          /**/                       Kbtb = 0.06
+        case (11, 1, 1, 11): (V1, Vn, V3) = (-1.350, 0.305, 0.355)
+          /**/                       Kbtb = -0.06
+          
+          // Silicon
+        case (5, 1, 1, 19):   V3 = 0.200
+        case (19, 1, 1, 19):  V3 = 0.167
+        case (1, 1, 19, 5):   V3 = 0.295
+        case ( 5, 1, 19, 1):  V3 = 0.195
+        case ( 5, 1, 19, 5):  V3 = 0.177
+        case (19, 1, 19, 1):  V3 = 0.100
+        case (19, 1, 19, 5):  V3 = 0.167
+        case ( 1, 1, 19, 19): V3 = 0.300
+        case ( 5, 1, 19, 19): V3 = 0.270
+        case (1, 19, 19, 5):  V3 = 0.127
+        case (1, 19, 19, 1):  V3 = 0.107
+        case (1, 19, 19, 19): V3 = 0.350
+        case (5, 19, 19, 5):  V3 = 0.132
+        case (5, 19, 19, 19): V3 = 0.070
+        case (1, 1, 1, 19):
+          if ringType == 5 {  V3 = 0.850 }
+          else {        (Vn, V3) = (0.050, 0.240) }
+        case (1, 1, 19, 1):
+          if ringType == 5 {  Vn = 0.800 }
+          else {              V3 = 0.167 }
+        case (19, 19, 19, 19):
+          if ringType == 5 {  V3 = 0.175 }
+          else {              V3 = 0.125 }
+          
+          // Phosphorus
+        case (5, 1, 25, 1):     (V3, V6) = (0.300, -0.050)
+        case (5, 1, 1, 25):     (Vn, V3) = (0.200, 0.360)
+        case (1, 1, 25, 1): (V1, Vn, V3) = (0.800, -0.400, 0.100)
+          
+          // Sulfur
+          //
+          // Grabbing the 15-1-15-1 torsion parameters from MM3.
+        case (15, 1, 15, 1):      (Vn, V3) = (-0.900, 0.300)
+        case (5, 1, 15, 1):     (V3, Kbtb) = (0.540, 0.080)
+        case (1, 1, 15, 1): (V1, V3, Kbtb) = (0.410, 0.600, 0.004)
+        case (15, 1, 1, 15):  (V1, Vn, V3) = (0.461, 0.144, 1.511)
+          /**/                        Kbtb = 0.130
+        case (5, 1, 1, 15):     (V3, Kbtb) = (0.460, 0.050)
+        case (1, 1, 1, 15):   (V1, Vn, V3) = (0.420, 0.100, 0.200)
+          /**/                        Kbtb = 0.090
+        case (5, 123, 123, 15): (V3, Kbtb) = (0.200, 0.020)
+        case (123, 15, 123, 1):   (V1, V3) = (0.100, 0.200)
+        case (5, 1, 123, 15):     (Vn, V3) = (0.330, 0.200)
+          /**/                        Kbtb = 0.050
+        case (123, 15, 123, 5): (V3, Kbtb) = (0.450, 0.020)
+        case (15, 123, 123, 123):
+          if ringType == 5 {
+            (V1, Vn, V3, Kbtb) = (0.040, 0.200, 0.300, 0.100)
+          } else {
+            (V1, Vn, V3, Kbtb) = (0.520, 0.080, 0.250, 0.100)
           }
-          return true
+        case (123, 15, 123, 123):
+          if ringType == 5 {  (V1, Vn, V3) = (0.440, 0.300, 0.500) }
+          else { return false }
+          
+          // Germanium
+          //
+          // There are two values for 1-1-1-31 in the MM3 paper. It hints that
+          // one is from the preliminary MM3(1996), but doesn't explicitly
+          // state which. The Tinker implementation suggests the one without
+          // the "b" footnote.
+          //
+          // There are no germanium parameters for the following torsions in
+          // MM3. As with angles, it looks like silicon has the same ballpark
+          // value for torsions - neither consistently greater or smaller.
+          // Note that crystolecules are supposedly very insensitive to
+          // torsions. I wouldn't call these gold standard, just borderline
+          // okay for trying out germanium in diamondoid nanomachines.
+          // - 31-1-1-31
+          // - 31-1-31-1
+          // - 31-1-31-5
+          // - 1-1-31-31
+          // - 5-1-31-31
+          // - 1-31-31-5
+          // - 1-31-31-31
+          // - 5-31-31-31
+        case (5, 1, 1, 31):        V3 = 0.185
+        case (31, 1, 1, 31):       V3 = 0.167
+        case (1, 1, 31, 5):        V3 = 0.172
+        case (5, 1, 31, 1):        V3 = 0.127
+        case (5, 1, 31, 5):        V3 = 0.132
+        case (31, 1, 31, 1):       V3 = 0.100
+        case (31, 1, 31, 5):       V3 = 0.167
+        case (1, 1, 31, 31):       V3 = 0.300
+        case (5, 1, 31, 31):       V3 = 0.270
+        case (1, 31, 31, 5):       V3 = 0.127
+        case (1, 31, 31, 1):       V3 = 0.112
+        case (1, 31, 31, 31):      V3 = 0.350
+        case (5, 31, 31, 5):       V3 = 0.165
+        case (5, 31, 31, 31):      V3 = 0.070
+        case (31, 31, 31, 31):     V3 = 0.112
+        case (1, 1, 1, 31):
+          if ringType == 5 {       V3 = 0.520 }
+          else {             (V1, V3) = (-0.200, 0.112) }
+        case (1, 1, 31, 1):
+          if ringType == 5 { (V1, V3) = (-0.200, 0.100) }
+          else {         (V1, Vn, V3) = (-0.200, 0.085, 0.112) }
+          
+        default:
+          return false
         }
+        return true
       }
       
-      if !forces.contains(.torsion) {
-        (V1, Vn, V3, V4, V6) = (0, 0, 0, 0, 0)
-        n = 2
-      }
       if !forces.contains(.torsionBend) {
         Kbtb = nil
       }

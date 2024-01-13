@@ -12,12 +12,8 @@ class MM4TorsionForce: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Eventually, we want to optimize this by fusing all the torsions
     // surrounding the same bond into a single invocation.
-    //
-    // Perhaps only do this for bonds that have no heteroatoms immediately next
-    // to them. This should optimize bulk diamond and moissanite, without
-    // introducing extra computation for highly mixed-element compounds. There
-    // should be a separate force object for this.
-    let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
+    func createForce() -> OpenMM_CustomCompoundBondForce {
+      let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
       torsion + torsionStretch;
       torsion = V1 * fourierExpansion1
               + Vn * fourierExpansionN
@@ -30,13 +26,15 @@ class MM4TorsionForce: MM4Force {
       fourierExpansion3 = 1 + cos(3 * omega);
       omega = dihedral(p1, p2, p3, p4);
       """)
-    force.addPerBondParameter(name: "V1")
-    force.addPerBondParameter(name: "Vn")
-    force.addPerBondParameter(name: "V3")
-    force.addPerBondParameter(name: "n")
-    force.addPerBondParameter(name: "Kts3")
-    force.addPerBondParameter(name: "equilibriumLength")
-    var forceActive = false
+      force.addPerBondParameter(name: "V1")
+      force.addPerBondParameter(name: "Vn")
+      force.addPerBondParameter(name: "V3")
+      force.addPerBondParameter(name: "n")
+      force.addPerBondParameter(name: "Kts3")
+      force.addPerBondParameter(name: "equilibriumLength")
+      return force
+    }
+    var force: OpenMM_CustomCompoundBondForce!
     
     let particles = OpenMM_IntArray(size: 4)
     let array = OpenMM_DoubleArray(size: 6)
@@ -50,6 +48,12 @@ class MM4TorsionForce: MM4Force {
       }
       if torsions.extendedParameters[torsionID] != nil {
         // Compute heteroatom V1/V2/V3 terms in the extended force.
+        continue
+      }
+      if parameters.V1 == 0,
+         parameters.Vn == 0,
+         parameters.V3 == 0,
+         parameters.Kts3 == 0 {
         continue
       }
       
@@ -88,10 +92,13 @@ class MM4TorsionForce: MM4Force {
       for lane in 0..<4 {
         particles[lane] = reorderedTorsion[lane]
       }
+      
+      if force == nil {
+        force = createForce()
+      }
       force.addBond(particles: particles, parameters: array)
-      forceActive = true
     }
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 1)
   }
 }
 
@@ -101,7 +108,8 @@ class MM4TorsionExtendedForce: MM4Force {
     // When fusing multiple carbon-like torsions into a single invocation: V4/V6
     // terms are very rare. There should be a separate force to handle only the
     // extended torsions with V4 or V6 terms.
-    let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
+    func createForce() -> OpenMM_CustomCompoundBondForce {
+      let force = OpenMM_CustomCompoundBondForce(numParticles: 4, energy: """
       torsion + torsionStretch + torsionBend + bendTorsionBend;
       torsion = V1 * fourierExpansion1
               + V2 * fourierExpansion2
@@ -145,34 +153,36 @@ class MM4TorsionExtendedForce: MM4Force {
       fourierExpansion3 = 1 + cos(3 * omega);
       omega = dihedral(p1, p2, p3, p4);
       """)
-    force.addPerBondParameter(name: "V1")
-    force.addPerBondParameter(name: "V2")
-    force.addPerBondParameter(name: "V3")
-    force.addPerBondParameter(name: "V4")
-    force.addPerBondParameter(name: "V6")
-    var forceActive = false
-    
-    for position in ["Left", "Center", "Right"] {
-      // Use the same technique to make code for appending the tuples for Kts/b
-      // parameter more concise. Although that might require an inlined function
-      // instead of a loop.
-      force.addPerBondParameter(name: "Kts1\(position)")
-      force.addPerBondParameter(name: "Kts2\(position)")
-      force.addPerBondParameter(name: "Kts3\(position)")
+      force.addPerBondParameter(name: "V1")
+      force.addPerBondParameter(name: "V2")
+      force.addPerBondParameter(name: "V3")
+      force.addPerBondParameter(name: "V4")
+      force.addPerBondParameter(name: "V6")
+      
+      for position in ["Left", "Center", "Right"] {
+        // Use the same technique to make code for appending the tuples for Kts/b
+        // parameter more concise. Although that might require an inlined function
+        // instead of a loop.
+        force.addPerBondParameter(name: "Kts1\(position)")
+        force.addPerBondParameter(name: "Kts2\(position)")
+        force.addPerBondParameter(name: "Kts3\(position)")
+      }
+      for position in ["Left", "Center", "Right"] {
+        force.addPerBondParameter(name: "equilibriumLength\(position)")
+      }
+      
+      for position in ["Left", "Right"] {
+        force.addPerBondParameter(name: "Ktb1\(position)")
+        force.addPerBondParameter(name: "Ktb2\(position)")
+        force.addPerBondParameter(name: "Ktb3\(position)")
+      }
+      force.addPerBondParameter(name: "Kbtb")
+      for position in ["Left", "Right"] {
+        force.addPerBondParameter(name: "equilibriumAngle\(position)")
+      }
+      return force
     }
-    for position in ["Left", "Center", "Right"] {
-      force.addPerBondParameter(name: "equilibriumLength\(position)")
-    }
-    
-    for position in ["Left", "Right"] {
-      force.addPerBondParameter(name: "Ktb1\(position)")
-      force.addPerBondParameter(name: "Ktb2\(position)")
-      force.addPerBondParameter(name: "Ktb3\(position)")
-    }
-    force.addPerBondParameter(name: "Kbtb")
-    for position in ["Left", "Right"] {
-      force.addPerBondParameter(name: "equilibriumAngle\(position)")
-    }
+    var force: OpenMM_CustomCompoundBondForce!
     
     let particles = OpenMM_IntArray(size: 4)
     let array = OpenMM_DoubleArray(
@@ -298,9 +308,12 @@ class MM4TorsionExtendedForce: MM4Force {
       for lane in 0..<4 {
         particles[lane] = reorderedTorsion[lane]
       }
+      
+      if force == nil {
+        force = createForce()
+      }
       force.addBond(particles: particles, parameters: array)
-      forceActive = true
     }
-    super.init(forces: [force], forcesActive: [forceActive], forceGroup: 1)
+    super.init(forces: [force], forceGroup: 1)
   }
 }

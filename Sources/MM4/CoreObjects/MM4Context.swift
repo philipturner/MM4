@@ -39,7 +39,6 @@ class MM4Context {
         system: system.system,
         integrator: compoundIntegrator)
     }
-    
   }
   
   var currentIntegrator: MM4IntegratorDescriptor {
@@ -55,7 +54,9 @@ class MM4Context {
   /// Modeled after how the OpenMM `integrator.step` API is typically used -
   /// without an argument label for steps.
   func step(_ steps: Int, timeStep: Double) {
-    compoundIntegrator.stepSize = timeStep
-    compoundIntegrator.step(steps)
+    // There is a performance issue with custom integrators right now. See the
+    // note in 'MM4Integrator'.
+    compoundIntegrator.stepSize = timeStep / 2
+    compoundIntegrator.step(steps * 2)
   }
 }

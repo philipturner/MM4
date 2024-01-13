@@ -57,6 +57,7 @@ Key:
 Available forces:
 - bend ❌
 - bend-bend ❌
+- external ✅
 - nonbonded ❌
   - van der Waals force ❌
   - overlap repulsion ❌

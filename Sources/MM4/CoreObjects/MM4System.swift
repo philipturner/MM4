@@ -14,9 +14,6 @@ class MM4System {
   /// The forces used by the system.
   var forces: MM4Forces!
   
-  /// Map from reordered indices to original indices.
-  var originalIndices: [UInt32] = []
-  
   /// The location where the parameters are owned.
   var parameters: MM4Parameters
   
@@ -26,11 +23,8 @@ class MM4System {
   /// The backing OpenMM system object.
   var system: OpenMM_System
   
-  /// The number of virtual sites.
+  /// The number of virtual sites in the system.
   var virtualSiteCount: Int = 0
-  
-  /// Whether each atom is a virtual site.
-  var virtualSiteMask: [Bool] = []
   
   init(parameters: MM4Parameters, descriptor: MM4ForceFieldDescriptor) {
     // Initialize base properties.
@@ -41,7 +35,6 @@ class MM4System {
     self.createReorderedIndices()
     self.createMasses()
     self.createVirtualSites()
-    self.createVirtualSiteMask()
     
     // Create force objects.
     self.forces = MM4Forces(system: self, descriptor: descriptor)
@@ -54,7 +47,7 @@ extension MM4System {
   func reorder(_ indices: SIMD2<UInt32>) -> SIMD2<Int> {
     var output: SIMD2<UInt32> = .zero
     for i in 0..<indices.scalarCount {
-      output[i] = reorderedIndices[Int(output[i])]
+      output[i] = reorderedIndices[Int(indices[i])]
     }
     return SIMD2(truncatingIfNeeded: output)
   }
@@ -63,7 +56,7 @@ extension MM4System {
   func reorder(_ indices: SIMD3<UInt32>) -> SIMD3<Int> {
     var output: SIMD3<UInt32> = .zero
     for i in 0..<indices.scalarCount {
-      output[i] = reorderedIndices[Int(output[i])]
+      output[i] = reorderedIndices[Int(indices[i])]
     }
     return SIMD3(truncatingIfNeeded: output)
   }
@@ -72,7 +65,7 @@ extension MM4System {
   func reorder(_ indices: SIMD4<UInt32>) -> SIMD4<Int> {
     var output: SIMD4<UInt32> = .zero
     for i in 0..<indices.scalarCount {
-      output[i] = reorderedIndices[Int(output[i])]
+      output[i] = reorderedIndices[Int(indices[i])]
     }
     return SIMD4(truncatingIfNeeded: output)
   }

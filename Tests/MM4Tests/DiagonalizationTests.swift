@@ -55,6 +55,26 @@ final class DiagonalizationTests: XCTestCase {
         XCTAssertEqual(root2, 106430.8046875, accuracy: root2 * 1e-5)
       }
     }
+    
+    do {
+      let coefficients: SIMD4<Double> = [
+        -1.0, 681.8423500061035, -154951.57960266608, 11736402.461415779
+      ]
+      let (root0, root1, root2) = factorCubicPolynomial(
+        coefficients: coefficients)
+      XCTAssertNotNil(root0)
+      XCTAssertNotNil(root1)
+      XCTAssertNotNil(root2)
+      if let root0 {
+        XCTAssertEqual(root0, 229.73597, accuracy: root0 * 1e-5)
+      }
+      if let root1 {
+        XCTAssertEqual(root1, 222.37041, accuracy: root1 * 1e-5)
+      }
+      if let root2 {
+        XCTAssertEqual(root2, 229.73597, accuracy: root2 * 1e-5)
+      }
+    }
   }
   
   func testInvert() throws {
@@ -91,10 +111,7 @@ final class DiagonalizationTests: XCTestCase {
   
   func testDiagonalize() throws {
     func checkEigenPairs(
-      _ actual: (
-        eigenValues: SIMD3<Double>,
-        eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
-      )?,
+      _ matrix: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>),
       _ expected: (
         eigenValues: SIMD3<Double>,
         eigenVectors: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>)
@@ -102,22 +119,25 @@ final class DiagonalizationTests: XCTestCase {
       file: StaticString = #filePath,
       line: UInt = #line
     ) {
-      guard let actual else {
-        XCTAssert(false, "Matrix failed to diagonalize", file: file, line: line)
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      guard let Λ, let Σ else {
+        XCTAssert(
+          false, "Matrix failed to diagonalize: \(failureReason!)",
+          file: file, line: line)
         return
       }
       
       XCTAssertEqual(
-        actual.eigenValues, expected.eigenValues, ratioAccuracy: 1e-5,
+        Λ, expected.eigenValues, ratioAccuracy: 1e-5,
         file: file, line: line)
       XCTAssertEqual(
-        actual.eigenVectors.0, expected.eigenVectors.0, accuracy: 1e-4,
+        Σ.0, expected.eigenVectors.0, accuracy: 1e-4,
         file: file, line: line)
       XCTAssertEqual(
-        actual.eigenVectors.1, expected.eigenVectors.1, accuracy: 1e-4,
+        Σ.1, expected.eigenVectors.1, accuracy: 1e-4,
         file: file, line: line)
       XCTAssertEqual(
-        actual.eigenVectors.2, expected.eigenVectors.2, accuracy: 1e-4,
+        Σ.2, expected.eigenVectors.2, accuracy: 1e-4,
         file: file, line: line)
     }
     
@@ -132,10 +152,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, 0, 1.0),
         SIMD3(-0.0076379897, 0.99997085, 0),
         SIMD3(-0.99997085, -0.0076379897, 0))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     do {
@@ -149,10 +167,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, 0, 1.0),
         SIMD3(-0.0076379897, 0.99997085, 0),
         SIMD3(-0.99997085, -0.0076379897, 0))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     do {
@@ -166,10 +182,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0, -0.17364809, 0.9848078),
         SIMD3(-0.0076380027, 0.98477906, 0.17364302),
         SIMD3(-0.99997085, -0.0075219646, -0.0013263224))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 1 eigenvector.
@@ -184,10 +198,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.77459675, -0.19999957, 0.6),
         SIMD3(0.3834677, 0.90293205, -0.19407801),
         SIMD3(-0.5029437, 0.38041282, 0.7761016))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 1 eigenvector.
@@ -202,10 +214,8 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(-0.41388798, -0.09375615, 0.9054869),
         SIMD3(0.23297852, 0.9506457, 0.20492388),
         SIMD3(-0.88001007, 0.29577452, -0.37161765))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
     }
     
     // This test case required an additional trial to find 2 eigenvectors.
@@ -220,10 +230,107 @@ final class DiagonalizationTests: XCTestCase {
         SIMD3(0.9168911, 0.1343581, 0.37584394),
         SIMD3(0.05351307, 0.89175814, -0.44933698),
         SIMD3(-0.39553395, 0.43210563, 0.8104552))
-      
-      let eigenPairs = diagonalize(matrix: matrix)
       checkEigenPairs(
-        eigenPairs, (expectedEigenValues, expectedEigenVectors))
+        matrix, (expectedEigenValues, expectedEigenVectors))
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(35702.36472773552, -1.3455748558044434e-05, 7.459503173828125),
+        SIMD3(-1.3455748558044434e-05, 82421.14924621582, -5.0455331802368164e-05),
+        SIMD3(7.459503173828125, -5.0455331802368164e-05, 47511.179409742355))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(35702.347987532616, 0.007739812135696411, 7.47467041015625),
+        SIMD3(0.007739812135696411, 82421.11811828613, 0.007063537836074829),
+        SIMD3(7.47467041015625, 0.007063537836074829, 47511.16352403164))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(229.3068447113037, -9.5367431640625e-07, 3.2782554626464844e-07),
+        SIMD3(-9.5367431640625e-07, 229.3068389892578, -9.685754776000977e-07),
+        SIMD3(3.2782554626464844e-07, -9.685754776000977e-07, 222.27340507507324))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(229.30638122558594, 0.00022840499877929688, 0.00021526217460632324),
+        SIMD3(0.00022840499877929688, 229.30638122558594, 0.00021557509899139404),
+        SIMD3(0.00021526217460632324, 0.00021557509899139404, 222.27295684814453))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case has known repeated roots.
+    do {
+      let matrix = (
+        SIMD3(1.0, 0, 0),
+        SIMD3(0, 1.0, 0),
+        SIMD3(0, 0, 1.0))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case has known repeated roots.
+    do {
+      let matrix = (
+        SIMD3(2.0, 0, 0),
+        SIMD3(0, 2.0, 0),
+        SIMD3(0, 0, 1.0))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case had a tricky characteristic polynomial.
+    do {
+      let matrix = (
+        SIMD3(229.7359676361084, -1.7881393432617188e-07, 2.3543834686279297e-06),
+        SIMD3(-1.7881393432617188e-07, 229.73597145080566, -2.1904706954956055e-06),
+        SIMD3(2.3543834686279297e-06, -2.1904706954956055e-06, 222.37041091918945))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(230.0067958831787, 2.384185791015625e-07, 2.562999725341797e-06),
+        SIMD3(2.384185791015625e-07, 230.00679206848145, -1.2218952178955078e-06),
+        SIMD3(2.562999725341797e-06, -1.2218952178955078e-06, 222.01723098754883))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
+    }
+    
+    // This test case caused convergence issues.
+    do {
+      let matrix = (
+        SIMD3(230.44046783447266, -7.748603820800781e-07, -1.9371509552001953e-06),
+        SIMD3(-7.748603820800781e-07, 230.4404697418213, -2.6226043701171875e-06),
+        SIMD3(-1.9371509552001953e-06, -2.6226043701171875e-06, 223.87350273132324))
+      let (Λ, Σ, failureReason) = diagonalize(matrix: matrix)
+      XCTAssertNotNil(Λ)
+      XCTAssertNotNil(Σ, failureReason ?? "")
     }
   }
 }

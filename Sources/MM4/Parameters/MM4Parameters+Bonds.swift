@@ -513,4 +513,20 @@ extension MM4Parameters {
       }
     }
   }
+  
+  mutating func removeBondLengths(forces: MM4ForceOptions) {
+    // If the user omitted '.stretch' from the forces, zero out the bond
+    // lengths. Do this after the partial charges have been initialized.
+    //
+    // If and only if they omitted '.nonbonded', zero out the dipole moment.
+    // The latter was already done when bond parameters were initialized.
+    // To get all the information about how to project a bond dipole onto
+    // charges, the user must request parameters for both '.stretch' and
+    // '.nonbonded'.
+    if !forces.contains(.stretch) {
+      for bondID in bonds.indices.indices {
+        bonds.parameters[bondID].equilibriumLength = .zero
+      }
+    }
+  }
 }

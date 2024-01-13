@@ -15,7 +15,8 @@ public struct MM4ParametersDescriptor {
   
   /// Required. The forces to assign parameters for.
   ///
-  /// The default value includes all available forces.
+  /// The default value includes stretch, bend, stretch-bend, stretch-stretch,
+  /// and nonbonded forces.
   ///
   /// Disabling certain forces may reduce the execution time required to
   /// generate parameters. For example, if torsion forces are excluded, the
@@ -23,14 +24,10 @@ public struct MM4ParametersDescriptor {
   /// also be an empty array.
   public var forces: MM4ForceOptions = [
     .bend,
-    .bendBend,
     .nonbonded,
     .stretch,
     .stretchBend,
     .stretchStretch,
-    .torsion,
-    .torsionBend,
-    .torsionStretch,
   ]
   
   /// Required. The factor to multiply hydrogen mass by.
@@ -83,6 +80,7 @@ public struct MM4Parameters {
           let descriptorBonds = descriptor.bonds else {
       fatalError("Descriptor did not have the required properties.")
     }
+    Self.checkForces(descriptor.forces)
     
     // Set the properties for conveniently iterating over the atoms.
     // Behavior should be well-defined when the atom count is zero.
@@ -111,6 +109,7 @@ public struct MM4Parameters {
     try createTorsionParameters(forces: descriptor.forces)
     createElectronegativityEffectCorrections()
     createPartialCharges()
+    removeBondLengths(forces: descriptor.forces)
   }
   
   public mutating func append(contentsOf other: Self) {
@@ -135,6 +134,50 @@ public struct MM4Parameters {
     atomsToAtomsMap += other.atomsToAtomsMap.map {
       let modified = $0 &+ Int32(truncatingIfNeeded: atomOffset)
       return $0.replacing(with: modified, where: $0 .>= 0)
+    }
+  }
+  
+  // Validate that the specified combination of forces is okay. Otherwise,
+  // cause a runtime crash.
+  static func checkForces(_ forces: MM4ForceOptions) {
+    let includeTorsions =
+    forces.contains(.torsion) ||
+    forces.contains(.torsionBend) ||
+    forces.contains(.torsionStretch)
+    
+    // Use a conservative metric to determine whether angles are included. If
+    // torsions are included but angles aren't, there's still some torsion
+    // cross-terms that depend on equilibrium angle.
+    let includeAngles =
+    forces.contains(.bend) ||
+    forces.contains(.bendBend) ||
+    forces.contains(.stretchBend) ||
+    forces.contains(.stretchStretch) ||
+    includeTorsions
+    
+    // None of the other bonded forces will be stable without bond stretching.
+    let includeBonds =
+    forces.contains(.stretch) ||
+    includeAngles ||
+    includeTorsions
+    
+    if includeBonds {
+      guard forces.contains(.stretch) else {
+        fatalError(
+          "The specified forces cannot be evaluated without '.stretch'.")
+      }
+    }
+    if includeAngles {
+      guard forces.contains(.bend) else {
+        fatalError(
+          "The specified forces cannot be evaluated without '.bend'.")
+      }
+    }
+    if includeTorsions {
+      guard forces.contains(.torsion) else {
+        fatalError(
+          "The specified forces cannot be evaluated without '.torsion'.")
+      }
     }
   }
 }
