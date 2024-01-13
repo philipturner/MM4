@@ -102,9 +102,9 @@ force = dU / dx = (10^-21) / (10^-9) = 10^-12
 
 ### Levels of Theory
 
-|  | Stable Time Step | Minimum Latency/Step | Maximum ns/day | Force Computation | Integration |
-| :-----------------: | :--------: | :--------: | :-----: | :-: | :-: |
-| Molecular Dynamics (w/o cutoff)        | 4.35 fs |  100 us | 3200 ns/day | GPU | GPU |
-| Molecular Dynamics (w/o neighbor list) | 4.35 fs |  200 us | 1600 ns/day | GPU | GPU |
-| Molecular Dynamics                     | 4.35 fs |  700 us | 500 ns/day  | GPU | GPU |
-| Rigid Body Dynamics                    | 80 fs   | 1500 us | 4000 ns/day | GPU | CPU |
+|  | Stable Time Step | Minimum Latency/Step | Maximum ns/day | Scaling | Force Computation | Integration |
+| :-----------------: | :--------: | :--------: | :-----: | :-: | :-: | :-: |
+| Molecular Dynamics (w/o cutoff)        | 4.35 fs |  100 us | 3200 ns/day | $O(n^2)$ | GPU | GPU |
+| Molecular Dynamics (w/o neighbor list) | 4.35 fs |  200 us | 1600 ns/day | $O(n^2)$ |  GPU | GPU |
+| Molecular Dynamics                     | 4.35 fs |  700 us | 500 ns/day  | $O(n)$ |  GPU | GPU |
+| Rigid Body Dynamics                    | 80 fs   | 1500 us | 4000 ns/day | $O(n)$ |  GPU | CPU |
