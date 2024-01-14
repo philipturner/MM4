@@ -75,7 +75,7 @@ MM4 offloads all molecular dynamics calculations to OpenMM. Rigid body dynamics 
 | Molecular Dynamics                     | 4.35 fs |  700 μs | 500 ns/day  | $O(n)$ |  GPU | GPU |
 | Rigid Body Dynamics                    | 80 fs   | 1500 μs | 4000 ns/day | $O(n)$ |  GPU | CPU |
 
-For large systems and lower-end hardware, the $O(n)$ term will dominate. It is about the compute cost of biomolecular force fields (AMBER, etc.). However, GPU hardware allows several thousand calculations to occur each clock cycle. This makes MM4 much faster than CPU-based simulators (GROMACS, LAMMPS) running the same type of force field.
+For large atom counts and lower-end hardware, the $O(n)$ term will dominate. It is about the compute cost of biomolecular force fields (e.g. AMBER). However, GPU hardware allows several thousand calculations to occur each clock cycle. This makes MM4 much faster than CPU-based simulators (GROMACS, LAMMPS) running the same type of force field.
 
 ### Units
 
