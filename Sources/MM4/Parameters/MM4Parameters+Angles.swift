@@ -406,30 +406,27 @@ extension MM4Parameters {
         throw createAngleError()
       }
       
-      // Factors in both the center type and the other atoms in the angle.
-      var angleType: Int
-      if sortedCodes[1] == 15 {
-        angleType = 0
-      } else {
-        var matchMask: SIMD3<UInt8> = .zero
-        matchMask.replace(with: .one, where: sortedCodes .== 5)
-        let numHydrogens = Int(matchMask[0] &+ matchMask[1] &+ matchMask[2])
-        
-        guard let centerType = atoms.centerTypes[Int(angle[1])] else {
-          // Angle did not occur at tetravalent atom.
-          throw createAngleError()
+      // Compute angle type based on number of neighbors (excluding the angle)
+      // that are heavy atoms.
+      var heavyAtomCount: Int = 0
+      do {
+        let map = atomsToAtomsMap[Int(angle[1])]
+        var debugAtomicNumbers: [UInt8] = []
+        for lane in 0..<4 where map[lane] != -1 {
+          let otherID = UInt32(truncatingIfNeeded: map[lane])
+          debugAtomicNumbers.append(atoms.atomicNumbers[Int(otherID)])
+          guard all(angle .!= otherID) else {
+            continue
+          }
+          
+          let otherAtomicNumber = atoms.atomicNumbers[Int(otherID)]
+          if otherAtomicNumber != 1 {
+            heavyAtomCount &+= 1
+          }
         }
-        switch centerType {
-        case .quaternary:
-          angleType = 1 - numHydrogens
-        case .tertiary:
-          angleType = 2 - numHydrogens
-        case .secondary:
-          angleType = 3 - numHydrogens
-        case .primary:
-          angleType = 4 - numHydrogens
-        }
+        print("ANGLE", angleID, angle, map, sortedCodes, debugAtomicNumbers)
       }
+      let angleType = 1 + heavyAtomCount
       
       // MARK: - Bend-Bend, Stretch-Bend, Stretch-Stretch
       
