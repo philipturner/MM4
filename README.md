@@ -6,68 +6,63 @@ Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
 ### Atoms
 
-| MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
-| - | - | - | - | - |
-| H             | 5   | n/a | n/a           | n/a           |
-| C             | 1   | 123 | not supported | not supported |
-| N (trivalent) | 8   | 8   | not supported | not supported |
-| O             | 6   | 6   | not supported | not supported |
-| F             | 11  | n/a | n/a           | n/a           |
-| Si            | 19  | 19  | not supported | not supported |
-| P (trivalent) | 25  | 25  | not supported | not supported |
-| S             | 15  | 15  | not supported | not supported |
-| Ge            | 31  | 31  | not supported | not supported |
+Officially supported:
 
-The following are officially supported in the current release. Other atoms are unsupported.
+| Element | Ring Types |
+| ------- | ---------- |
+| H             | n/a  |
+| C             | 5, 6 |
+| Si            | 5, 6 |
+| P (trivalent) | 5, 6 |
+| S             | 5, 6 |
+| Ge            | 5, 6 |
 
-| MM4 Atom Code | 6-ring | 5-ring | 4-ring | 3-ring |
-| - | - | - | - | - |
-| H             | 5   | n/a | n/a           | n/a           |
-| C             | 1   | 123 | not supported | not supported |
-| Si            | 19  | 19  | n/a           | n/a           |
+Experimental:
+
+| Element | Ring Types |
+| ------- | ---------- |
+| N (trivalent) | 5, 6 |
+| O             | 5, 6 |
+| F             | n/a  |
 
 ### Bonds
 
-| Element | H | C | N | O | F | Si | P | S | Ge |
-| ------- | - | - | - | - | - | - | - | - | - |
-| H       |   | X |   |   |   | X |   |   | X |
-| C       | X | X | O | O | O | O | O | O | O |
-| N       |   | O |   |   |   |   |   |   |   |
-| O       |   | O |   |   |   |   |   |   |   |
-| F       |   | O |   |   |   |   |   |   |   |
-| Si      | X | O |   |   |   | X |   |   |   |
-| P       |   | O |   |   |   |   |   |   |   |
-| S       |   | O |   |   |   |   |   |   |   |
-| Ge      | X | O |   |   |   |   |   |   | X |
+Officially supported:
 
-The following are officially supported in the current release. Other bonds are unsupported.
+| Element | H | C |
+| ------- | - | - |
+| C       | X | X |
+| Si      | X | X |
+| P       |   | X |
+| S       |   | X |
+| Ge      | X | X |
 
-| Element | H | C | Si |
-| ------- | - | - | - |
-| H       |   | X | X |
-| C       | X | X |   |
-| Si      | x |   | X |
+Experimental:
 
-Key:
-- X = nonpolar sigma bond
-- O = polar sigma bond
+| Element | H | C |
+| ------- | - | - |
+| N       |   | X |
+| O       |   | X |
+| F       |   | X |
 
 ### Forces
 
-Available forces:
-- bend ✅
-- bend-bend ❌
-- external ✅
+Officially supported:
+- bend
+- external
 - nonbonded
-  - van der Waals force ✅
-  - overlap repulsion ✅
-  - electrostatic force ❌
-- stretch ✅
-- stretch-bend ✅
-- stretch-stretch ❌
-- torsion ❌
-- torsion-bend ❌
-- torsion-stretch ❌
+  - van der Waals force
+  - overlap repulsion
+  - electrostatic force
+- stretch
+- stretch-bend
+
+Experimental:
+- bend-bend
+- stretch-stretch
+- torsion
+- torsion-bend
+- torsion-stretch
 
 ### Units
 
