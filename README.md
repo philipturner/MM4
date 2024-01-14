@@ -66,7 +66,12 @@ Experimental:
 
 ### Units
 
-The following unit systems are used for MM4 and OpenMM. The `MM4` module defines several constants for converting between them.
+MM4 and OpenMM use slightly different unit systems. MM4 adheres to the SI system: nanometer, yoctogram, picosecond. Units for force and energy are derived from dimensional analysis.
+
+```
+energy = m * v^2 = yg * (nm/ps)^2 = zJ
+force = dU / dx = zJ / nm = pN
+```
 
 | Unit   | MM4   | OpenMM    |
 | ------ | ----- | --------- |
@@ -88,14 +93,9 @@ The following unit systems are used for MM4 and OpenMM. The `MM4` module defines
 | Speed             | m/s     | 1000  | 1000      |
 | Time              | s       | 1e-12 | 1e-12     |
 
-MM4's unit system is internally consistent. Units for force and energy are derived from mass and velocity.
-
-```
-energy = 0.5 * m * v^2 = (10^-27) (10^3)^2 = 10^-21
-force = dU / dx = (10^-21) / (10^-9) = 10^-12
-```
-
 ### Levels of Theory
+
+MM4 offloads all molecular dynamics calculations to OpenMM. Rigid body dynamics must be integrated on the CPU by the library user. Any communication between CPU and GPU causes a latency bottleneck. This bottleneck manifests as a large $O(1)$ term in the polynomial for algorithmic complexity.
 
 |  | Stable Time Step | Minimum Latency/Step | Maximum ns/day | Scaling | Force Computation | Integration |
 | :-----------------: | :--------: | :--------: | :-----: | :-: | :-: | :-: |
