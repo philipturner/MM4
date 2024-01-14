@@ -29,21 +29,21 @@ Experimental:
 
 Officially supported:
 
-| Element | H | C |
-| ------- | - | - |
-| C       | X | X |
-| Si      | X | X |
-| P       |   | X |
-| S       |   | X |
-| Ge      | X | X |
+| Element | H | C | Si | Ge |
+| ------- | - | - | -- | -- |
+| Si      | X | X | X  |    |
+| P       |   | X |    |    |
+| S       |   | X |    |    |
+| Ge      | X | X |    |    |
 
 Experimental:
 
-| Element | H | C |
-| ------- | - | - |
-| N       |   | X |
-| O       |   | X |
-| F       |   | X |
+| Element | H | C | Si | Ge |
+| ------- | - | - | -- | -- |
+| N       |   | X |    |    |
+| O       |   | X |    |    |
+| F       |   | X |    |    |
+| Ge      |   |   |    | X  |
 
 ### Forces
 
