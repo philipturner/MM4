@@ -337,29 +337,9 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
       }
     }
     
-    let angle = params.angles.indices[i]
-    let centerType = params.atoms.centerTypes[Int(angle[1])]!
-    let atomicNumbers = (0..<3).map { laneID -> String in
-      let atomID = Int(angle[laneID])
-      let uint8Value = params.atoms.atomicNumbers[atomID]
-      if uint8Value == 1 {
-        return "H"
-      } else if uint8Value == 6 {
-        return "C"
-      } else if uint8Value == 14 {
-        return "Si"
-      } else {
-        return "X"
-      }
-    }
-    
     XCTAssert(
       succeeded,
       "Angle \(i) of the MM4Parameters failed: \(paramsRingType), \(paramsParams)")
-    
-    if !succeeded {
-      print("Angle \(i) of the MM4Parameters, \(centerType), \(atomicNumbers[0])-\(atomicNumbers[1])-\(atomicNumbers[2])")
-    }
   }
   XCTAssert(angleMarks.allSatisfy { $0 == true })
   
