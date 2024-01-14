@@ -113,8 +113,8 @@ class MM4ElectrostaticForce: MM4Force {
       // will add more complexity to the implementation (fast-path that removes
       // text from the GPU kernel if all particles have charge zero). It is also
       // unknown whether the switching function causes negative side-effects.
-      force.useSwitchingFunction = true
-      force.switchingDistance = Double(cutoffDistance * pow(1.0 / 3, 1.0 / 6))
+//      force.useSwitchingFunction = true
+//      force.switchingDistance = Double(cutoffDistance * pow(1.0 / 3, 1.0 / 6))
     } else {
       force.nonbondedMethod = .noCutoff
     }
