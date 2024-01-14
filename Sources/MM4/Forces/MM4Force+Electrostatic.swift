@@ -102,19 +102,14 @@ class MM4ElectrostaticForce: MM4Force {
     force.addPerParticleParameter(name: "charge")
     
     if let cutoffDistance = descriptor.cutoffDistance {
+      // Force is discontinuous at the cutoff
+      // (https://www.desmos.com/calculator/a9my66qauu). However, adding a
+      // switching function like with the vdW force makes it worse. It
+      // introduces a jump in force as the energy drops faster than before.
+      // There's not much wrong with discontinuous forces, but there's
+      // definitely something wrong with discontinuous energies.
       force.nonbondedMethod = .cutoffNonPeriodic
       force.cutoffDistance = Double(cutoffDistance)
-      
-      // Force is discontinuous at the cutoff:
-      // https://www.desmos.com/calculator/a9my66qauu
-      //
-      // We do actually want a switching function here, to make the forces more
-      // continuous. Hold off on fusing this into the other nonbonded kernel. It
-      // will add more complexity to the implementation (fast-path that removes
-      // text from the GPU kernel if all particles have charge zero). It is also
-      // unknown whether the switching function causes negative side-effects.
-//      force.useSwitchingFunction = true
-//      force.switchingDistance = Double(cutoffDistance * pow(1.0 / 3, 1.0 / 6))
     } else {
       force.nonbondedMethod = .noCutoff
     }
