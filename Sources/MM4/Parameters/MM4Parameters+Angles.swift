@@ -94,6 +94,24 @@ extension MM4Parameters {
       }
       var sortedCodes = sortAngle(codes)
       
+      // MARK: - Debugging
+      
+      let atomicNumbers = (0..<3).map { laneID -> String in
+        let atomID = Int(angle[laneID])
+        let uint8Value = atoms.atomicNumbers[atomID]
+        if uint8Value == 1 {
+          return "H"
+        } else if uint8Value == 6 {
+          return "C"
+        } else if uint8Value == 14 {
+          return "Si"
+        } else {
+          return "X"
+        }
+      }
+      
+      print("ANGLE, \(angleID), \(atomicNumbers[0])-\(atomicNumbers[1])-\(atomicNumbers[2]), \(codes[0])-\(codes[1])-\(codes[2]), \(sortedCodes[0])-\(sortedCodes[1])-\(sortedCodes[2])")
+      
       // MARK: - Bend
       
       var bendingStiffnesses: SIMD3<Float>?
@@ -406,27 +424,50 @@ extension MM4Parameters {
         throw createAngleError()
       }
       
-      // Compute angle type based on number of neighbors (excluding the angle)
-      // that are heavy atoms.
       var heavyAtomCount: Int = 0
       do {
         let map = atomsToAtomsMap[Int(angle[1])]
         var debugAtomicNumbers: [UInt8] = []
+        var sameAtomicNumbers: [UInt8] = []
+        var otherAtomicNumbers: [UInt8] = []
         for lane in 0..<4 where map[lane] != -1 {
           let otherID = UInt32(truncatingIfNeeded: map[lane])
           debugAtomicNumbers.append(atoms.atomicNumbers[Int(otherID)])
           guard all(angle .!= otherID) else {
+            sameAtomicNumbers.append(atoms.atomicNumbers[Int(otherID)])
             continue
           }
           
           let otherAtomicNumber = atoms.atomicNumbers[Int(otherID)]
+          otherAtomicNumbers.append(otherAtomicNumber)
           if otherAtomicNumber != 1 {
             heavyAtomCount &+= 1
           }
         }
-        print("ANGLE", angleID, angle, map, sortedCodes, debugAtomicNumbers)
+        print("ANGLE", angleID, equilibriumAngles, bendingStiffnesses)
+        print("ANGLE", angleID, angle, map, sortedCodes, debugAtomicNumbers, sameAtomicNumbers, otherAtomicNumbers, heavyAtomCount)
       }
-      let angleType = 1 + heavyAtomCount
+      
+      var angleType: Int
+      switch atoms.codes[Int(angle[1])] {
+      case .alkaneCarbon, .cyclopentaneCarbon, .silicon, .germanium:
+        switch heavyAtomCount {
+        case 2: angleType = 1
+        case 1: angleType = 2
+        case 0: angleType = 3
+        default: fatalError("Unexpected heavy atom count.")
+        }
+      case .nitrogen, .phosphorus:
+        precondition(
+          heavyAtomCount == 1, "Group V atom was bonded to hydrogen.")
+        angleType = 1
+      case .oxygen, .sulfur:
+        precondition(
+          heavyAtomCount == 0, "Group VI atom had more than 2 bonds.")
+        angleType = 1
+      case .hydrogen, .fluorine:
+        fatalError("Group VII atom cannot be the center of an angle.")
+      }
       
       // MARK: - Bend-Bend, Stretch-Bend, Stretch-Stretch
       
