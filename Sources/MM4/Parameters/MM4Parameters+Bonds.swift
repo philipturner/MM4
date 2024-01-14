@@ -224,6 +224,8 @@ extension MM4Parameters {
         equilibriumLength = 2.404
         
       default:
+        print("Could not find parameters for bond: \(sortedCodes[0])-\(sortedCodes[1]) or \(atoms.atomicNumbers[Int(bond[0])])-\(atoms.atomicNumbers[Int(bond[1])])")
+        
         var addresses: [MM4Address] = []
         for lane in 0..<2 {
           addresses.append(createAddress(bond[lane]))
