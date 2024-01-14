@@ -189,8 +189,8 @@ extension MM4Parameters {
         // Phosphorus
       case (1, 25):
         potentialWellDepth = 0.702
-        stretchingStiffness = 1.8514
-        equilibriumLength = 2.9273
+        stretchingStiffness = 2.9273
+        equilibriumLength = 1.8514
         dipoleMoment = (codes[1] == 25) ? +0.9254 : -0.9254
         
         // Sulfur
