@@ -117,6 +117,10 @@ class MM4ElectrostaticForce: MM4Force {
       array[0] = Double(parameters.charge)
       force.addParticle(parameters: array)
       
+      if parameters.charge != 0 {
+        print("DEBUGGING", atomID, parameters.charge, prefactor, K, C)
+      }
+      
       // Give the original hydrogens zero charge.
       if atoms.atomicNumbers[atomID] == 1 {
         array[0] = 0
