@@ -371,8 +371,8 @@ extension MM4Parameters {
           
           // Phosphorus
         case (1, 25, 25, 1): return (-0.0036, nil, 0.62, 0.40)
-        case (1, 5, 1, 15):  return (-0.0070, nil, 0.62, 0.40)
-        case (1, 15, 1, 1):  return (0.0005, nil, 0.62, 0.40)
+        case (1, 5, 1, 25):  return (-0.0015, nil, 0.62, 0.40)
+        case (1, 25, 1, 1):  return (0.0005, nil, 0.62, 0.40)
           
           // Sulfur
         case (1, 1, 1, 15):       return (-0.0010, nil, 0.62, 0.40)
