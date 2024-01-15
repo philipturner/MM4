@@ -414,7 +414,7 @@ extension MM4Parameters {
           bendingStiffnesses = SIMD3(repeating: 0.350)
 //          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
 //          equilibriumAngles = SIMD3(repeating: 109.5)
-          equilibriumAngles = SIMD3(109.50, 114.50, 112)
+          equilibriumAngles = SIMD3(109.50, 119.50, 112)
         case (1, 31, 5):
           bendingStiffnesses = SIMD3(repeating: 0.390)
           equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
