@@ -31,6 +31,7 @@ Officially supported:
 
 | Element | H | C | Si | Ge |
 | ------- | - | - | -- | -- |
+| C       | X | X | X  | X  |
 | Si      | X | X | X  |    |
 | P       |   | X |    |    |
 | S       |   | X |    |    |
