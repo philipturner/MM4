@@ -258,9 +258,10 @@ extension MM4Parameters {
             equilibriumAngles = SIMD3(109.50, 110.40, 109.20)
           }
         case (19, 1, 19):
+          // The wierd 120-degree like parameters are required to agree with
+          // xTB results.
           bendingStiffnesses = SIMD3(repeating: 0.350)
-//          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
-          equilibriumAngles = SIMD3(109.50, 109.50, 107.00)
+          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
         case (1, 19, 5):
           bendingStiffnesses = SIMD3(repeating: 0.400)
           equilibriumAngles = SIMD3(109.30, 107.00, 110.00)
@@ -290,8 +291,11 @@ extension MM4Parameters {
             // variants, one gets 0.233 and 0.236 respectively for 19-19-19.
             // That is very close to 0.25, so I don't think that was messed
             // up.
+            
+            // TODO: Investigate this parameter change. For now, it's reverted.
             bendingStiffnesses = SIMD3(repeating: 0.250)
-            equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
+//            equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
+            equilibriumAngles = SIMD3(118.00, 110.80, 111.20)
           } else {
             bendingStiffnesses = SIMD3(repeating: 0.320)
             equilibriumAngles = SIMD3(repeating: 106.00)
@@ -403,8 +407,6 @@ extension MM4Parameters {
           // xTB showed a germanium structure being very inaccurate when using
           // the large equilibrium angle parameter for sidewall silicon. I will
           // revert to just 109.5 for all types of Ge-C-Ge angles.
-          //
-          // TODO: Re-run the silicon benchmark with 119.5 -> 109.5, 117 -> 107.
           bendingStiffnesses = SIMD3(repeating: 0.350)
 //          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
           equilibriumAngles = SIMD3(repeating: 109.5)
@@ -437,14 +439,15 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 112.50)
           
           // Only set to 109.5 when simulating solid germanium.
-          let map = atomsToAtomsMap[Int(angle[1])]
-          var atomCodes: SIMD4<UInt8> = .zero
-          for lane in 0..<4 {
-            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
-          }
-          if all(atomCodes .== 5 .| atomCodes .== 31) {
-            equilibriumAngles![0] = 109.5
-          }
+          // TODO: Investigate this parameter change. For now, it's reverted.
+//          let map = atomsToAtomsMap[Int(angle[1])]
+//          var atomCodes: SIMD4<UInt8> = .zero
+//          for lane in 0..<4 {
+//            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
+//          }
+//          if all(atomCodes .== 5 .| atomCodes .== 31) {
+//            equilibriumAngles![0] = 109.5
+//          }
           
         default:
           continueAttempt = true
