@@ -407,9 +407,13 @@ extension MM4Parameters {
           // xTB showed a germanium structure being very inaccurate when using
           // the large equilibrium angle parameter for sidewall silicon. I will
           // revert to just 109.5 for all types of Ge-C-Ge angles.
+          //
+          // The new values are interpolated halfway between the silicon
+          // parameters and 109.5°.
           bendingStiffnesses = SIMD3(repeating: 0.350)
 //          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
-          equilibriumAngles = SIMD3(repeating: 109.5)
+//          equilibriumAngles = SIMD3(repeating: 109.5)
+          equilibriumAngles = SIMD3(109.50, 114.50, 113.3)
         case (1, 31, 5):
           bendingStiffnesses = SIMD3(repeating: 0.390)
           equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
