@@ -239,27 +239,28 @@ extension MM4Parameters {
           
           // Silicon
         case (1, 1, 19):
-          if ringType == 6 {
-            bendingStiffnesses = SIMD3(repeating: 0.400)
-            equilibriumAngles = SIMD3(109.00, 112.70, 111.50)
-          } else {
+          if ringType == 5 {
             bendingStiffnesses = SIMD3(repeating: 0.550)
             equilibriumAngles = SIMD3(repeating: 107.20)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.400)
+            equilibriumAngles = SIMD3(109.00, 112.70, 111.50)
           }
         case (5, 1, 19):
           bendingStiffnesses = SIMD3(repeating: 0.540)
           equilibriumAngles = SIMD3(109.50, 110.00, 108.90)
         case (1, 19, 1):
-          if ringType == 6 {
-            bendingStiffnesses = SIMD3(repeating: 0.480)
-            equilibriumAngles = SIMD3(109.50, 110.40, 109.20)
-          } else {
+          if ringType == 5 {
             bendingStiffnesses = SIMD3(repeating: 0.650)
             equilibriumAngles = SIMD3(102.80, 103.80, 99.50)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.480)
+            equilibriumAngles = SIMD3(109.50, 110.40, 109.20)
           }
         case (19, 1, 19):
           bendingStiffnesses = SIMD3(repeating: 0.350)
-          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+//          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+          equilibriumAngles = SIMD3(109.50, 109.50, 107.00)
         case (1, 19, 5):
           bendingStiffnesses = SIMD3(repeating: 0.400)
           equilibriumAngles = SIMD3(109.30, 107.00, 110.00)
@@ -398,8 +399,15 @@ extension MM4Parameters {
           // There are no parameters for 31-1-31 in the MM3 forcefield. It
           // looks like silicon is a good first-order approximation for the
           // other angles. Therefore, I will use the silicon values here.
+          //
+          // xTB showed a germanium structure being very inaccurate when using
+          // the large equilibrium angle parameter for sidewall silicon. I will
+          // revert to just 109.5 for all types of Ge-C-Ge angles.
+          //
+          // TODO: Re-run the silicon benchmark with 119.5 -> 109.5, 117 -> 107.
           bendingStiffnesses = SIMD3(repeating: 0.350)
-          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+//          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+          equilibriumAngles = SIMD3(repeating: 109.5)
         case (1, 31, 5):
           bendingStiffnesses = SIMD3(repeating: 0.390)
           equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
@@ -415,9 +423,8 @@ extension MM4Parameters {
         case (31, 31, 31):
           // Silicon has some numbers similar to 112.50 when not in the
           // quaternary configuration: equilibriumAngles = SIMD3(109.50,
-          // 110.80, 111.20). The MM3 paper had an explicit parameter "111.3"
-          // for the quaternary case. I need to do some benchmarks of solid
-          // germanium, to see whether changing the type-1 interaction
+          // 110.80, 111.20). I need to do some benchmarks of solid germanium,
+          // to see whether changing the type-1 interaction
           // constant will improve accuracy.
           //
           // The angle might need to be a variable of how many carbon atoms
