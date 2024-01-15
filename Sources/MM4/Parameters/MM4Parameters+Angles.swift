@@ -586,16 +586,18 @@ extension MM4Parameters {
           case 25:
             // There's no stretch-bend or bend-bend parameters in the phosphines
             // research paper. It seems some generic parameters were uniformly
-            // applied to Si, P, and PO4 in MM3. They were removed from the MM4
-            // paper, except a new bend-bend parameter for H-P-H. I don't allow
-            // H-P-H angles in this forcefield.
+            // applied to Si, P, and PO4 in MM3. They were not mentioned in the
+            // MM4 paper, except a new bend-bend parameter for H-P-H. I don't
+            // allow H-P-H angles in this forcefield.
             //
-            // I assume this omission was intentional. The creators knew the
-            // parameters existed, and they talked with Allinger about it. They
-            // made a decision that the parameters weren't necessary, which is
-            // generally good practice to avoid overfitting a forcefield.
-            bendBendStiffness = 0
-            stretchBendStiffness = 0
+            // I will reuse the bend-bend and stretch-bend parameters from MM3.
+            // They are the same as silicon.
+            if any(sortedCodes .== 5) {
+              bendBendStiffness = 0.24
+              stretchBendStiffness = 0.10
+            } else {
+              throw createAngleError()
+            }
             
             // Sulfur
           case 15:
@@ -610,9 +612,9 @@ extension MM4Parameters {
             // Germanium
           case 31:
             // The parameters that Allinger created for MM3(2000) do not list
-            // germanium under bend-bend parameters. Like sulfur, it is almost
-            // certainly zero.
-            bendBendStiffness = 0.000
+            // germanium under bend-bend parameters. However, silicon does have
+            // a parameter. I will reuse that.
+            bendBendStiffness = 0.240
             if any(sortedCodes .== 5) {
               stretchBendStiffness = 0.000
             } else {
