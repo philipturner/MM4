@@ -529,10 +529,7 @@ extension MM4Parameters {
           case 1:
             // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
             // H-C-Si/C-C-Si/Si-C-Si.
-            if any(sortedCodes .== 5) {
-              bendBendStiffness = 0.350
-              stretchBendStiffness = 0.100
-            } else {
+            if all(sortedCodes .!= 5) {
               bendBendStiffness = 0.204
               stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
               
@@ -540,6 +537,9 @@ extension MM4Parameters {
               if sortedCodes[0] == 1, sortedCodes[2] == 8 {
                 stretchStretchStiffness = -0.10
               }
+            } else {
+              bendBendStiffness = 0.350
+              stretchBendStiffness = 0.100
             }
             
             // Nitrogen
@@ -574,7 +574,7 @@ extension MM4Parameters {
             
             // Silicon
           case 19:
-            if any(sortedCodes .== 5) {
+            if all(sortedCodes .!= 5) {
               bendBendStiffness = 0.24
               stretchBendStiffness = 0.10
             } else {
@@ -592,7 +592,7 @@ extension MM4Parameters {
             //
             // I will reuse the bend-bend and stretch-bend parameters from MM3.
             // They are the same as silicon.
-            if any(sortedCodes .== 5) {
+            if all(sortedCodes .!= 5) {
               bendBendStiffness = 0.24
               stretchBendStiffness = 0.10
             } else {
@@ -615,10 +615,10 @@ extension MM4Parameters {
             // germanium under bend-bend parameters. However, silicon does have
             // a parameter. I will reuse that.
             bendBendStiffness = 0.240
-            if any(sortedCodes .== 5) {
-              stretchBendStiffness = 0.000
-            } else {
+            if all(sortedCodes .!= 5) {
               stretchBendStiffness = 0.450
+            } else {
+              stretchBendStiffness = 0.000
             }
             
           default:
