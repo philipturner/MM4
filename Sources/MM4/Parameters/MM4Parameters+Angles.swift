@@ -683,6 +683,7 @@ extension MM4Parameters {
       
       guard !bendingStiffnesses[angleType - 1].isNaN,
             !equilibriumAngles[angleType - 1].isNaN else {
+        print("Threw an angle error. angle type = \(angleType), bending stiffness = \(bendingStiffnesses), equilibrium angles = \(equilibriumAngles)")
         // Angle parameter was NaN.
         throw createAngleError()
       }
