@@ -239,23 +239,23 @@ extension MM4Parameters {
           
           // Silicon
         case (1, 1, 19):
-          if ringType == 5 {
-            bendingStiffnesses = SIMD3(repeating: 0.550)
-            equilibriumAngles = SIMD3(repeating: 107.20)
-          } else {
+          if ringType == 6 {
             bendingStiffnesses = SIMD3(repeating: 0.400)
             equilibriumAngles = SIMD3(109.00, 112.70, 111.50)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.550)
+            equilibriumAngles = SIMD3(repeating: 107.20)
           }
         case (5, 1, 19):
           bendingStiffnesses = SIMD3(repeating: 0.540)
           equilibriumAngles = SIMD3(109.50, 110.00, 108.90)
         case (1, 19, 1):
-          if ringType == 5 {
-            bendingStiffnesses = SIMD3(repeating: 0.650)
-            equilibriumAngles = SIMD3(102.80, 103.80, 99.50)
-          } else {
+          if ringType == 6 {
             bendingStiffnesses = SIMD3(repeating: 0.480)
             equilibriumAngles = SIMD3(109.50, 110.40, 109.20)
+          } else {
+            bendingStiffnesses = SIMD3(repeating: 0.650)
+            equilibriumAngles = SIMD3(102.80, 103.80, 99.50)
           }
         case (19, 1, 19):
           // The wierd 120-degree like parameters are required to agree with
@@ -291,11 +291,8 @@ extension MM4Parameters {
             // variants, one gets 0.233 and 0.236 respectively for 19-19-19.
             // That is very close to 0.25, so I don't think that was messed
             // up.
-            
-            // TODO: Investigate this parameter change. For now, it's reverted.
             bendingStiffnesses = SIMD3(repeating: 0.250)
-//            equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
-            equilibriumAngles = SIMD3(118.00, 110.80, 111.20)
+            equilibriumAngles = SIMD3(109.5, 110.80, 111.20)
           } else {
             bendingStiffnesses = SIMD3(repeating: 0.320)
             equilibriumAngles = SIMD3(repeating: 106.00)
