@@ -184,6 +184,10 @@ extension MM4Parameters {
           } else {
             continueAttempt = true
           }
+        case (8, 1, 8):
+          // This was taken from the MM3 parameters.
+          bendingStiffnesses = SIMD3(repeating: 1.045)
+          equilibriumAngles = SIMD3(repeating: 110.74)
           
           // Oxygen
         case (1, 1, 6):
@@ -302,6 +306,41 @@ extension MM4Parameters {
         case (1, 1, 25):
           bendingStiffnesses = SIMD3(0.750, 0.825, 0.725)
           equilibriumAngles = SIMD3(107.05, 108.25, 109.55)
+        case (25, 1, 25):
+          // There is no angle parameter for P-C-P, so we'll have to examine
+          // between nearby elements.
+          //
+          // | C  | N | O | F  |
+          // | Si |   | S | Cl |
+          //
+          // Stiffness
+          //
+          // | 0.740 | 1.045 | 1.050 | 1.950 |
+          // | 0.350 |       | 0.420 | 0.750 |
+          //
+          // Equilibrium Angle
+          //
+          // | 109.5 | 110.74 | 108.0 | 104.3 |
+          // | 109.5 |        | 110.0 | 108.1 |
+          //
+          // Relationships between X-C-X and C-C-X parameters:
+          // -  N: 1.175 -> 1.045, 106.4 -> 110.7
+          // -  O: 1.275 -> 1.050, 105.5 -> 108.0
+          // - Si: 0.400 -> 0.350, 109.0 -> 109.5
+          // -  P: 0.750 ->      , 107.1 ->
+          // -  S: 0.975 -> 0.420, 102.6 -> 110.00
+          //
+          // From C-C-X to X-C-X, angle always increases. The values for Si and
+          // S are both within the narrow range 109.5-110.00. Using 109.5 for P
+          // seems like the obvious choice.
+          //
+          // From the first row to the third row of the periodic table, there is
+          // consistent pattern. It can be interpolated bilinearly to reach a
+          // number of ~0.400. The nearby S parameter also jumps downward when
+          // going from C-C-X to X-C-X. Silicon doesn't, but it's an exception
+          // because it is electropositive (neutral C-C-C angle character).
+          bendingStiffnesses = SIMD3(repeating: 0.4)
+          equilibriumAngles = SIMD3(repeating: 109.5)
           
           // Sulfur
         case (5, 1, 15):
