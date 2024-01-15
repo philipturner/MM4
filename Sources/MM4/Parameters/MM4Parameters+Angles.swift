@@ -408,9 +408,9 @@ extension MM4Parameters {
           // the large equilibrium angle parameter for sidewall silicon. I will
           // revert to just 109.5 for all types of Ge-C-Ge angles.
           //
-          // The new values are interpolated halfway between the silicon
-          // parameters and 109.5°. Then, based on GFN2-xTB results, the last
-          // angle parameter was refined to ???°.
+          // The new values were interpolated halfway between the silicon
+          // parameters and 109.5°. Then, the sidewall angle parameter was
+          // refined to 112° to match GFN2-xTB results.
           bendingStiffnesses = SIMD3(repeating: 0.350)
 //          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
 //          equilibriumAngles = SIMD3(repeating: 109.5)

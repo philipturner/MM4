@@ -376,7 +376,7 @@ extension MM4Parameters {
           
           // Sulfur
         case (1, 1, 1, 15):       return (-0.0010, nil, 0.62, 0.40)
-        case (5, 1, 1, 15):       return (-0.015, nil, 0.62, 0.40)
+        case (1, 5, 1, 15):       return (-0.015, nil, 0.62, 0.40)
         case (5, 123, 123, 15):   return (-0.022, nil, 0.62, 0.40)
         case (123, 123, 123, 15): return (-0.015, nil, 0.62, 0.40)
           
