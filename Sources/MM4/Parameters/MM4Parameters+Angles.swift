@@ -410,11 +410,25 @@ extension MM4Parameters {
           //
           // The new values were interpolated halfway between the silicon
           // parameters and 109.5°. Then, the sidewall angle parameter was
-          // refined to 112° to match GFN2-xTB results.
+          // refined to 112° to match GFN2-xTB results. 112° also made the
+          // bridgehead parameter agree very well, in all metrics except nearby
+          // H-Ge-H bond angle.
+          //
+          // Results of parameterizing germanium carbide, represented by
+          // adamantane with all sidewall carbons replaced with Ge. This was
+          // used to determine the bridgehead parameter (angle type 2). It is
+          // not the original derivation (sidewall; angle type 3; 112°). It just
+          // happened to converge at the same angle.
+          //
+          // | Ge-C-Ge equilibrium | 119.5 | 114.5 | 112   | 109.5 | GFN2-xTB |
+          // | ------------------- | ----- | ----- | ----- | ----- | -------- |
+          // | Ge-C-Ge angle       | 111.1 | 110.3 | 109.8 | 109.4 | 109.7    |
+          // | C-Ge-C angle        | 106.0 | 107.9 | 108.8 | 109.6 | 109.0    |
+          // | H-C-Ge angle        | 107.8 | 108.7 | 109.1 | 109.6 | 109.2    |
+          // | H-Ge-C angle        | 110.9 | 110.6 | 110.4 | 110.2 | 110.2    |
+          // | H-Ge-H angle        | 107.1 | 106.7 | 106.5 | 106.3 | 107.2    |
           bendingStiffnesses = SIMD3(repeating: 0.350)
-//          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
-//          equilibriumAngles = SIMD3(repeating: 109.5)
-          equilibriumAngles = SIMD3(109.50, 119.50, 112)
+          equilibriumAngles = SIMD3(109.50, 112, 112)
         case (1, 31, 5):
           bendingStiffnesses = SIMD3(repeating: 0.390)
           equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
