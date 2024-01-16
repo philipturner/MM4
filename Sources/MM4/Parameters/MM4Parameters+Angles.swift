@@ -291,8 +291,12 @@ extension MM4Parameters {
             // variants, one gets 0.233 and 0.236 respectively for 19-19-19.
             // That is very close to 0.25, so I don't think that was messed
             // up.
+            //
+            // After doing deeper investigation with xTB, it turns out this
+            // parameter is correct. 118.00 has lower RMS error than 109.50 and
+            // 112.00.
             bendingStiffnesses = SIMD3(repeating: 0.250)
-            equilibriumAngles = SIMD3(109.5, 110.80, 111.20)
+            equilibriumAngles = SIMD3(118, 110.80, 111.20)
           } else {
             bendingStiffnesses = SIMD3(repeating: 0.320)
             equilibriumAngles = SIMD3(repeating: 106.00)
@@ -455,15 +459,16 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 112.50)
           
           // Only set to 109.5 when simulating solid germanium.
-          // TODO: Investigate this parameter change. For now, it's reverted.
-//          let map = atomsToAtomsMap[Int(angle[1])]
-//          var atomCodes: SIMD4<UInt8> = .zero
-//          for lane in 0..<4 {
-//            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
-//          }
-//          if all(atomCodes .== 5 .| atomCodes .== 31) {
-//            equilibriumAngles![0] = 109.5
-//          }
+          //          let map = atomsToAtomsMap[Int(angle[1])]
+          //          var atomCodes: SIMD4<UInt8> = .zero
+          //          for lane in 0..<4 {
+          //            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
+          //          }
+          //          if all(atomCodes .== 5 .| atomCodes .== 31) {
+          //            equilibriumAngles![0] = 109.5
+          //          }
+          
+          // This parameter change was reverted.
           
         default:
           continueAttempt = true
