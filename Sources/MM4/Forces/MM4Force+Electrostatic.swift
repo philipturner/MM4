@@ -102,6 +102,12 @@ class MM4ElectrostaticForce: MM4Force {
     force.addPerParticleParameter(name: "charge")
     
     if let cutoffDistance = descriptor.cutoffDistance {
+      // Force is discontinuous at the cutoff
+      // (https://www.desmos.com/calculator/a9my66qauu). However, adding a
+      // switching function like with the vdW force makes it worse. It
+      // introduces a jump in force as the energy drops faster than before.
+      // There's not much wrong with discontinuous forces, but there's
+      // definitely something wrong with discontinuous energies.
       force.nonbondedMethod = .cutoffNonPeriodic
       force.cutoffDistance = Double(cutoffDistance)
     } else {

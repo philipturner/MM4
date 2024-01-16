@@ -80,8 +80,9 @@ class MM4NonbondedForce: MM4Force {
     
     if let cutoffDistance = descriptor.cutoffDistance {
       force.nonbondedMethod = .cutoffNonPeriodic
-      force.useSwitchingFunction = true
       force.cutoffDistance = Double(cutoffDistance)
+      
+      force.useSwitchingFunction = true
       force.switchingDistance = Double(cutoffDistance * pow(1.0 / 3, 1.0 / 6))
     } else {
       force.nonbondedMethod = .noCutoff

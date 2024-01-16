@@ -336,6 +336,7 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
         break
       }
     }
+    
     XCTAssert(
       succeeded,
       "Angle \(i) of the MM4Parameters failed: \(paramsRingType), \(paramsParams)")

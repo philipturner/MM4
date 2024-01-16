@@ -184,6 +184,10 @@ extension MM4Parameters {
           } else {
             continueAttempt = true
           }
+        case (8, 1, 8):
+          // This was taken from the MM3 parameters.
+          bendingStiffnesses = SIMD3(repeating: 1.045)
+          equilibriumAngles = SIMD3(repeating: 110.74)
           
           // Oxygen
         case (1, 1, 6):
@@ -254,6 +258,8 @@ extension MM4Parameters {
             equilibriumAngles = SIMD3(102.80, 103.80, 99.50)
           }
         case (19, 1, 19):
+          // The wierd 120-degree like parameters are required to agree with
+          // xTB results.
           bendingStiffnesses = SIMD3(repeating: 0.350)
           equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
         case (1, 19, 5):
@@ -285,8 +291,12 @@ extension MM4Parameters {
             // variants, one gets 0.233 and 0.236 respectively for 19-19-19.
             // That is very close to 0.25, so I don't think that was messed
             // up.
+            //
+            // After doing deeper investigation with xTB, it turns out this
+            // parameter is correct. 118.00 has lower RMS error than 109.50 and
+            // 112.00.
             bendingStiffnesses = SIMD3(repeating: 0.250)
-            equilibriumAngles = SIMD3(109.50, 110.80, 111.20)
+            equilibriumAngles = SIMD3(118, 110.80, 111.20)
           } else {
             bendingStiffnesses = SIMD3(repeating: 0.320)
             equilibriumAngles = SIMD3(repeating: 106.00)
@@ -296,9 +306,47 @@ extension MM4Parameters {
         case (1, 25, 1):
           bendingStiffnesses = SIMD3(0.900, 0.725, .nan)
           equilibriumAngles = SIMD3(94.50, 97.90, .nan)
+        case (5, 1, 25):
+          bendingStiffnesses = SIMD3(0.475, 0.570, 0.717)
+          equilibriumAngles = SIMD3(106.3, 108.3, 108.0)
         case (1, 1, 25):
           bendingStiffnesses = SIMD3(0.750, 0.825, 0.725)
           equilibriumAngles = SIMD3(107.05, 108.25, 109.55)
+        case (25, 1, 25):
+          // There is no angle parameter for P-C-P, so we'll have to examine
+          // between nearby elements.
+          //
+          // | C  | N | O | F  |
+          // | Si |   | S | Cl |
+          //
+          // Stiffness
+          //
+          // | 0.740 | 1.045 | 1.050 | 1.950 |
+          // | 0.350 |       | 0.420 | 0.750 |
+          //
+          // Equilibrium Angle
+          //
+          // | 109.5 | 110.74 | 108.0 | 104.3 |
+          // | 109.5 |        | 110.0 | 108.1 |
+          //
+          // Relationships between X-C-X and C-C-X parameters:
+          // -  N: 1.175 -> 1.045, 106.4 -> 110.7
+          // -  O: 1.275 -> 1.050, 105.5 -> 108.0
+          // - Si: 0.400 -> 0.350, 109.0 -> 109.5
+          // -  P: 0.750 ->      , 107.1 ->
+          // -  S: 0.975 -> 0.420, 102.6 -> 110.00
+          //
+          // From C-C-X to X-C-X, angle always increases. The values for Si and
+          // S are both within the narrow range 109.5-110.00. Using 109.5 for P
+          // seems like the obvious choice.
+          //
+          // From the first row to the third row of the periodic table, there is
+          // consistent pattern. It can be interpolated bilinearly to reach a
+          // number of ~0.400. The nearby S parameter also jumps downward when
+          // going from C-C-X to X-C-X. Silicon doesn't, but it's an exception
+          // because it is electropositive (neutral C-C-C angle character).
+          bendingStiffnesses = SIMD3(repeating: 0.4)
+          equilibriumAngles = SIMD3(repeating: 109.5)
           
           // Sulfur
         case (5, 1, 15):
@@ -356,8 +404,32 @@ extension MM4Parameters {
           // There are no parameters for 31-1-31 in the MM3 forcefield. It
           // looks like silicon is a good first-order approximation for the
           // other angles. Therefore, I will use the silicon values here.
+          //
+          // xTB showed a germanium structure being very inaccurate when using
+          // the large equilibrium angle parameter for sidewall silicon. I will
+          // revert to just 109.5 for all types of Ge-C-Ge angles.
+          //
+          // The new values were interpolated halfway between the silicon
+          // parameters and 109.5°. Then, the sidewall angle parameter was
+          // refined to 112° to match GFN2-xTB results. 112° also made the
+          // bridgehead parameter agree very well, in all metrics except nearby
+          // H-Ge-H bond angle.
+          //
+          // Results of parameterizing germanium carbide, represented by
+          // adamantane with all sidewall carbons replaced with Ge. This was
+          // used to determine the bridgehead parameter (angle type 2). It is
+          // not the original derivation (sidewall; angle type 3; 112°). It just
+          // happened to converge at the same angle.
+          //
+          // | Ge-C-Ge equilibrium | 119.5 | 114.5 | 112   | 109.5 | GFN2-xTB |
+          // | ------------------- | ----- | ----- | ----- | ----- | -------- |
+          // | Ge-C-Ge angle       | 111.1 | 110.3 | 109.8 | 109.4 | 109.7    |
+          // | C-Ge-C angle        | 106.0 | 107.9 | 108.8 | 109.6 | 109.0    |
+          // | H-C-Ge angle        | 107.8 | 108.7 | 109.1 | 109.6 | 109.2    |
+          // | H-Ge-C angle        | 110.9 | 110.6 | 110.4 | 110.2 | 110.2    |
+          // | H-Ge-H angle        | 107.1 | 106.7 | 106.5 | 106.3 | 107.2    |
           bendingStiffnesses = SIMD3(repeating: 0.350)
-          equilibriumAngles = SIMD3(109.50, 119.50, 117.00)
+          equilibriumAngles = SIMD3(109.50, 112, 112)
         case (1, 31, 5):
           bendingStiffnesses = SIMD3(repeating: 0.390)
           equilibriumAngles = SIMD3(110.2, 110.5, 111.5)
@@ -373,9 +445,8 @@ extension MM4Parameters {
         case (31, 31, 31):
           // Silicon has some numbers similar to 112.50 when not in the
           // quaternary configuration: equilibriumAngles = SIMD3(109.50,
-          // 110.80, 111.20). The MM3 paper had an explicit parameter "111.3"
-          // for the quaternary case. I need to do some benchmarks of solid
-          // germanium, to see whether changing the type-1 interaction
+          // 110.80, 111.20). I need to do some benchmarks of solid germanium,
+          // to see whether changing the type-1 interaction
           // constant will improve accuracy.
           //
           // The angle might need to be a variable of how many carbon atoms
@@ -388,14 +459,16 @@ extension MM4Parameters {
           equilibriumAngles = SIMD3(repeating: 112.50)
           
           // Only set to 109.5 when simulating solid germanium.
-          let map = atomsToAtomsMap[Int(angle[1])]
-          var atomCodes: SIMD4<UInt8> = .zero
-          for lane in 0..<4 {
-            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
-          }
-          if all(atomCodes .== 5 .| atomCodes .== 31) {
-            equilibriumAngles![0] = 109.5
-          }
+          //          let map = atomsToAtomsMap[Int(angle[1])]
+          //          var atomCodes: SIMD4<UInt8> = .zero
+          //          for lane in 0..<4 {
+          //            atomCodes[lane] = atoms.codes[Int(map[lane])].rawValue
+          //          }
+          //          if all(atomCodes .== 5 .| atomCodes .== 31) {
+          //            equilibriumAngles![0] = 109.5
+          //          }
+          
+          // This parameter change was reverted.
           
         default:
           continueAttempt = true
@@ -404,31 +477,6 @@ extension MM4Parameters {
       guard let bendingStiffnesses,
             let equilibriumAngles else {
         throw createAngleError()
-      }
-      
-      // Factors in both the center type and the other atoms in the angle.
-      var angleType: Int
-      if sortedCodes[1] == 15 {
-        angleType = 0
-      } else {
-        var matchMask: SIMD3<UInt8> = .zero
-        matchMask.replace(with: .one, where: sortedCodes .== 5)
-        let numHydrogens = Int(matchMask[0] &+ matchMask[1] &+ matchMask[2])
-        
-        guard let centerType = atoms.centerTypes[Int(angle[1])] else {
-          // Angle did not occur at tetravalent atom.
-          throw createAngleError()
-        }
-        switch centerType {
-        case .quaternary:
-          angleType = 1 - numHydrogens
-        case .tertiary:
-          angleType = 2 - numHydrogens
-        case .secondary:
-          angleType = 3 - numHydrogens
-        case .primary:
-          angleType = 4 - numHydrogens
-        }
       }
       
       // MARK: - Bend-Bend, Stretch-Bend, Stretch-Stretch
@@ -512,10 +560,7 @@ extension MM4Parameters {
           case 1:
             // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
             // H-C-Si/C-C-Si/Si-C-Si.
-            if any(sortedCodes .== 5) {
-              bendBendStiffness = 0.350
-              stretchBendStiffness = 0.100
-            } else {
+            if all(sortedCodes .!= 5) {
               bendBendStiffness = 0.204
               stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
               
@@ -523,6 +568,9 @@ extension MM4Parameters {
               if sortedCodes[0] == 1, sortedCodes[2] == 8 {
                 stretchStretchStiffness = -0.10
               }
+            } else {
+              bendBendStiffness = 0.350
+              stretchBendStiffness = 0.100
             }
             
             // Nitrogen
@@ -557,7 +605,7 @@ extension MM4Parameters {
             
             // Silicon
           case 19:
-            if any(sortedCodes .== 5) {
+            if all(sortedCodes .!= 5) {
               bendBendStiffness = 0.24
               stretchBendStiffness = 0.10
             } else {
@@ -569,16 +617,18 @@ extension MM4Parameters {
           case 25:
             // There's no stretch-bend or bend-bend parameters in the phosphines
             // research paper. It seems some generic parameters were uniformly
-            // applied to Si, P, and PO4 in MM3. They were removed from the MM4
-            // paper, except a new bend-bend parameter for H-P-H. I don't allow
-            // H-P-H angles in this forcefield.
+            // applied to Si, P, and PO4 in MM3. They were not mentioned in the
+            // MM4 paper, except a new bend-bend parameter for H-P-H. I don't
+            // allow H-P-H angles in this forcefield.
             //
-            // I assume this omission was intentional. The creators knew the
-            // parameters existed, and they talked with Allinger about it. They
-            // made a decision that the parameters weren't necessary, which is
-            // generally good practice to avoid overfitting a forcefield.
-            bendBendStiffness = 0
-            stretchBendStiffness = 0
+            // I will reuse the bend-bend and stretch-bend parameters from MM3.
+            // They are the same as silicon.
+            if all(sortedCodes .!= 5) {
+              bendBendStiffness = 0.24
+              stretchBendStiffness = 0.10
+            } else {
+              throw createAngleError()
+            }
             
             // Sulfur
           case 15:
@@ -593,13 +643,13 @@ extension MM4Parameters {
             // Germanium
           case 31:
             // The parameters that Allinger created for MM3(2000) do not list
-            // germanium under bend-bend parameters. Like sulfur, it is almost
-            // certainly zero.
-            bendBendStiffness = 0.000
-            if any(sortedCodes .== 5) {
-              stretchBendStiffness = 0.000
-            } else {
+            // germanium under bend-bend parameters. However, silicon does have
+            // a parameter. I will reuse that.
+            bendBendStiffness = 0.240
+            if all(sortedCodes .!= 5) {
               stretchBendStiffness = 0.450
+            } else {
+              stretchBendStiffness = 0.000
             }
             
           default:
@@ -622,8 +672,49 @@ extension MM4Parameters {
         stretchStretchStiffness = nil
       }
       
+      // MARK: - Identify Angle Type
+      
+      var angleType: Int
+      if !forces.contains(.bend) {
+        angleType = 1
+      } else {
+        var heavyAtomCount: Int = 0
+        let map = atomsToAtomsMap[Int(angle[1])]
+        for lane in 0..<4 where map[lane] != -1 {
+          let otherID = UInt32(truncatingIfNeeded: map[lane])
+          if all(angle .!= otherID),
+             atoms.atomicNumbers[Int(otherID)] != 1 {
+            heavyAtomCount &+= 1
+          }
+        }
+        
+        switch atoms.codes[Int(angle[1])] {
+        case .alkaneCarbon, .cyclopentaneCarbon, .silicon, .germanium:
+          switch heavyAtomCount {
+          case 2: angleType = 1
+          case 1: angleType = 2
+          case 0: angleType = 3
+          default: fatalError("Group IV atom had unexpected heavy atom count.")
+          }
+        case .nitrogen, .phosphorus:
+          switch heavyAtomCount {
+          case 1: angleType = 1
+          case 0: fatalError("Group V atom was bonded to hydrogen.")
+          default: fatalError("Group V atom had unexpected heavy atom count.")
+          }
+        case .oxygen, .sulfur:
+          switch heavyAtomCount {
+          case 0: angleType = 1
+          default: fatalError("Group VI atom had unexpected heavy atom count.")
+          }
+        case .hydrogen, .fluorine:
+          fatalError("Group VII atom cannot be the center of an angle.")
+        }
+      }
+      
       guard !bendingStiffnesses[angleType - 1].isNaN,
             !equilibriumAngles[angleType - 1].isNaN else {
+        print("Threw an angle error. angle type = \(angleType), bending stiffness = \(bendingStiffnesses), equilibrium angles = \(equilibriumAngles)")
         // Angle parameter was NaN.
         throw createAngleError()
       }

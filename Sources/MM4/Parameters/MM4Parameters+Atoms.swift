@@ -183,6 +183,7 @@ extension MM4Parameters {
       case 32:
         output = .germanium
         valenceCount = 4
+        supportsHydrogen = true
       default:
         let address = createAddress(atomID)
         throw MM4Error.missingParameter([address])
