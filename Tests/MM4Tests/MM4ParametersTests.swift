@@ -151,6 +151,12 @@ final class MM4ParametersTests: XCTestCase {
   func testSilicon100Surface() throws {
     let surface = Silicon100Surface()
     XCTAssertEqual(surface.parameters.bonds.indices.count, 2098)
+    
+    // WARNING: There is a terrible bug hidden somewhere in the codebase. This
+    // test case briefly reported 5363, but never reported it again. From now
+    // on, always assert a specific number of bond angles exists in any
+    // instances of MM4Parameters you generate. Hopefully it will catch a rare
+    // instance of this bug.
     XCTAssertEqual(surface.parameters.angles.indices.count, 5364)
   }
 #endif
