@@ -5,6 +5,7 @@
 //  Created by Philip Turner on 10/7/23.
 //
 
+import Atomics
 import Dispatch
 
 /// Parameters for a group of 2 atoms.
@@ -353,7 +354,8 @@ extension MM4Parameters {
             }
           }
           precondition(
-            count > 0, "Carbon with a C-C bond didn't have any carbon neighbors.")
+            count > 0,
+            "Carbon with a C-C bond didn't have any carbon neighbors.")
           
           let units = sum / Float(count)
           return (-0.0193 * units, nil, 0.38, 0.05)
@@ -390,12 +392,39 @@ extension MM4Parameters {
       return nil
     }
     
-    var primaryNeighbors: [[(correction: Float, decay: Float)]] = Array(
-      repeating: [], count: bonds.indices.count)
-    var secondaryNeighborsSum: [Float] = Array(
-      repeating: 0, count: bonds.indices.count)
-    var bohlmannEffectSum: [Float] = Array(
-      repeating: 0, count: bonds.indices.count)
+    let bondCapacity = bonds.indices.count
+    var primaryNeighborContributions: UnsafeMutablePointer<SIMD2<Float>> =
+      .allocate(capacity: 64 * bondCapacity)
+    var secondaryNeighborContributions: UnsafeMutablePointer<Float> =
+      .allocate(capacity: 64 * bondCapacity)
+    var bohlmannEffectContributions: UnsafeMutablePointer<Float> =
+      .allocate(capacity: 64 * bondCapacity)
+    
+    typealias AtomicPointer = UnsafeMutablePointer<UInt16.AtomicRepresentation>
+    let primaryNeighborAtomics: AtomicPointer =
+      .allocate(capacity: bondCapacity)
+    let secondaryNeighborAtomics: AtomicPointer =
+      .allocate(capacity: bondCapacity)
+    let bohlmannEffectAtomics: AtomicPointer =
+      .allocate(capacity: bondCapacity)
+    let primaryNeighborCounts = UnsafeMutablePointer<UInt16>(
+      OpaquePointer(primaryNeighborAtomics))
+    let secondaryNeighborCounts = UnsafeMutablePointer<UInt16>(
+      OpaquePointer(secondaryNeighborAtomics))
+    let bohlmannEffectCounts = UnsafeMutablePointer<UInt16>(
+      OpaquePointer(bohlmannEffectAtomics))
+    
+    primaryNeighborCounts.initialize(repeating: .zero, count: bondCapacity)
+    secondaryNeighborCounts.initialize(repeating: .zero, count: bondCapacity)
+    bohlmannEffectCounts.initialize(repeating: .zero, count: bondCapacity)
+    defer {
+      primaryNeighborAtomics.deallocate()
+      secondaryNeighborAtomics.deallocate()
+      bohlmannEffectAtomics.deallocate()
+      primaryNeighborContributions.deallocate()
+      secondaryNeighborContributions.deallocate()
+      bohlmannEffectContributions.deallocate()
+    }
     
     let taskSize = 128
     let taskCount = (atoms.count + taskSize - 1) / taskSize
@@ -422,11 +451,32 @@ extension MM4Parameters {
             let corr = correction(
               atomID: atom0, endID: atom1, bondID: bondID)
             if let corr, corr.correction * sign > 0 {
-              primaryNeighbors[Int(bondID)]
-                .append((corr.correction, corr.decay))
+              // Atomically accumulate the primary neighbor contribution.
+              let contribution = SIMD2(corr.correction, corr.decay)
+              let atomic = UnsafeAtomic<UInt16>(
+                at: primaryNeighborAtomics.advanced(by: Int(bondID)))
+              
+              let slotID = atomic
+                .loadThenWrappingIncrement(ordering: .relaxed)
+              if slotID >= 64 {
+                fatalError("Exceeded slot capacity for primary neighbors.")
+              }
+              let address = 64 &* Int(bondID) &+ Int(slotID)
+              primaryNeighborContributions[address] = contribution
             }
             if let bohlmann = corr?.bohlmann {
-              bohlmannEffectSum[Int(bondID)] += bohlmann
+              // Atomically accumulate the Bohlmann Effect contribution.
+              let contribution = bohlmann
+              let atomic = UnsafeAtomic<UInt16>(
+                at: bohlmannEffectAtomics.advanced(by: Int(bondID)))
+              
+              let slotID = atomic
+                .loadThenWrappingIncrement(ordering: .relaxed)
+              if slotID >= 64 {
+                fatalError("Exceeded slot capacity for Bohlmann Effect.")
+              }
+              let address = 64 &* Int(bondID) &+ Int(slotID)
+              bohlmannEffectContributions[address] = contribution
             }
             
             let secondaryLevelAtoms = atomsToAtomsMap[Int(atom2)]
@@ -440,8 +490,18 @@ extension MM4Parameters {
               let corr = correction(
                 atomID: atom0, endID: atom2, bondID: bondID)
               if let corr, corr.correction * sign > 0 {
-                secondaryNeighborsSum[Int(bondID)]
-                += corr.correction * corr.beta
+                // Atomically accumulate the secondary neighbor contribution.
+                let contribution = corr.correction * corr.beta
+                let atomic = UnsafeAtomic<UInt16>(
+                  at: secondaryNeighborAtomics.advanced(by: Int(bondID)))
+                
+                let slotID = atomic
+                  .loadThenWrappingIncrement(ordering: .relaxed)
+                if slotID >= 64 {
+                  fatalError("Exceeded slot capacity for secondary neighbors.")
+                }
+                let address = 64 &* Int(bondID) &+ Int(slotID)
+                secondaryNeighborContributions[address] = contribution
               }
             }
           }
@@ -451,7 +511,22 @@ extension MM4Parameters {
     
     return bonds.indices.indices.map { bondID in
       var correction: Float = 0
-      var neighbors = primaryNeighbors[bondID]
+      
+      struct PrimaryCorrection: Equatable {
+        var correction: Float
+        var decay: Float
+      }
+      
+      let neighborCount = Int(primaryNeighborCounts[bondID])
+      var neighbors: [PrimaryCorrection] = []
+      neighbors.reserveCapacity(neighborCount)
+      for slotID in 0..<neighborCount {
+        let address = 64 &* bondID &+ slotID
+        let contribution = primaryNeighborContributions[address]
+        neighbors.append(
+          PrimaryCorrection(
+            correction: contribution[0], decay: contribution[1]))
+      }
       neighbors.sort(by: { $0.correction.magnitude > $1.correction.magnitude })
       
       var decay: Float = 1
@@ -461,8 +536,16 @@ extension MM4Parameters {
         }
         correction += neighbor.correction * decay
       }
-      correction += secondaryNeighborsSum[bondID]
-      correction += bohlmannEffectSum[bondID]
+      for slotID in 0..<Int(secondaryNeighborCounts[bondID]) {
+        let address = 64 &* bondID &+ slotID
+        let contribution = secondaryNeighborContributions[address]
+        correction += contribution
+      }
+      for slotID in 0..<Int(bohlmannEffectCounts[bondID]) {
+        let address = 64 &* bondID &+ slotID
+        let contribution = bohlmannEffectContributions[address]
+        correction += contribution
+      }
       return correction
     }
   }

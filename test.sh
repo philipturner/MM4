@@ -122,7 +122,7 @@ if [[ $build_release == true ]]; then
   export XCTEST_FILE="$(pwd)/.build/debug/MM4PackageTests.xctest"
   
     # Alternative commands to activate when benchmarking performance.
-#    swift test -c release
+#    swift test -c release -Xswiftc -DRELEASE
 #    export XCTEST_FILE="$(pwd)/.build/release/MM4PackageTests.xctest"
 else
   swift test

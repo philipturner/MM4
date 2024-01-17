@@ -147,6 +147,14 @@ final class MM4ParametersTests: XCTestCase {
     try testAdamantaneVariant(atomCode: .silicon)
   }
   
+#if RELEASE
+  func testSilicon100Surface() throws {
+    let surface = Silicon100Surface()
+    XCTAssertEqual(surface.parameters.bonds.indices.count, 2098)
+    XCTAssertEqual(surface.parameters.angles.indices.count, 5364)
+  }
+#endif
+  
   func testUnsupportedRing() throws {
     let ringLengths: [Int] = [3, 4, 5, 6]
     
