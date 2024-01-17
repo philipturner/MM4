@@ -23,8 +23,8 @@ struct Silicon100Surface {
   var parameters: MM4Parameters
   
   init() {
-    let atoms = Base64Decoder.decodeAtoms(NCFPart.base64Atoms)
-    let bonds = Base64Decoder.decodeBonds(NCFPart.base64Bonds)
+    let atoms = Base64Decoder.decodeAtoms(Silicon100Surface.base64Atoms)
+    let bonds = Base64Decoder.decodeBonds(Silicon100Surface.base64Bonds)
     
     var paramsDesc = MM4ParametersDescriptor()
     paramsDesc.atomicNumbers = atoms.map(\.w).map(UInt8.init)

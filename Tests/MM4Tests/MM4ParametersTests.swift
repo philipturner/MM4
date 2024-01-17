@@ -75,6 +75,21 @@ final class MM4ParametersTests: XCTestCase {
     // exceptions appear where they should and don't appear where they
     // shouldn't.
     let parts = [part0, part1, part2, part3]
+    
+    for part in parts {
+      let parameters = part.rigidBody.parameters
+      XCTAssertEqual(parameters.atoms.count, 1514)
+      
+      XCTAssertEqual(parameters.bonds.indices.count, 2098)
+      
+      // WARNING: There is a terrible bug hidden somewhere in the codebase. This
+      // test case briefly reported 5363, but never reported it again. From now
+      // on, always assert a specific number of bond angles exists in any
+      // instances of MM4Parameters you generate. Hopefully it will catch a rare
+      // instance of this bug.
+      XCTAssertEqual(parameters.angles.indices.count, 5364)
+    }
+    
     for partID in parts.indices {
       let parameters = parts[partID].rigidBody.parameters
       
@@ -150,14 +165,9 @@ final class MM4ParametersTests: XCTestCase {
 #if RELEASE
   func testSilicon100Surface() throws {
     let surface = Silicon100Surface()
-    XCTAssertEqual(surface.parameters.bonds.indices.count, 2098)
-    
-    // WARNING: There is a terrible bug hidden somewhere in the codebase. This
-    // test case briefly reported 5363, but never reported it again. From now
-    // on, always assert a specific number of bond angles exists in any
-    // instances of MM4Parameters you generate. Hopefully it will catch a rare
-    // instance of this bug.
-    XCTAssertEqual(surface.parameters.angles.indices.count, 5364)
+    XCTAssertEqual(surface.parameters.atoms.count, 1414)
+    XCTAssertEqual(surface.parameters.bonds.indices.count, 2372)
+    XCTAssertEqual(surface.parameters.angles.indices.count, 6660)
   }
 #endif
   
