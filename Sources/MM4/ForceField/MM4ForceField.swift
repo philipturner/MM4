@@ -36,6 +36,11 @@ public struct MM4ForceFieldDescriptor {
   /// is somewhere in the middle, at ~5.
   public var dielectricConstant: Float = 5.7
   
+  /// Required. The integrator to use for simulation.
+  ///
+  /// The default value is `.verlet`.
+  public var integrator: MM4IntegratorOptions = .verlet
+  
   /// Required. The parameters that define internal forces.
   ///
   /// If there are multiple rigid bodies, you can combine their parameters with
@@ -72,7 +77,7 @@ public class MM4ForceField {
   var _energy: MM4ForceFieldEnergy!
   
   /// Stores the time step, in picoseconds.
-  var _timeStep: Double = 100 / 23 * OpenMM_PsPerFs
+  var _timeStep: Double
   
   /// Create a simulator using the specified configuration.
   public init(descriptor: MM4ForceFieldDescriptor) throws {
@@ -81,9 +86,16 @@ public class MM4ForceField {
     }
     
     system = MM4System(parameters: parameters, descriptor: descriptor)
-    context = MM4Context(system: system, platform: descriptor.platform)
+    context = MM4Context(system: system, descriptor: descriptor)
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
+    
+    switch descriptor.integrator {
+    case .multipleTimeStep:
+      _timeStep = 4.35 * OpenMM_PsPerFs
+    case .verlet:
+      _timeStep = 2.5 * OpenMM_PsPerFs
+    }
     _energy = MM4ForceFieldEnergy(forceField: self)
   }
 }

@@ -7,8 +7,23 @@
 
 import OpenMM
 
-/// A configuration for an integrator.
-struct MM4IntegratorDescriptor: Hashable {
+public enum MM4IntegratorOptions {
+  /// Executes bonded forces at half the rate of nonbonded forces.
+  ///
+  /// The default time step is 4.35 fs.
+  ///
+  /// This integrators has a large O(1) overhead, so only use it for very large
+  /// systems.
+  case multipleTimeStep
+  
+  /// Executes all forces at the same rate.
+  ///
+  /// The default time step is 2.5 fs.
+  case verlet
+}
+
+/// A configuration for a custom integrator.
+struct MM4CustomIntegratorDescriptor: Hashable {
   /// Whether to correct velocities for the start of leapfrog integration
   /// intervals.
   var start: Bool = false
@@ -22,8 +37,8 @@ struct MM4IntegratorDescriptor: Hashable {
   }
   
   static func == (
-    lhs: MM4IntegratorDescriptor,
-    rhs: MM4IntegratorDescriptor
+    lhs: MM4CustomIntegratorDescriptor,
+    rhs: MM4CustomIntegratorDescriptor
   ) -> Bool {
     guard lhs.start == rhs.start,
           lhs.end == rhs.end else {
@@ -38,54 +53,49 @@ struct MM4IntegratorDescriptor: Hashable {
   }
 }
 
-class MM4Integrator {
-  var integrator: OpenMM_VerletIntegrator
+class MM4CustomIntegrator {
+  var integrator: OpenMM_CustomIntegrator
   
   /// Create an integrator using the specified configuration.
-  init(descriptor: MM4IntegratorDescriptor) {
-    // There is a performance issue with custom integrators right now. So, we
-    // are relying on the Verlet integrator instead. We take the timestep
-    // entered into the simulator, and divide by 2.
-    self.integrator = OpenMM_VerletIntegrator(stepSize: 0)
+  init(descriptor: MM4CustomIntegratorDescriptor) {
+    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
-//    self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
-//    
-//    if descriptor.start {
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.5 * dt * f1 / m
-//        """)
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.25 * dt * f2 / m
-//        """)
-//    } else {
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 1.0 * dt * f1 / m
-//        """)
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.5 * dt * f2 / m
-//        """)
-//    }
-//    
-//    integrator.addComputePerDof(variable: "x", expression: """
-//      x + 0.5 * dt * v
-//      """)
-//    integrator.addConstrainPositions()
-//    
-//    integrator.addComputePerDof(variable: "v", expression: """
-//      v + 0.5 * dt * f2 / m
-//      """)
-//    integrator.addComputePerDof(variable: "x", expression: """
-//      x + 0.5 * dt * v
-//      """)
-//    integrator.addConstrainPositions()
-//    
-//    if descriptor.end {
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.25 * dt * f2 / m
-//        """)
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.5 * dt * f1 / m
-//        """)
-//    }
+    if descriptor.start {
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f1 / m
+        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.25 * dt * f2 / m
+        """)
+    } else {
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 1.0 * dt * f1 / m
+        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f2 / m
+        """)
+    }
+    
+    integrator.addComputePerDof(variable: "x", expression: """
+      x + 0.5 * dt * v
+      """)
+    integrator.addConstrainPositions()
+    
+    integrator.addComputePerDof(variable: "v", expression: """
+      v + 0.5 * dt * f2 / m
+      """)
+    integrator.addComputePerDof(variable: "x", expression: """
+      x + 0.5 * dt * v
+      """)
+    integrator.addConstrainPositions()
+    
+    if descriptor.end {
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.25 * dt * f2 / m
+        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f1 / m
+        """)
+    }
   }
 }
