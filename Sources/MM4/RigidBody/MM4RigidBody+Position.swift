@@ -116,7 +116,7 @@ extension MM4RigidBodyStorage {
     }
     precondition(
       positions.count == atoms.count,
-      "Initial velocities array has incorrect size.")
+      "Initial positions array has incorrect size.")
     
     positions.withContiguousStorageIfAvailable {
       let baseAddress = $0.baseAddress.unsafelyUnwrapped
