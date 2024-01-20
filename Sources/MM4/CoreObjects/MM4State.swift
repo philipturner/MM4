@@ -7,7 +7,7 @@
 
 import OpenMM
 
-/// A configuration for a frame of a simulation.
+/// A configuration for a snapshot of a force field's state.
 public struct MM4StateDescriptor {
   /// Required. Whether to report the system's total kinetic and potential
   /// energy.
@@ -30,12 +30,13 @@ public struct MM4StateDescriptor {
   /// The default value is `false`.
   public var velocities: Bool = false
   
+  /// Create a descriptor with the default properties.
   public init() {
     
   }
 }
 
-/// A frame of a simulation.
+/// A snapshot of a force field's state.
 public struct MM4State {
   /// The net varying force (in piconewtons) exerted on each atom.
   public var forces: [SIMD3<Float>]?
@@ -49,7 +50,7 @@ public struct MM4State {
   /// The system's total potential energy, in zeptojoules.
   public var potentialEnergy: Double?
   
-  /// The linear velocity (in nanometers per picosecond), of each atom.
+  /// The velocity (in nanometers per picosecond) of each atom.
   public var velocities: [SIMD3<Float>]?
   
   internal init() {

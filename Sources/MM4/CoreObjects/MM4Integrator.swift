@@ -7,12 +7,19 @@
 
 import OpenMM
 
+/// Options for customizing the integrator used for
+/// <doc:MM4ForceField/simulate(time:)>
 public enum MM4IntegratorOptions {
-  /// Executes bonded forces at half the rate of nonbonded forces.
+  /// Executes bonded forces at twice the rate of nonbonded forces.
   ///
   /// The default time step is 4.35 fs.
   ///
-  /// This integrator has a slightly lower coefficient to O(n) scaling than the
+  /// This integrator uses a multiple time-stepping (MTS) scheme. Cheaper bonded
+  /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
+  /// without constraints. Expensive forces like torsions, nonbonded, and
+  /// electrostatic can execute at ~4 fs.
+  ///
+  /// MTS has a smaller coefficient to O(n) scaling than the
   /// Verlet integrator. However, it has a larger O(1) prefactor. Only use
   /// it for large systems that are not latency-bound.
   ///

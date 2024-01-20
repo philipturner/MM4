@@ -34,11 +34,13 @@ public struct MM4ParametersDescriptor {
   ///
   /// If not specified, the default value gives hydrogens ~2 amu of mass.
   ///
-  /// During hydrogen mass repartitioning, mass is added to hydrogens and
-  /// removed from atoms covalently bonded to hydrogens. The resulting structure
-  /// has the same total mass as before the transformation.
+  /// Hydrogen mass repartitioning (HMR) is a technique to maximize simulation
+  /// speed. It makes hydrogens heaver and makes non-hydrogen atoms lighter,
+  /// decreasing the C-H stretching frequency. The smaller frequency corresponds
+  /// to a larger vibration period. Therefore, larger time steps can be used.
   public var hydrogenMassScale: Float = 2
   
+  /// Create a descriptor with the default properties.
   public init() {
     
   }

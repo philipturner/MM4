@@ -28,7 +28,7 @@ public struct MM4Atoms {
   /// Each value corresponds to the atom at the same array index.
   public var parameters: [MM4AtomParameters] = []
   
-  /// The smallest ring this is involved in.
+  /// The smallest ring each atom is involved in.
   public var ringTypes: [UInt8] = []
   
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {
@@ -112,9 +112,10 @@ public enum MM4CenterType: UInt8 {
   case quaternary = 4
 }
 
-/// Parameters for the vdW and electrostatic forces on an atom. Special values
-/// are provided for hydrogen parameters, where applicable. Interactions
-/// containing Si, Ge should be treated with MM3 heuristics:
+/// Parameters for the vdW and electrostatic forces on an atom.
+///
+/// Special values are provided for hydrogen parameters, where applicable.
+/// Interactions containing Si, Ge are treated with MM3 heuristics:
 /// - Dispersion factors for 1,4 nonbonded exceptions are eliminated.
 /// - Hydrogen reduction factors for bonded hydrogens change from 0.94 to 0.923.
 public struct MM4AtomParameters {

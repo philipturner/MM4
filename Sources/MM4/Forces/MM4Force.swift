@@ -7,9 +7,12 @@
 
 import OpenMM
 
+/// Options for customizing the forces that act on a set of atoms.
 public struct MM4ForceOptions: OptionSet {
+  /// The 32-bit code describing the force options.
   public let rawValue: UInt32
   
+  /// Create a set of force options using the specified code.
   @_transparent
   public init(rawValue: UInt32) {
     self.rawValue = rawValue

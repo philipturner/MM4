@@ -19,7 +19,7 @@ public struct MM4Torsions {
   /// Each value corresponds to the torsion at the same array index.
   public var parameters: [MM4TorsionParameters] = []
   
-  /// The smallest ring this is involved in.
+  /// The smallest ring each torsion is involved in.
   public var ringTypes: [UInt8] = []
   
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {
@@ -90,9 +90,11 @@ public struct MM4TorsionParameters {
 }
 
 /// Parameters for the various torsion forces unique to highly electronegative
-/// elements (V4, V6, 3-term torsion-stretch, torsion-bend). This also includes
-/// the bend-torsion-bend force, which is omitted from C-H torsions for
-/// efficiency.
+/// elements.
+///
+/// The parameters include V4, V6, 3-term torsion-stretch, and torsion-bend. In
+/// addition, parameters for the bend-torsion-bend force. This force is omitted
+/// from C-H torsions for efficiency.
 public struct MM4TorsionExtendedParameters {
   /// Units: kilocalorie / mole
   ///

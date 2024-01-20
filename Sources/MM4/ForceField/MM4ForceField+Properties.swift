@@ -5,7 +5,7 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
-/// A data structure wrapping a system's energy.
+/// The energy of a force field.
 ///
 /// We always report energy, time, and unit conversion constants in double
 /// precision. Potential energy can sometimes have a massive absolute value
@@ -48,7 +48,7 @@ public struct MM4ForceFieldEnergy {
 }
 
 extension MM4ForceField {
-  /// The system's energy.
+  /// This force field's energy.
   public var energy: MM4ForceFieldEnergy {
     _energy
   }

@@ -5,11 +5,12 @@
 //  Created by Philip Turner on 11/19/23.
 //
 
+/// A configuration for a rigid body.
 public struct MM4RigidBodyDescriptor {
-  /// Required.
+  /// Required. The parameters that define each atom's mass.
   public var parameters: MM4Parameters?
   
-  /// Required.
+  /// Required. The position (in nanometers) of each atom's nucleus.
   ///
   /// After the rigid body is created, positions cannot be modified at the
   /// granularity of individual atoms. Doing so may deform the object, changing
@@ -17,7 +18,7 @@ public struct MM4RigidBodyDescriptor {
   /// mechanics.
   public var positions: [SIMD3<Float>]?
   
-  /// Optional.
+  /// Optional. The velocity (in nanometers per picosecond) of each atom.
   ///
   /// The default value is zero for every atom.
   ///
@@ -26,6 +27,7 @@ public struct MM4RigidBodyDescriptor {
   /// modified, as that would require the momenta to be recomputed.
   public var velocities: [SIMD3<Float>]?
   
+  /// Create a descriptor with the default properties.
   public init() {
     
   }

@@ -28,12 +28,12 @@ extension MM4RigidBody {
     }
   }
   
-  /// The net angular momentum, in yoctogram-radians per picosecond.
+  /// The net angular momentum, in yoctogram-nanometers^2 per picosecond.
   ///
   /// In contrast to linear momentum, angular momentum cannot be projected onto
   /// the global reference frame. It is not parallel to the axis of rotation.
-  /// Rather, it is the magnitude of angular momentum with respect to each
-  /// eigenpair of the inertia tensor.
+  /// Rather, it is the projection of true angular momentum onto each principal
+  /// axis.
   public var angularMomentum: SIMD3<Double> {
     _read {
       yield storage.angularMomentum

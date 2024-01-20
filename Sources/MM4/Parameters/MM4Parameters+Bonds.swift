@@ -22,7 +22,7 @@ public struct MM4Bonds {
   /// Each value corresponds to the bond at the same array index.
   public var parameters: [MM4BondParameters] = []
   
-  /// The smallest ring this is involved in.
+  /// The smallest ring each bond is involved in.
   public var ringTypes: [UInt8] = []
   
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {

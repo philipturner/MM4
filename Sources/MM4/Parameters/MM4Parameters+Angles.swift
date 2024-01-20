@@ -19,7 +19,7 @@ public struct MM4Angles {
   /// Each value corresponds to the angle at the same array index.
   public var parameters: [MM4AngleParameters] = []
   
-  /// The smallest ring this is involved in.
+  /// The smallest ring each angle is involved in.
   public var ringTypes: [UInt8] = []
   
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {
@@ -37,8 +37,10 @@ public struct MM4Angles {
   }
 }
 
-/// Parameters for an angle between two bonds, including bending stiffness
-/// and multiplicative contribution to bend-bend stiffness.
+/// Parameters for an angle between two bonds.
+///
+/// The parameters include bending stiffness and the multiplicative contribution
+/// to bend-bend stiffness.
 public struct MM4AngleParameters {
   /// Units: millidyne \* angstrom / radian^2
   ///

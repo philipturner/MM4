@@ -36,16 +36,20 @@ extension MM4RigidBody {
   }
   
   /// The eigenvalues of the inertia tensor, in descending order.
+  ///
+  /// Units: yoctogram-nanometers^2
   public var momentOfInertia: SIMD3<Double> {
     storage.momentOfInertia
   }
   
   /// The eigenvectors of the inertia tensor.
+  ///
+  /// Each axis is a dimensionless, normalized vector.
   public var principalAxes: (SIMD3<Double>, SIMD3<Double>, SIMD3<Double>) {
     storage.principalAxes
   }
   
-  /// Rotate the object.
+  /// Rotate the atoms around the center of mass.
   /// - parameter angle: The angle to rotate, in radians.
   /// - parameter axis: The normalized vector to rotate around.
   ///
