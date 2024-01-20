@@ -85,6 +85,7 @@ class MM4CustomIntegrator {
       x + 0.5 * dt * v
       """)
     integrator.addConstrainPositions()
+    integrator.addComputePerDof(variable: "cachedf", expression: "f1")
     integrator.addComputePerDof(variable: "v", expression: """
       v + 0.5 * dt * cachedf / m
       """)
