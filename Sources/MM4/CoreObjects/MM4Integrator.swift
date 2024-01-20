@@ -66,7 +66,7 @@ class MM4CustomIntegrator {
     if descriptor.start || true {
       integrator.addComputePerDof(variable: "cachedf", expression: "f1")
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.25 * dt * cachedf / m
+        v + 0.5 * dt * cachedf / m
         """)
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.25 * dt * f2 / m
@@ -85,10 +85,6 @@ class MM4CustomIntegrator {
       x + 0.5 * dt * v
       """)
     integrator.addConstrainPositions()
-    integrator.addComputePerDof(variable: "cachedf", expression: "f1")
-    integrator.addComputePerDof(variable: "v", expression: """
-      v + 0.5 * dt * cachedf / m
-      """)
     integrator.addComputePerDof(variable: "v", expression: """
       v + 0.5 * dt * f2 / m
       """)
@@ -103,7 +99,7 @@ class MM4CustomIntegrator {
     if descriptor.end || true {
       integrator.addConstrainPositions()
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.25 * dt * f1 / m
+        v + 0.5 * dt * f1 / m
         """)
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.25 * dt * f2 / m
