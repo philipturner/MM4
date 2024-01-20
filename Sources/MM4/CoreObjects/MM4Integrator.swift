@@ -60,25 +60,21 @@ class MM4CustomIntegrator {
   init(descriptor: MM4CustomIntegratorDescriptor) {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
-    integrator.addPerDofVariable(name: "cachedf", initialValue: 0)
-    
     integrator.addConstrainPositions()
-    if descriptor.start || true {
-      integrator.addComputePerDof(variable: "cachedf", expression: "f1")
+    if descriptor.start {
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * cachedf / m
+        v + 0.5 * dt * f1 / m
         """)
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.25 * dt * f2 / m
         """)
     } else {
-      fatalError()
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 1.0 * dt * f1 / m
-//        """)
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.5 * dt * f2 / m
-//        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 1.0 * dt * f1 / m
+        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f2 / m
+        """)
     }
     
     integrator.addComputePerDof(variable: "x", expression: """
@@ -92,11 +88,7 @@ class MM4CustomIntegrator {
       x + 0.5 * dt * v
       """)
     
-//    integrator.addComputePerDof(variable: "v", expression: """
-//      v + 0.5 * dt * f2 / m
-//      """)
-    
-    if descriptor.end || true {
+    if descriptor.end {
       integrator.addConstrainPositions()
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.5 * dt * f1 / m
