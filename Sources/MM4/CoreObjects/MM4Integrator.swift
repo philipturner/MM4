@@ -63,11 +63,11 @@ class MM4CustomIntegrator {
     integrator.addConstrainPositions()
     if descriptor.start || true {
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * (f1 + f2) / m
+        v + 0.5 * dt * f1 / m
         """)
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.5 * dt * f2 / m
-//        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f2 / m
+        """)
     } else {
       fatalError()
 //      integrator.addComputePerDof(variable: "v", expression: """
@@ -94,7 +94,7 @@ class MM4CustomIntegrator {
     if descriptor.end || true {
       integrator.addConstrainPositions()
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * (f1 + f2) / m
+        v + 0.5 * dt * f / m
         """)
 //      integrator.addComputePerDof(variable: "v", expression: """
 //        v + 0.5 * dt * f1 / m
