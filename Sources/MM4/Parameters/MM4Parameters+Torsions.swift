@@ -37,7 +37,7 @@ public struct MM4Torsions {
   }
 }
 
-/// Parameters for a torsion among hydrogen, carbon, and silicon atoms.
+/// Parameters for a torsion between three nonpolar bonds.
 ///
 /// V1 term:
 /// - zeroed out for X-C-C-H
@@ -89,8 +89,7 @@ public struct MM4TorsionParameters {
   public var Kts3: Float
 }
 
-/// Parameters for the various torsion forces unique to highly electronegative
-/// elements.
+/// Parameters for torsion forces unique to highly electronegative elements.
 ///
 /// The parameters include V4, V6, 3-term torsion-stretch, and torsion-bend. In
 /// addition, parameters for the bend-torsion-bend force. This force is omitted

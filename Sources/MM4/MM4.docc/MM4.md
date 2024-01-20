@@ -29,15 +29,14 @@ The simulator supports the atoms enumerated by <doc:MM4AtomCode>, with some
    simulation, this simulator is O(n). Linear scaling exists at every system
    size and material composition. This is a rarity among simulation
    algorithms, most of which are inherently O(n^2) or
-   [employ sparse O(n^2) matrix factorizations](https://xtb-docs.readthedocs.io/en/latest/gfnff.html).
+   [employ difficult-to-parallelize matrix factorizations](https://xtb-docs.readthedocs.io/en/latest/gfnff.html).
    Molecular mechanics is one of the few techniques that can simulate
    million-atom nanosystems on affordable hardware.
 
- The simulator uses 32-bit single precision and a massive timestep. It uses the
- NVE ensemble to conserve momentum (not energy). Energy fluctuates, but 
- shouldn't systematically drift upward or downward (unless the timestep exceeds
- C-H stretching resonance frequency). The default timestep (2&ndash;4 fs) is
- so massive that integration error dwarfs rounding error. Switching to 64-bit
+ The simulator uses 32-bit single precision and an NVE ensemble. Single 
+ precision is often associated with poor energy conservation. However, the 
+ reason for using NVE is not energy conservation. The default time step is
+ so large that integration error dwarfs rounding error. Switching to 64-bit
  double precision would not improve energy conservation.
 
  > Note: Accuracy (whether an archer hits the right target) is orthogonal

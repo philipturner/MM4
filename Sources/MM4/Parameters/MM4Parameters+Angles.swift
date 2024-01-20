@@ -63,8 +63,7 @@ public struct MM4AngleParameters {
   public var stretchBendStiffness: Float
 }
 
-/// Parameters for the various angle forces unique to highly electronegative
-/// elements.
+/// Parameters for angle forces unique to highly electronegative elements.
 public struct MM4AngleExtendedParameters {
   /// Stiffness for type 2 stretch-bend forces, affecting bonds not directly
   /// involved in this angle.

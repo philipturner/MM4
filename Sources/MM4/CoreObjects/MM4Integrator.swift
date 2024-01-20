@@ -7,8 +7,7 @@
 
 import OpenMM
 
-/// Options for customizing the integrator used for
-/// <doc:MM4ForceField/simulate(time:)>
+/// Options for customizing the integrator used for simulation.
 public enum MM4IntegratorOptions {
   /// Executes bonded forces at twice the rate of nonbonded forces.
   ///
