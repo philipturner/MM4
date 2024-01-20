@@ -63,7 +63,6 @@ extension MM4ForceField {
       fatalError("This should never happen.")
     }
     
-    context.context.computeVirtualSites()
     if stepCountQuotient == 0 {
       if context.integrator is OpenMM_VerletIntegrator {
         context.step(1, timeStep: time)

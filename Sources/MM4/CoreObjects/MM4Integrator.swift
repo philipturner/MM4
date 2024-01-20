@@ -60,9 +60,7 @@ class MM4CustomIntegrator {
   init(descriptor: MM4CustomIntegratorDescriptor) {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
-//    integrator.addUpdateContextState()
-//    integrator.addConstrainPositions()
-//    integrator.addUpdateContextState()
+    integrator.addConstrainPositions()
     
     if descriptor.start {
       integrator.addComputePerDof(variable: "v", expression: """
@@ -83,9 +81,7 @@ class MM4CustomIntegrator {
     integrator.addComputePerDof(variable: "x", expression: """
       x + 0.5 * dt * v
       """)
-    integrator.addUpdateContextState()
     integrator.addConstrainPositions()
-    integrator.addUpdateContextState()
     
     integrator.addComputePerDof(variable: "v", expression: """
       v + 0.5 * dt * f2 / m
@@ -93,9 +89,7 @@ class MM4CustomIntegrator {
     integrator.addComputePerDof(variable: "x", expression: """
       x + 0.5 * dt * v
       """)
-    integrator.addUpdateContextState()
     integrator.addConstrainPositions()
-    integrator.addUpdateContextState()
     
     if descriptor.end {
       integrator.addComputePerDof(variable: "v", expression: """
@@ -105,9 +99,5 @@ class MM4CustomIntegrator {
         v + 0.5 * dt * f1 / m
         """)
     }
-    
-//    integrator.addUpdateContextState()
-//    integrator.addConstrainPositions()
-//    integrator.addUpdateContextState()
   }
 }
