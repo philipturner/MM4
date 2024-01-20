@@ -60,6 +60,8 @@ class MM4CustomIntegrator {
   init(descriptor: MM4CustomIntegratorDescriptor) {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
+    integrator.addPerDofVariable(name: "cachedf", initialValue: 0)
+    
     integrator.addConstrainPositions()
     if descriptor.start || true {
       integrator.addComputePerDof(variable: "cachedf", expression: "f1")
