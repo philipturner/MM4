@@ -106,8 +106,8 @@ class MM4CustomIntegrator {
         """)
     }
     
-    integrator.addUpdateContextState()
-    integrator.addConstrainPositions()
-    integrator.addUpdateContextState()
+//    integrator.addUpdateContextState()
+//    integrator.addConstrainPositions()
+//    integrator.addUpdateContextState()
   }
 }
