@@ -61,7 +61,7 @@ class MM4CustomIntegrator {
     self.integrator = OpenMM_CustomIntegrator(stepSize: 0)
     
     integrator.addConstrainPositions()
-    if descriptor.start {
+    if descriptor.start || true {
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.5 * dt * f1 / m
         """)
@@ -90,7 +90,7 @@ class MM4CustomIntegrator {
       x + 0.5 * dt * v
       """)
     
-    if descriptor.end {
+    if descriptor.end || true {
       integrator.addConstrainPositions()
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.25 * dt * f2 / m
