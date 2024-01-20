@@ -64,7 +64,7 @@ class MM4CustomIntegrator {
     if descriptor.start || true {
       integrator.addComputePerDof(variable: "cachedf", expression: "f1")
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.25 * dt * cached_f / m
+        v + 0.25 * dt * cachedf / m
         """)
       integrator.addComputePerDof(variable: "v", expression: """
         v + 0.25 * dt * f2 / m
