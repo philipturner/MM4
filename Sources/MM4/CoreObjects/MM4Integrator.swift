@@ -12,8 +12,15 @@ public enum MM4IntegratorOptions {
   ///
   /// The default time step is 4.35 fs.
   ///
-  /// This integrators has a large O(1) overhead, so only use it for very large
-  /// systems.
+  /// This integrator has a slightly lower coefficient to O(n) scaling than the
+  /// Verlet integrator. However, it has a larger O(1) prefactor. Only use
+  /// it for large systems that are not latency-bound.
+  ///
+  /// > WARNING: The MTS integrator does not conserve energy well. There is
+  ///   often a one-time spike in energy, the first timestep an MTS integrator
+  ///   is used. Afterward, the integrator is stable. You are recommended to
+  ///   measure energy drift against the energy reported a few timesteps into
+  ///   the simulation.
   case multipleTimeStep
   
   /// Executes all forces at the same rate.

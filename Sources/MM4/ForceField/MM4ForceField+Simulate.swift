@@ -124,9 +124,6 @@ extension MM4ForceField {
     invalidatePositionsAndVelocities()
     invalidateForcesAndEnergy()
     
-    // TODO: Check that energy minimization behaves as expected, even when
-    // the integrator may be wrong.
-    
     // Run the energy minimization.
     //
     // The 'reporter' argument doesn't do anything. You have to create a C++
