@@ -94,11 +94,11 @@ class MM4CustomIntegrator {
     if descriptor.end || true {
       integrator.addConstrainPositions()
       integrator.addComputePerDof(variable: "v", expression: """
-        v + 0.5 * dt * f / m
+        v + 0.5 * dt * f1 / m
         """)
-//      integrator.addComputePerDof(variable: "v", expression: """
-//        v + 0.5 * dt * f1 / m
-//        """)
+      integrator.addComputePerDof(variable: "v", expression: """
+        v + 0.5 * dt * f2 / m
+        """)
       integrator.addConstrainPositions()
     }
   }
