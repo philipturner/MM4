@@ -82,7 +82,7 @@ class MM4CustomIntegrator {
       x + 0.5 * dt * v
       """)
     
-    integrator.addConstrainPositions()
+//    integrator.addConstrainPositions()
 //    integrator.addComputePerDof(variable: "v", expression: """
 //      v + 0.5 * dt * f2 / m
 //      """)
