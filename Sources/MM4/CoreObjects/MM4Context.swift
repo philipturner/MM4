@@ -7,44 +7,54 @@
 
 import OpenMM
 
-/// Stores an OpenMM context generated from an integrator variant.
+/// Encapsulates an OpenMM context and the various integrators.
 class MM4Context {
-  var compoundIntegrator: OpenMM_CompoundIntegrator
+  var compoundIntegrator: OpenMM_CompoundIntegrator?
   var context: OpenMM_Context
-  var integrators: [MM4IntegratorDescriptor: Int] = [:]
+  var customIntegrators: [MM4CustomIntegratorDescriptor: Int] = [:]
+  var integrator: OpenMM_Integrator
+  var verletIntegrator: OpenMM_VerletIntegrator?
   
-  init(system: MM4System, platform: OpenMM_Platform?) {
-    self.compoundIntegrator = OpenMM_CompoundIntegrator()
-    
-    for start in [false, true] {
-      for end in [false, true] {
-        var descriptor = MM4IntegratorDescriptor()
-        descriptor.start = start
-        descriptor.end = end
-        
-        let integrator = MM4Integrator(descriptor: descriptor)
-        integrator.integrator.transfer()
-        let index = compoundIntegrator.addIntegrator(integrator.integrator)
-        integrators[descriptor] = index
+  init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    switch descriptor.integrator {
+    case .multipleTimeStep:
+      self.compoundIntegrator = OpenMM_CompoundIntegrator()
+      self.integrator = compoundIntegrator!
+      
+      for start in [false, true] {
+        for end in [false, true] {
+          var descriptor = MM4CustomIntegratorDescriptor()
+          descriptor.start = start
+          descriptor.end = end
+          
+          let integrator = MM4CustomIntegrator(descriptor: descriptor)
+          integrator.integrator.transfer()
+          let index = compoundIntegrator!.addIntegrator(integrator.integrator)
+          customIntegrators[descriptor] = index
+        }
       }
+    case .verlet:
+      self.verletIntegrator = OpenMM_VerletIntegrator(stepSize: 0)
+      self.integrator = verletIntegrator!
     }
     
-    if let platform {
+    if let platform = descriptor.platform {
       self.context = OpenMM_Context(
         system: system.system,
-        integrator: compoundIntegrator,
+        integrator: integrator,
         platform: platform)
     } else {
       self.context = OpenMM_Context(
         system: system.system,
-        integrator: compoundIntegrator)
+        integrator: integrator)
     }
   }
   
-  var currentIntegrator: MM4IntegratorDescriptor {
+  var currentIntegrator: MM4CustomIntegratorDescriptor {
     get { fatalError("Not implemented.") }
     set {
-      guard let index = integrators[newValue] else {
+      guard let index = customIntegrators[newValue],
+            let compoundIntegrator else {
         fatalError("This should never happen.")
       }
       compoundIntegrator.currentIntegrator = index
@@ -54,9 +64,7 @@ class MM4Context {
   /// Modeled after how the OpenMM `integrator.step` API is typically used -
   /// without an argument label for steps.
   func step(_ steps: Int, timeStep: Double) {
-    // There is a performance issue with custom integrators right now. See the
-    // note in 'MM4Integrator'.
-    compoundIntegrator.stepSize = timeStep / 2
-    compoundIntegrator.step(steps * 2)
+    integrator.stepSize = timeStep
+    integrator.step(steps)
   }
 }

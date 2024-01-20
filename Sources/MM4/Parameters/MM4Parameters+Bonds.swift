@@ -393,11 +393,11 @@ extension MM4Parameters {
     }
     
     let bondCapacity = bonds.indices.count
-    var primaryNeighborContributions: UnsafeMutablePointer<SIMD2<Float>> =
+    let primaryNeighborContributions: UnsafeMutablePointer<SIMD2<Float>> =
       .allocate(capacity: 64 * bondCapacity)
-    var secondaryNeighborContributions: UnsafeMutablePointer<Float> =
+    let secondaryNeighborContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
-    var bohlmannEffectContributions: UnsafeMutablePointer<Float> =
+    let bohlmannEffectContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
     
     typealias AtomicPointer = UnsafeMutablePointer<UInt16.AtomicRepresentation>

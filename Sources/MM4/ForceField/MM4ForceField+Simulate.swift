@@ -11,7 +11,8 @@ extension MM4ForceField {
   /// The largest time step that may be taken during simulation, in picoseconds.
   /// Some steps may have a smaller duration.
   ///
-  /// The default value is 4.35 fs.
+  /// The default value is the default time step of
+  /// the <doc:MM4ForceFieldDescriptor/integrator>.
   public var timeStep: Double {
     _read {
       yield _timeStep
@@ -63,32 +64,41 @@ extension MM4ForceField {
     }
     
     if stepCountQuotient == 0 {
-      var descriptor = MM4IntegratorDescriptor()
-      descriptor.start = true
-      descriptor.end = true
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: time)
+      if context.integrator is OpenMM_VerletIntegrator {
+        context.step(1, timeStep: time)
+      } else {
+        var descriptor = MM4CustomIntegratorDescriptor()
+        descriptor.start = true
+        descriptor.end = true
+        context.currentIntegrator = descriptor
+        context.step(1, timeStep: time)
+      }
     } else {
       let conservativeStepCount = Int(exactly: (time / timeStep).rounded(.up))!
       let conservativeStepSize = time / Double(conservativeStepCount)
       
-      var descriptor = MM4IntegratorDescriptor()
-      descriptor.start = true
-      descriptor.end = false
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: conservativeStepSize)
-      
-      if conservativeStepCount > 2 {
-        descriptor.start = false
+      if context.integrator is OpenMM_VerletIntegrator {
+        context.step(conservativeStepCount, timeStep: conservativeStepSize)
+      } else {
+        var descriptor = MM4CustomIntegratorDescriptor()
+        descriptor.start = true
         descriptor.end = false
         context.currentIntegrator = descriptor
-        context.step(conservativeStepCount - 2, timeStep: conservativeStepSize)
+        context.step(1, timeStep: conservativeStepSize)
+        
+        if conservativeStepCount > 2 {
+          descriptor.start = false
+          descriptor.end = false
+          context.currentIntegrator = descriptor
+          context.step(
+            conservativeStepCount - 2, timeStep: conservativeStepSize)
+        }
+        
+        descriptor.start = false
+        descriptor.end = true
+        context.currentIntegrator = descriptor
+        context.step(1, timeStep: conservativeStepSize)
       }
-      
-      descriptor.start = false
-      descriptor.end = true
-      context.currentIntegrator = descriptor
-      context.step(1, timeStep: conservativeStepSize)
     }
   }
   
@@ -114,20 +124,13 @@ extension MM4ForceField {
     invalidatePositionsAndVelocities()
     invalidateForcesAndEnergy()
     
-    // Switch to an integrator that always reports the correct velocity.
-    var integratorDescriptor = MM4IntegratorDescriptor()
-    integratorDescriptor.start = true
-    integratorDescriptor.end = true
-    context.currentIntegrator = integratorDescriptor
-    
     // Run the energy minimization.
     //
-    // The reporter doesn't do anything. You have to create a C++ class, which
-    // is not possible through the OpenMM C API.
+    // The 'reporter' argument doesn't do anything. You have to create a C++
+    // class, which is not possible through the OpenMM C API.
     OpenMM_LocalEnergyMinimizer.minimize(
       context: context.context,
       tolerance: tolerance,
-      maxIterations: maxIterations,
-      reporter: nil)
+      maxIterations: maxIterations)
   }
 }
