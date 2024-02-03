@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
   name: "MM4",
   platforms: [
-    // Supposedly, this permits deployment to non-Apple platforms?
+    // Specifying a macOS/iOS version doesn't affect deployment to non-Apple platforms.
     .macOS(.v13),
     .iOS(.v15),
   ],
@@ -17,7 +17,7 @@ let package = Package(
       targets: ["MM4"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.2.0")),
+    .package(url: "https://github.com/apple/swift-atomics", .upToNextMajor(from: "1.2.0")),
     .package(url: "https://github.com/apple/swift-docc-plugin", branch: "main"),
     .package(url: "https://github.com/philipturner/swift-numerics", branch: "Quaternions"),
     .package(url: "https://github.com/philipturner/swift-openmm", branch: "main"),
