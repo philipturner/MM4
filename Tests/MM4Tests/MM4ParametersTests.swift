@@ -76,20 +76,21 @@ final class MM4ParametersTests: XCTestCase {
     // shouldn't.
     let parts = [part0, part1, part2, part3]
     
-    for part in parts {
+    for (partID, part) in parts.enumerated() {
       let parameters = part.rigidBody.parameters
       XCTAssertEqual(parameters.atoms.count, 1514)
       
       XCTAssertEqual(parameters.bonds.indices.count, 2098)
       
-      // WARNING: There may be a terrible bug hidden somewhere in the codebase.
-      // This test case briefly reported 5363, but never reported it again. From
-      // now on, always assert a specific number of bond angles exists in any
-      // instances of MM4Parameters you generate. Hopefully it will catch a rare
-      // instance of this bug.
+      // WARNING: There may be a terrible bug hidden somewhere in the 
+      // codebase. This test case briefly reported 5363, but never reported it
+      // again. From now on, always assert a specific number of bond angles
+      // exists in any instances of MM4Parameters you generate. Hopefully it
+      // will catch a rare instance of this bug.
       //
-      // It could have also originated from a cosmic ray or a compiler bug.
-      XCTAssertEqual(parameters.angles.indices.count, 5364)
+      // Fails on all four part IDs.
+      XCTAssertEqual(
+        parameters.angles.indices.count, 5364, "Failed on part ID \(partID).")
     }
     
     for partID in parts.indices {

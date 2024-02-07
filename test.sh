@@ -98,8 +98,15 @@ if [[ $invalid_input == false ]]; then
       invalid_input=true
     else
       # Automatically detect the OpenMM library path. This is only tested on
-      # arm64 macOS.
-      export OPENMM_LIBRARY_PATH="/Users/${user_name}/miniforge3/lib"
+      # Linux and arm64 macOS. Source: https://stackoverflow.com/a/8597411
+      if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        export OPENMM_LIBRARY_PATH="/home/${user_name}/miniconda3/lib"
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
+        export OPENMM_LIBRARY_PATH="/Users/${user_name}/miniforge3/lib"
+      else
+        echo "Unrecognized OS for argument '--user'."
+        exit -1
+      fi
     fi
   elif [[ $path_specified == true ]]; then
     export OPENMM_LIBRARY_PATH="${path_name}"
@@ -130,16 +137,18 @@ else
 fi
 
 # Unsure what to do for other platforms. Only the exec path for macOS is known.
-export XCTEST_EXEC="$XCTEST_FILE/Contents/MacOS/MM4PackageTests"
-
-# Link libc++ and every plausible OpenMM version for the next 5 years.
-install_name_tool -change @rpath/libOpenMM.8.0.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.0.dylib" $XCTEST_EXEC
-install_name_tool -change @rpath/libOpenMM.8.1.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.1.dylib" $XCTEST_EXEC
-install_name_tool -change @rpath/libOpenMM.8.2.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.2.dylib" $XCTEST_EXEC
-install_name_tool -change @rpath/libOpenMM.8.3.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.3.dylib" $XCTEST_EXEC
-install_name_tool -change @rpath/libOpenMM.8.4.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.4.dylib" $XCTEST_EXEC
-install_name_tool -change @rpath/libOpenMM.8.5.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.5.dylib" $XCTEST_EXEC
-install_name_tool -change @rpath/libc++.1.dylib "$OPENMM_LIBRARY_PATH/libc++.1.dylib" $XCTEST_EXEC
-
-# Actually run the Swift package tests.
-xcrun xctest $XCTEST_FILE
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  export XCTEST_EXEC="$XCTEST_FILE/Contents/MacOS/MM4PackageTests"
+  
+  # Link libc++ and every plausible OpenMM version for the next 5 years.
+  install_name_tool -change @rpath/libOpenMM.8.0.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.0.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.1.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.1.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.2.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.2.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.3.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.3.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.4.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.4.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.5.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.5.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libc++.1.dylib "$OPENMM_LIBRARY_PATH/libc++.1.dylib" $XCTEST_EXEC
+  
+  # Actually run the Swift package tests.
+  xcrun xctest $XCTEST_FILE
+fi
