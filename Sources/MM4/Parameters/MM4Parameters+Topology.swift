@@ -212,7 +212,6 @@ extension MM4Parameters {
               
               let count = atomic
                 .loadThenWrappingIncrement(ordering: .relaxed)
-              angleCounts[atomID] = count &+ 1
               angleBuckets[6 &* atomID &+ Int(count)] = angle
             }
             let map3 = vAtomsToAtomsMap[Int(atom3)]
@@ -258,7 +257,6 @@ extension MM4Parameters {
                   
                   let count = atomic
                     .loadThenWrappingIncrement(ordering: .relaxed)
-                  torsionCounts[atomID] = count &+ 1
                   torsionBuckets[36 &* atomID &+ Int(count)] = torsion
                 }
                 
