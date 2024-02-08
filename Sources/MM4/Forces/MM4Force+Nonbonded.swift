@@ -174,8 +174,8 @@ class MM4NonbondedExceptionForce: MM4Force {
     var force: OpenMM_CustomBondForce!
     var legacyForce: OpenMM_CustomBondForce!
     
-    // TODO: Test how different choices affect the accuracy of molecular
-    // structures, similar to the testing of electrostatic exceptions:
+    // Ideally, one would test how different choices affect the accuracy of
+    // molecular structures, similar to the testing of electrostatic exceptions:
     // - dispersionFactor = 0.550
     // - dispersionFactor = 1.000
     // - applying the dispersion factor to the Pauli repulsion force

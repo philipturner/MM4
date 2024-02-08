@@ -5,12 +5,6 @@ import MM4
 
 final class MM4ParametersTests: XCTestCase {
   
-  // TODO: Enhance the XTBProcess code to launch a programmatic process. It
-  // might still write to disk and require a directory, but it enables much
-  // faster feedback loops to quickly compare different structures. Maybe
-  // even multithreading - multiple CPU cores executing a different XTB
-  // processes in parallel, in different directories.
-  
   func testAdamantane() throws {
     try testAdamantaneVariant(atomCode: .alkaneCarbon)
   }
@@ -76,21 +70,11 @@ final class MM4ParametersTests: XCTestCase {
     // shouldn't.
     let parts = [part0, part1, part2, part3]
     
-    for (partID, part) in parts.enumerated() {
+    for part in parts {
       let parameters = part.rigidBody.parameters
       XCTAssertEqual(parameters.atoms.count, 1514)
-      
       XCTAssertEqual(parameters.bonds.indices.count, 2098)
-      
-      // WARNING: There may be a terrible bug hidden somewhere in the 
-      // codebase. This test case briefly reported 5363, but never reported it
-      // again. From now on, always assert a specific number of bond angles
-      // exists in any instances of MM4Parameters you generate. Hopefully it
-      // will catch a rare instance of this bug.
-      //
-      // Fails on all four part IDs.
-      XCTAssertEqual(
-        parameters.angles.indices.count, 5364, "Failed on part ID \(partID).")
+      XCTAssertEqual(parameters.angles.indices.count, 5364)
     }
     
     for partID in parts.indices {
