@@ -122,8 +122,16 @@ if [[ $invalid_input == true ]]; then
   exit -1
 fi
 
-# Compile the executable. The tests shouldn't actually run, and no error should
-# appear, because the command is broken.
+# Add OpenMM to the dynamic linker path, if possible.
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  export LD_LIBRARY_PATH="$OPENMM_LIBRARY_PATH:$LD_LIBRARY_PATH"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  # The tests shouldn't actually run, and no error should
+  # appear, because the command is broken.
+  :
+fi
+
+# Compile the executable.
 if [[ $build_release == true ]]; then
   swift test -Xswiftc -Ounchecked -Xswiftc -DRELEASE
   export XCTEST_FILE="$(pwd)/.build/debug/MM4PackageTests.xctest"
@@ -136,25 +144,19 @@ else
   export XCTEST_FILE="$(pwd)/.build/debug/MM4PackageTests.xctest"
 fi
 
-
-# Link libc++ and every plausible OpenMM version for the next 5 years.
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  llvm-install-name-tool -change @rpath/libOpenMM.so.8.0 "$OPENMM_LIBRARY_PATH/libOpenMM.8.0.dylib" $XCTEST_FILE
-  llvm-install-name-tool -change @rpath/libOpenMM.so.8.1 "$OPENMM_LIBRARY_PATH/libOpenMM.8.1.dylib" $XCTEST_FILE
-  llvm-install-name-tool -change @rpath/libOpenMM.so.8.2 "$OPENMM_LIBRARY_PATH/libOpenMM.8.2.dylib" $XCTEST_FILE
-  llvm-install-name-tool -change @rpath/libOpenMM.so.8.3 "$OPENMM_LIBRARY_PATH/libOpenMM.8.3.dylib" $XCTEST_FILE
-  llvm-install-name-tool -change @rpath/libOpenMM.so.8.4 "$OPENMM_LIBRARY_PATH/libOpenMM.8.4.dylib" $XCTEST_FILE
-  llvm-install-name-tool -change @rpath/libOpenMM.so.8.5 "$OPENMM_LIBRARY_PATH/libOpenMM.8.5.dylib" $XCTEST_FILE
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  export XCTEST_FILE="$XCTEST_FILE/Contents/MacOS/MM4PackageTests"
-  install_name_tool -change @rpath/libOpenMM.8.0.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.0.dylib" $XCTEST_FILE
-  install_name_tool -change @rpath/libOpenMM.8.1.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.1.dylib" $XCTEST_FILE
-  install_name_tool -change @rpath/libOpenMM.8.2.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.2.dylib" $XCTEST_FILE
-  install_name_tool -change @rpath/libOpenMM.8.3.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.3.dylib" $XCTEST_FILE
-  install_name_tool -change @rpath/libOpenMM.8.4.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.4.dylib" $XCTEST_FILE
-  install_name_tool -change @rpath/libOpenMM.8.5.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.5.dylib" $XCTEST_FILE
-  install_name_tool -change @rpath/libc++.1.dylib "$OPENMM_LIBRARY_PATH/libc++.1.dylib" $XCTEST_FILE
+# Workaround for the tests not running on macOS.
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  export XCTEST_EXEC="$XCTEST_FILE/Contents/MacOS/MM4PackageTests"
+  
+  # Link libc++ and every plausible OpenMM version for the next 5 years.
+  install_name_tool -change @rpath/libOpenMM.8.0.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.0.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.1.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.1.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.2.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.2.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.3.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.3.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.4.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.4.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libOpenMM.8.5.dylib "$OPENMM_LIBRARY_PATH/libOpenMM.8.5.dylib" $XCTEST_EXEC
+  install_name_tool -change @rpath/libc++.1.dylib "$OPENMM_LIBRARY_PATH/libc++.1.dylib" $XCTEST_EXEC
+  
+  # Actually run the Swift package tests.
+  swift test --skip-build
 fi
-
-# Actually run the Swift package tests.
-swift test --skip-build
