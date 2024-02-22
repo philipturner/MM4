@@ -6,6 +6,7 @@
 //
 
 import OpenMM
+import QuartzCore
 
 /// Encapsulates an OpenMM system and the associated force objects.
 ///
@@ -27,18 +28,33 @@ class MM4System {
   var virtualSiteCount: Int = 0
   
   init(parameters: MM4Parameters, descriptor: MM4ForceFieldDescriptor) {
+    let checkpoint0 = CACurrentMediaTime()
+    
     // Initialize base properties.
     self.system = OpenMM_System()
     self.parameters = parameters
+    
+    let checkpoint1 = CACurrentMediaTime()
     
     // Create virtual sites.
     self.createReorderedIndices()
     self.createMasses()
     self.createVirtualSites()
     
+    let checkpoint2 = CACurrentMediaTime()
+    
     // Create force objects.
     self.forces = MM4Forces(system: self, descriptor: descriptor)
+    let checkpoint3 = CACurrentMediaTime()
     forces.addForces(to: system)
+    let checkpoint4 = CACurrentMediaTime()
+    
+    print()
+    print("MM4System.init")
+    print("0 to 1: \(checkpoint1 - checkpoint0)")
+    print("1 to 2: \(checkpoint2 - checkpoint1)")
+    print("2 to 3: \(checkpoint3 - checkpoint2)")
+    print("3 to 4: \(checkpoint4 - checkpoint3)")
   }
 }
 

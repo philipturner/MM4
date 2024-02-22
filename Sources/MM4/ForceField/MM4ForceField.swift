@@ -6,6 +6,7 @@
 //
 
 import OpenMM
+import QuartzCore
 
 /// A configuration for a force field.
 public struct MM4ForceFieldDescriptor {
@@ -86,10 +87,20 @@ public class MM4ForceField {
       fatalError("No force field parameters were specified.")
     }
     
+    let checkpoint0 = CACurrentMediaTime()
     system = MM4System(parameters: parameters, descriptor: descriptor)
+    let checkpoint1 = CACurrentMediaTime()
     context = MM4Context(system: system, descriptor: descriptor)
+    let checkpoint2 = CACurrentMediaTime()
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
+    let checkpoint3 = CACurrentMediaTime()
+    
+    print()
+    print("MM4ForceField.init")
+    print("0 to 1: \(checkpoint1 - checkpoint0)")
+    print("1 to 2: \(checkpoint2 - checkpoint1)")
+    print("2 to 3: \(checkpoint3 - checkpoint2)")
     
     switch descriptor.integrator {
     case .multipleTimeStep:
