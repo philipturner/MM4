@@ -6,6 +6,7 @@
 //
 
 import OpenMM
+import Foundation
 
 /// A configuration for a snapshot of a force field's state.
 public struct MM4StateDescriptor {
@@ -61,6 +62,28 @@ public struct MM4State {
 extension MM4ForceField {
   /// Retrieve a frame of the simulation.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
+    do {
+      var dataTypes: OpenMM_State.DataType = []
+      dataTypes = [dataTypes, .energy]
+      dataTypes = [dataTypes, .forces]
+      dataTypes = [dataTypes, .positions]
+      dataTypes = [dataTypes, .velocities]
+      let state = context.context.state(types: dataTypes)
+      
+      print()
+      print("serializing state")
+      var stateXML = OpenMM_XmlSerializer.serializeState(state)
+      print("writing to file")
+      let stateURL = URL(
+        fileURLWithPath: "/Users/philipturner/Desktop/state.xml")
+      var stateData = Data()
+      stateXML.withUTF8 {
+        stateData.append(contentsOf: $0)
+      }
+      try! stateData.write(to: stateURL)
+      print("done serializing state")
+    }
+    
     if updateRecord.active() {
       flushUpdateRecord()
     }

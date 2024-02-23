@@ -6,7 +6,6 @@
 //
 
 import OpenMM
-import Foundation
 
 /// Encapsulates an OpenMM context and the various integrators.
 class MM4Context {
@@ -49,32 +48,6 @@ class MM4Context {
         system: system.system,
         integrator: integrator)
     }
-    
-    print()
-    print("serializing system")
-    var systemXML = OpenMM_XmlSerializer.serializeSystem(system.system)
-    print("writing to file")
-    let systemURL = URL(
-      fileURLWithPath: "/Users/philipturner/Desktop/system.xml")
-    var systemData = Data()
-    systemXML.withUTF8 {
-      systemData.append(contentsOf: $0)
-    }
-    try! systemData.write(to: systemURL)
-    print("done serializing system")
-    
-    print()
-    print("serializing integrator")
-    var integratorXML = OpenMM_XmlSerializer.serializeIntegrator(integrator)
-    print("writing to file")
-    let integratorURL = URL(
-      fileURLWithPath: "/Users/philipturner/Desktop/integrator.xml")
-    var integratorData = Data()
-    integratorXML.withUTF8 {
-      integratorData.append(contentsOf: $0)
-    }
-    try! integratorData.write(to: integratorURL)
-    print("done serializing integrator")
   }
   
   var currentIntegrator: MM4CustomIntegratorDescriptor {
