@@ -110,10 +110,17 @@ public class MM4ForceField {
     let state = context.context.state(types: dataTypes)
     
     print()
-    print("serialized state")
-    print("================")
-    print(OpenMM_XmlSerializer.serializeState(state))
-    print("================")
+    print("serializing state")
+    var stateXML = OpenMM_XmlSerializer.serializeState(state)
+    print("writing to file")
+    let stateURL = URL(
+      fileURLWithPath: "/Users/philipturner/Desktop/state.xml")
+    var stateData = Data()
+    stateXML.withUTF8 {
+      stateData.append(contentsOf: $0)
+    }
+    try! stateData.write(to: stateURL)
+    print("done serializing state")
     
     switch descriptor.integrator {
     case .multipleTimeStep:
