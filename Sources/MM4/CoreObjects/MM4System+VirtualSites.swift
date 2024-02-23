@@ -93,7 +93,6 @@ extension MM4System {
           let permutation2 = SIMD2(virtualSiteReordered[0], reordered[1])
           force.addExclusion(particles: permutation1)
           force.addExclusion(particles: permutation2)
-          fatalError("Unexpected situation regarding exclusions.")
         }
         force.addExclusion(particles: virtualSiteReordered)
       }
