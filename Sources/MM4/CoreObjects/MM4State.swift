@@ -31,6 +31,8 @@ public struct MM4StateDescriptor {
   /// The default value is `false`.
   public var velocities: Bool = false
   
+  public var serialize: Bool = false
+  
   /// Create a descriptor with the default properties.
   public init() {
     
@@ -62,7 +64,7 @@ public struct MM4State {
 extension MM4ForceField {
   /// Retrieve a frame of the simulation.
   public func state(descriptor: MM4StateDescriptor) -> MM4State {
-    do {
+    if descriptor.serialize {
       var dataTypes: OpenMM_State.DataType = []
       dataTypes = [dataTypes, .energy]
       dataTypes = [dataTypes, .forces]
