@@ -88,12 +88,12 @@ extension MM4System {
       force.addExclusion(particles: reordered)
       
       if virtualSiteReordered != reordered {
-        if all(virtualSiteReordered .!= reordered) {
-          let permutation1 = SIMD2(reordered[0], virtualSiteReordered[1])
-          let permutation2 = SIMD2(virtualSiteReordered[0], reordered[1])
-          force.addExclusion(particles: permutation1)
-          force.addExclusion(particles: permutation2)
-        }
+//        if all(virtualSiteReordered .!= reordered) {
+//          let permutation1 = SIMD2(reordered[0], virtualSiteReordered[1])
+//          let permutation2 = SIMD2(virtualSiteReordered[0], reordered[1])
+//          force.addExclusion(particles: permutation1)
+//          force.addExclusion(particles: permutation2)
+//        }
         force.addExclusion(particles: virtualSiteReordered)
       }
     }
