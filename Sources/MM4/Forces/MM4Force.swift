@@ -79,10 +79,10 @@ class MM4Force {
 class MM4Forces {
   // Force Group 1
   var electrostatic: MM4ElectrostaticForce
-  var electrostaticException: MM4ElectrostaticExceptionForce
+  var electrostaticException14: MM4ElectrostaticException14Force
   var external: MM4ExternalForce
   var nonbonded: MM4NonbondedForce
-  var nonbondedException: MM4NonbondedExceptionForce
+  var nonbondedException14: MM4NonbondedException14Force
   var torsion: MM4TorsionForce
   var torsionExtended: MM4TorsionExtendedForce
   
@@ -95,10 +95,11 @@ class MM4Forces {
   init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Force Group 1
     self.electrostatic = .init(system: system, descriptor: descriptor)
-    self.electrostaticException = .init(system: system, descriptor: descriptor)
+    self.electrostaticException14 = 
+      .init(system: system, descriptor: descriptor)
     self.external = .init(system: system, descriptor: descriptor)
     self.nonbonded = .init(system: system, descriptor: descriptor)
-    self.nonbondedException = .init(system: system, descriptor: descriptor)
+    self.nonbondedException14 = .init(system: system, descriptor: descriptor)
     self.torsion = .init(system: system, descriptor: descriptor)
     self.torsionExtended = .init(system: system, descriptor: descriptor)
     
@@ -112,10 +113,10 @@ class MM4Forces {
   func addForces(to system: OpenMM_System) {
     // Force Group 1
     electrostatic.addForces(to: system)
-    electrostaticException.addForces(to: system)
+    electrostaticException14.addForces(to: system)
     external.addForces(to: system)
     nonbonded.addForces(to: system)
-    nonbondedException.addForces(to: system)
+    nonbondedException14.addForces(to: system)
     torsion.addForces(to: system)
     torsionExtended.addForces(to: system)
     

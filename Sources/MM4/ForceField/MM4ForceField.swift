@@ -37,6 +37,18 @@ public struct MM4ForceFieldDescriptor {
   /// is somewhere in the middle, at ~5.
   public var dielectricConstant: Float = 5.7
   
+  /// Required. Whether to use OpenMM exceptions in nonbonded forces.
+  ///,
+  /// The default value is `true`. Exceptions explicitly avoid the computation
+  /// of nonbonded forces between bonded atoms. With exceptions disabled, the
+  /// exceptions are computed through a "nonbonded counterforce". This cancels
+  /// the effect of the energy from regular nonbonded forces.
+  ///
+  /// Disabling exceptions may cause lower precision in energy computations and
+  /// higher compute cost. However, it significantly decreases the overhead of
+  /// initializing an MM4ForceField.
+  public var exceptions: Bool = true
+  
   /// Required. The integrator to use for simulation.
   ///
   /// The default value is `.verlet`.

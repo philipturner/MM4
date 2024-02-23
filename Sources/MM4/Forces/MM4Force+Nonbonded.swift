@@ -119,13 +119,19 @@ class MM4NonbondedForce: MM4Force {
   }
 }
 
+class MM4NonbondedException13Force: MM4Force {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    fatalError("Not implemented.")
+  }
+}
+
 /// This force only computes the correction to vdW, while the electrostatic
 /// exception force computes the correction to partial charges. Either method,
 /// using 1,3 or 1,4 exceptions, wouldn't change whether these interactions fall
 /// on the diagonal. It also wouldn't change the compute cost due to divergence.
 /// The version here may actually decrease compute cost a little, as the
 /// exp(-12) term is omitted.
-class MM4NonbondedExceptionForce: MM4Force {
+class MM4NonbondedException14Force: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     var includeNonbonded = false
     for params in system.parameters.atoms.parameters {

@@ -135,6 +135,12 @@ class MM4ElectrostaticForce: MM4Force {
   }
 }
 
+class MM4ElectrostaticException13Force: MM4Force {
+  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+    fatalError("Not implemented.")
+  }
+}
+
 // ========================================================================== //
 //
 // Create a counterforce at short range that corrects for 1/2 of a
@@ -218,7 +224,7 @@ class MM4ElectrostaticForce: MM4Force {
 /// In the future, an optimization could fuse the O(bonds^2) interactions into a
 /// single kernel invocation. This would also pre-compute the O(bonds^2) partial
 /// charge interactions to "undo" the regular electrostatic force.
-class MM4ElectrostaticExceptionForce: MM4Force {
+class MM4ElectrostaticException14Force: MM4Force {
   required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     var includeElectrostaticException = false
     for params in system.parameters.atoms.parameters {
