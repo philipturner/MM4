@@ -72,7 +72,7 @@ extension MM4System {
     for bond in parameters.bonds.indices {
       let reordered = self.reorder(bond)
       let virtualSiteReordered = self.virtualSiteReorder(bond)
-      force.addExclusion(particles: reordered)//virtualSiteReordered)
+      force.addExclusion(particles: virtualSiteReordered)
       
 //      if virtualSiteReordered != reordered {
 //        guard any(virtualSiteReordered .== reordered) else {
@@ -85,7 +85,7 @@ extension MM4System {
     for exception in parameters.nonbondedExceptions13 {
       let reordered = self.reorder(exception)
       let virtualSiteReordered = self.virtualSiteReorder(exception)
-      force.addExclusion(particles: reordered)//virtualSiteReordered)
+      force.addExclusion(particles: virtualSiteReordered)
       
 //      if virtualSiteReordered != reordered {
 ////        if all(virtualSiteReordered .!= reordered) {
