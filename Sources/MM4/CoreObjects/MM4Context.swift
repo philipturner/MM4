@@ -48,6 +48,18 @@ class MM4Context {
         system: system.system,
         integrator: integrator)
     }
+    
+    print()
+    print("serialized system")
+    print("=================")
+    print(OpenMM_XmlSerializer.serializeSystem(system.system))
+    print("=================")
+    
+    print()
+    print("serialized integrator")
+    print("=====================")
+    print(OpenMM_XmlSerializer.serializeIntegrator(integrator))
+    print("=====================")
   }
   
   var currentIntegrator: MM4CustomIntegratorDescriptor {

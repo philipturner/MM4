@@ -102,6 +102,19 @@ public class MM4ForceField {
     print("1 to 2: \(checkpoint2 - checkpoint1)")
     print("2 to 3: \(checkpoint3 - checkpoint2)")
     
+    var dataTypes: OpenMM_State.DataType = []
+    dataTypes = [dataTypes, .energy]
+    dataTypes = [dataTypes, .forces]
+    dataTypes = [dataTypes, .positions]
+    dataTypes = [dataTypes, .velocities]
+    let state = context.context.state(types: dataTypes)
+    
+    print()
+    print("serialized state")
+    print("================")
+    print(OpenMM_XmlSerializer.serializeState(state))
+    print("================")
+    
     switch descriptor.integrator {
     case .multipleTimeStep:
       _timeStep = 4.35 * OpenMM_PsPerFs
