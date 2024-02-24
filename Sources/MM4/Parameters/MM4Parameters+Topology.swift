@@ -141,7 +141,7 @@ extension MM4Parameters {
       .allocate(capacity: 36 * torsionCapacity)
     let torsionAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
       .allocate(capacity: torsionCapacity)
-    let torsionCounts =  UnsafeMutablePointer<UInt16>(
+    let torsionCounts = UnsafeMutablePointer<UInt16>(
       OpaquePointer(torsionAtomics))
     
     angleCounts.initialize(repeating: .zero, count: angleCapacity)
