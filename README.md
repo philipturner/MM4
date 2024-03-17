@@ -105,3 +105,24 @@ force = dU / dx = zJ / nm = pN
 | Length            | m       | 1e-9  | 1e-9      |
 | Speed             | m/s     | 1000  | 1000      |
 | Time              | s       | 1e-12 | 1e-12     |
+
+## Linker
+
+MM4 needs to link against OpenMM, which can be problematic for the Swift compiler. On Unix platforms, the easiest method is by setting the environment variable, `OPENMM_LIBRARY_PATH`. This activates a piece of code in the package manifest for `swift-openmm`. On Windows (especially through the VSCode terminal), this does not work. An alternative is to modify your VSCode project's package manifest. Copy `OpenMM.dll` into the same folder as `Package.swift`, then explicitly link it in the manifest:
+
+```swift
+targets: [
+  .executableTarget(
+    name: "CLI",
+    dependencies: [
+       // Also add other necessary dependencies, such as 'HDL'.
+      .product(name: "MM4", package: "MM4"),
+    ],
+    linkerSettings: [
+      // In this example, the computer's user is 'username'. The
+      // package manifest is located in the folder 'workspace'.
+      .unsafeFlags(["-LC:/Users/username/Documents/.../workspace"]),
+      .linkedLibrary("OpenMM"),
+    ]),
+],
+```
