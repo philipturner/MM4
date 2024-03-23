@@ -21,17 +21,15 @@ public enum MM4IntegratorOptions {
   /// MTS has a smaller coefficient to O(n) scaling than the
   /// Verlet integrator. However, it has a larger O(1) prefactor. Only use
   /// it for large systems that are not latency-bound.
-  ///
-  /// > WARNING: The MTS integrator does not conserve energy well. There is
-  ///   often a one-time spike in energy, the first timestep an MTS integrator
-  ///   is used. Afterward, the integrator is stable. You are recommended to
-  ///   measure energy drift against the energy reported a few timesteps into
-  ///   the simulation.
   case multipleTimeStep
   
   /// Executes all forces at the same rate.
   ///
   /// The default time step is 2.5 fs.
+  ///
+  /// > WARNING: The velocity Verlet integrator does not report correct
+  ///   energies. For precise energy measurements in energy-conserving
+  ///   simulations, consider using the `.multipleTimeStep` integrator.
   case verlet
 }
 
