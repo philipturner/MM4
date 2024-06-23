@@ -1,4 +1,4 @@
-// The masses here are sorted by atomic number. The first value, 0, corresponds to neutronium. Then second value corresponds to hydrogen.
+// The masses here are sorted by atomic number. The first value, 0, corresponds to neutronium. The second value corresponds to hydrogen.
 
 0,
 1.008,
