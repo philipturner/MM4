@@ -10,12 +10,12 @@ Atoms:
 
 | Element | Ring Types |
 | ------- | ---------- |
-| H             | n/a  |
-| C             | 5, 6 |
-| Si            | 5, 6 |
-| P (trivalent) | 5, 6 |
-| S             | 5, 6 |
-| Ge            | 5, 6 |
+| H  | n/a  |
+| C  | 5, 6 |
+| Si | 5, 6 |
+| P  | 5, 6 |
+| S  | 5, 6 |
+| Ge | 5, 6 |
 
 Bonds:
 

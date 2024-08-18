@@ -123,6 +123,29 @@ extension MM4Parameters {
       return codes
     }
   }
+  
+  /// `codes` could also contain atom indices, for sorting the torsion while
+  /// generating the bond topology.
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
+  func sortTorsion<T>(_ codes: SIMD4<T>) -> SIMD4<T>
+  where T: FixedWidthInteger {
+    var reorder = false
+    if codes[1] > codes[2] {
+      reorder = true
+    } else if codes[1] == codes[2] {
+      if codes[0] > codes[3] {
+        reorder = true
+      }
+    }
+    
+    if reorder {
+      return SIMD4(codes[3], codes[2], codes[1], codes[0])
+    } else {
+      return codes
+    }
+  }
 }
 
 // MARK: - Sorting Between Bonds
@@ -136,6 +159,18 @@ extension MM4Parameters {
     if x[1] != y[1] { return x[1] < y[1] }
     if x[0] != y[0] { return x[0] < y[0] }
     if x[2] != y[2] { return x[2] < y[2] }
+    return true
+  }
+  
+  @_transparent
+  @_specialize(where T == UInt8)
+  @_specialize(where T == UInt32)
+  func compareTorsion<T>(_ x: SIMD4<T>, _ y: SIMD4<T>) -> Bool
+  where T: FixedWidthInteger {
+    if x[1] != y[1] { return x[1] < y[1] }
+    if x[2] != y[2] { return x[2] < y[2] }
+    if x[0] != y[0] { return x[0] < y[0] }
+    if x[3] != y[3] { return x[3] < y[3] }
     return true
   }
   

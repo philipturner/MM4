@@ -1,5 +1,6 @@
 import XCTest
 import MM4
+import QuaternionModule
 
 // MARK: - Test Execution
 
@@ -144,7 +145,9 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
         } else {
           XCTAssertNotEqual(rigidBody.netForce, SIMD3<Double>.zero)
           XCTAssertNotEqual(rigidBody.netTorque, SIMD3<Double>.zero)
-          rigidBody.rotate(angle: 0.001, axis: [0, 1, 0])
+          
+          let rotation = Quaternion<Double>(angle: 0.001, axis: [0, 1, 0])
+          rigidBody.rotate(quaternion: rotation)
         }
         XCTAssertNil(rigidBody.forces)
         XCTAssertNil(rigidBody.netForce)

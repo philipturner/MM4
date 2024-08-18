@@ -153,8 +153,11 @@ final class MM4RigidBodyTests: XCTestCase {
       
       for _ in 0..<5 {
         rigidBody.angularMomentum = SIMD3(1e-6, 0, 0)
-        rigidBody.rotate(angle: 0.1)
-        rigidBody.rotate(angle: 0.1, axis: rigidBody.principalAxes.0)
+        
+        let rotation = Quaternion<Double>(
+          angle: 0.1, axis: rigidBody.principalAxes.0)
+        rigidBody.rotate(quaternion: rotation)
+        rigidBody.rotate(quaternion: rotation)
       }
       
       for i in positions.indices {
