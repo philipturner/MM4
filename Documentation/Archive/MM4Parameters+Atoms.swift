@@ -213,10 +213,26 @@ extension MM4Parameters {
   }
   
   mutating func createMasses(hydrogenMassScale: Float) {
-    // Call the 'MM4Parameters.mass(atomicNumber:)' utility function on all of
-    // the atoms.
-    atoms.masses = atoms.atomicNumbers.map(
-      MM4Parameters.mass(atomicNumber:))
+    atoms.masses = atoms.atomicNumbers.map { atomicNumber in
+      var mass: Float
+      switch atomicNumber {
+      case 1: mass = 1.008
+      case 6: mass = 12.011
+      case 7: mass = 14.007
+      case 8: mass = 15.999
+      case 9: mass = 18.9984031636
+      case 14: mass = 28.085
+      case 15: mass = 30.9737619985
+      case 16: mass = 32.06
+      case 32: mass = 72.6308
+      default:
+        fatalError("Unrecognized atomic number: \(atomicNumber)")
+      }
+      
+      /// Units: amu -> yg
+      mass *= Float(MM4YgPerAmu)
+      return mass
+    }
     
     for atomID in atoms.indices
     where atoms.atomicNumbers[Int(atomID)] == 1 {

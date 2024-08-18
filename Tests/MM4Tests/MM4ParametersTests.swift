@@ -4,6 +4,23 @@ import MM4
 // MARK: - Test Execution
 
 final class MM4ParametersTests: XCTestCase {
+  func testMass() throws {
+    let hydrogenMass = MM4Parameters.mass(atomicNumber: 1)
+    let sodiumMass = MM4Parameters.mass(atomicNumber: 11)
+    let galliumMass = MM4Parameters.mass(atomicNumber: 31)
+    let platinumMass = MM4Parameters.mass(atomicNumber: 78)
+    let fleroviumMass = MM4Parameters.mass(atomicNumber: 114)
+    let oganessonMass = MM4Parameters.mass(atomicNumber: 118)
+    
+    // Test using alternative masses from the chemical literature. They differ
+    // slightly from the masses used in MM4 and related projects.
+    XCTAssertEqual(hydrogenMass, 1.00784 * 1.6605, accuracy: 0.001)
+    XCTAssertEqual(sodiumMass, 22.989769 * 1.6605, accuracy: 0.001)
+    XCTAssertEqual(galliumMass, 69.723 * 1.6605, accuracy: 0.01)
+    XCTAssertEqual(platinumMass, 195.084 * 1.6605, accuracy: 0.01)
+    XCTAssertEqual(fleroviumMass, 289 * 1.6605, accuracy: 0.03)
+    XCTAssertEqual(oganessonMass, 294 * 1.6605, accuracy: 0.03)
+  }
   
   func testAdamantane() throws {
     try testAdamantaneVariant(atomCode: .alkaneCarbon)
