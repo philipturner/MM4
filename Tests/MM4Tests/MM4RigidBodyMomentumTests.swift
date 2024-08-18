@@ -1,14 +1,15 @@
 import XCTest
 import MM4
+import QuaternionModule
 
 // MARK: - Test Execution
 
 final class MM4RigidBodyMomentumTests: XCTestCase {
   
   func testInitialVelocities() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       let rigidBody = try MM4RigidBody(descriptor: descriptor)
-      for i in rigidBody.parameters.atoms.indices {
+      for i in rigidBody.masses.indices {
         XCTAssertEqual(
           rigidBody.positions[i], descriptor.positions![i], accuracy: 1e-3)
       }
@@ -18,9 +19,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
   }
   
   func testLinearMomentum() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
-      let parameters = descriptor.parameters!
-      
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       var bulkVelocities: [SIMD3<Double>] = []
       bulkVelocities.append(.zero)
       while true {
@@ -38,7 +37,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
       for bulkVelocity in bulkVelocities {
         var rigidBodyDesc = descriptor
         rigidBodyDesc.velocities = Array(
-          repeating: SIMD3(bulkVelocity), count: parameters.atoms.count)
+          repeating: SIMD3(bulkVelocity), count: descriptor.masses!.count)
         let rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
         let computedVelocity = rigidBody.linearMomentum / rigidBody.mass
         XCTAssertEqual(computedVelocity, bulkVelocity, accuracy: 1e-5)
@@ -50,7 +49,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
       for bulkVelocity in bulkVelocities {
         var rigidBody = try MM4RigidBody(descriptor: descriptor)
         XCTAssertEqual(rigidBody.linearMomentum, .zero, accuracy: 1e-5)
-        for i in parameters.atoms.indices {
+        for i in descriptor.masses!.indices {
           XCTAssertEqual(rigidBody.velocities[i], .zero, accuracy: 1e-5)
         }
         rigidBody.linearMomentum = bulkVelocity * rigidBody.mass
@@ -58,7 +57,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
         XCTAssertEqual(
           rigidBody.linearMomentum / rigidBody.mass,
           bulkVelocity, accuracy: 1e-5)
-        for i in parameters.atoms.indices {
+        for i in descriptor.masses!.indices {
           XCTAssertEqual(
             rigidBody.velocities[i], SIMD3(bulkVelocity), accuracy: 1e-5)
         }
@@ -71,20 +70,20 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
       // times.
       var rigidBodyDesc = descriptor
       rigidBodyDesc.velocities = Array(
-        repeating: SIMD3(bulkVelocities[1]), count: parameters.atoms.count)
+        repeating: SIMD3(bulkVelocities[1]), count: descriptor.masses!.count)
       var rigidBody = try MM4RigidBody(descriptor: rigidBodyDesc)
       
       XCTAssertEqual(
         rigidBody.linearMomentum / rigidBody.mass,
-        (parameters.atoms.count > 0) ? bulkVelocities[1] : .zero,
+        (descriptor.masses!.count > 0) ? bulkVelocities[1] : .zero,
         accuracy: 1e-5)
-      for i in parameters.atoms.indices {
+      for i in descriptor.masses!.indices {
         XCTAssertEqual(
           rigidBody.velocities[i], SIMD3(bulkVelocities[1]), accuracy: 1e-5)
       }
       XCTAssertEqual(
         rigidBody.linearMomentum / rigidBody.mass,
-        (parameters.atoms.count > 0) ? bulkVelocities[1] : .zero,
+        (descriptor.masses!.count > 0) ? bulkVelocities[1] : .zero,
         accuracy: 1e-5)
       
       for _ in 0..<5 {
@@ -94,15 +93,15 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
         
         XCTAssertEqual(
           rigidBody.linearMomentum,
-          (parameters.atoms.count > 0) ? velocity * rigidBody.mass : .zero,
+          (descriptor.masses!.count > 0) ? velocity * rigidBody.mass : .zero,
           accuracy: 1e-5)
-        for i in parameters.atoms.indices {
+        for i in descriptor.masses!.indices {
           XCTAssertEqual(
             rigidBody.velocities[i], SIMD3(velocity), accuracy: 1e-5)
         }
         XCTAssertEqual(
           rigidBody.linearMomentum,
-          (parameters.atoms.count > 0) ? velocity * rigidBody.mass : .zero,
+          (descriptor.masses!.count > 0) ? velocity * rigidBody.mass : .zero,
           accuracy: 1e-5)
       }
     }
@@ -110,12 +109,12 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
   
   func testAngularMomentum() throws {
     for descriptor in MM4RigidBodyTests.descriptors {
-      try _testAngularMomentum(descriptor)
+      try _testAngularMomentum(descriptor.1)
     }
   }
   
   func testForces() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       var rigidBody = try MM4RigidBody(descriptor: descriptor)
       XCTAssertNil(rigidBody.forces)
       rigidBody.forces = nil
@@ -123,7 +122,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
       
       for zeroForces in [false, true] {
         var forces: [SIMD3<Float>] = []
-        for _ in rigidBody.parameters.atoms.indices {
+        for _ in rigidBody.masses.indices {
           if zeroForces {
             forces.append(.zero)
           } else {
@@ -144,7 +143,9 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
         } else {
           XCTAssertNotEqual(rigidBody.netForce, SIMD3<Double>.zero)
           XCTAssertNotEqual(rigidBody.netTorque, SIMD3<Double>.zero)
-          rigidBody.rotate(angle: 0.001, axis: [0, 1, 0])
+          
+          let rotation = Quaternion<Double>(angle: 0.001, axis: [0, 1, 0])
+          rigidBody.rotate(quaternion: rotation)
         }
         XCTAssertNil(rigidBody.forces)
         XCTAssertNil(rigidBody.netForce)
@@ -154,7 +155,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
   }
   
   func testNetForce() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       var rigidBody = try MM4RigidBody(descriptor: descriptor)
       
       var forces = [SIMD3<Float>](
@@ -171,7 +172,7 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
   }
   
   func testNetTorque() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       var rigidBody = try MM4RigidBody(descriptor: descriptor)
       
       var forces = [SIMD3<Float>](
@@ -218,10 +219,6 @@ final class MM4RigidBodyMomentumTests: XCTestCase {
 private func _testAngularMomentum(
   _ descriptor: MM4RigidBodyDescriptor
 ) throws {
-  let parameters = descriptor.parameters!
-  
-  
-  
   var bulkVelocities: [SIMD3<Double>] = []
   bulkVelocities.append(.zero)
   while true {
@@ -266,7 +263,7 @@ private func _testAngularMomentum(
     let Σ = rigidBody.principalAxes
     let Σw = Σ.0 * w[0] + Σ.1 * w[1] + Σ.2 * w[2]
     XCTAssertEqual(
-      Σw, (parameters.atoms.count > 0) ? bulkVelocity : .zero,
+      Σw, (descriptor.masses!.count > 0) ? bulkVelocity : .zero,
       accuracy: 1e-5)
   }
   
@@ -274,7 +271,7 @@ private func _testAngularMomentum(
   for bulkVelocity in bulkVelocities {
     var originalVelocities = createVelocities(bulkVelocity)
     let linearVelocity = SIMD3<Double>.random(in: -0.2...0.2)
-    for i in parameters.atoms.indices {
+    for i in descriptor.masses!.indices {
       originalVelocities[i] += SIMD3(linearVelocity)
     }
     
@@ -302,11 +299,11 @@ private func _testAngularMomentum(
     
     XCTAssertEqual(
       rigidBody.linearMomentum / rigidBody.mass,
-      (parameters.atoms.count > 0) ? linearVelocity : .zero,
+      (descriptor.masses!.count > 0) ? linearVelocity : .zero,
       accuracy: 1e-5)
     XCTAssertEqual(
       rigidBody.linearMomentum,
-      (parameters.atoms.count > 0) ? linearVelocity * rigidBody.mass : .zero,
+      (descriptor.masses!.count > 0) ? linearVelocity * rigidBody.mass : .zero,
       accuracy: 1e-5 * rigidBody.mass)
   }
   
@@ -314,7 +311,7 @@ private func _testAngularMomentum(
   for bulkVelocity in bulkVelocities {
     var rigidBody = try MM4RigidBody(descriptor: descriptor)
     XCTAssert(rigidBody.angularMomentum == .zero)
-    for i in parameters.atoms.indices {
+    for i in descriptor.masses!.indices {
       XCTAssertEqual(rigidBody.velocities[i], .zero, accuracy: 1e-5)
     }
     
@@ -338,11 +335,11 @@ private func _testAngularMomentum(
     var computedVelocity = createComputedVelocity()
     XCTAssertEqual(
       computedVelocity,
-      (parameters.atoms.count > 0) ? bulkVelocity : .zero,
+      (descriptor.masses!.count > 0) ? bulkVelocity : .zero,
       accuracy: 1e-5)
     
     let expectedVelocities = createVelocities(bulkVelocity)
-    for i in parameters.atoms.indices {
+    for i in descriptor.masses!.indices {
       let position = descriptor.positions![i]
       XCTAssertEqual(position, rigidBody.positions[i], accuracy: 1e-3)
       let velocity = expectedVelocities[i]
@@ -352,7 +349,7 @@ private func _testAngularMomentum(
     computedVelocity = createComputedVelocity()
     XCTAssertEqual(
       computedVelocity,
-      (parameters.atoms.count > 0) ? bulkVelocity : .zero,
+      (descriptor.masses!.count > 0) ? bulkVelocity : .zero,
       accuracy: 1e-5)
   }
   
@@ -383,13 +380,13 @@ private func _testAngularMomentum(
     if Bool.random() {
       XCTAssertEqual(
         rigidBody.linearMomentum / rigidBody.mass,
-        (parameters.atoms.count > 0) ? currentLinearVelocity : .zero,
+        (descriptor.masses!.count > 0) ? currentLinearVelocity : .zero,
         accuracy: 1e-5)
     } else {
       let expectedVelocity = currentLinearVelocity * rigidBody.mass
       XCTAssertEqual(
         rigidBody.linearMomentum,
-        (parameters.atoms.count > 0) ? expectedVelocity : .zero,
+        (descriptor.masses!.count > 0) ? expectedVelocity : .zero,
         accuracy: 1e-5 * rigidBody.mass)
     }
     do {
@@ -410,7 +407,7 @@ private func _testAngularMomentum(
       SIMD3(Σ.0[1], Σ.1[1], Σ.2[1]),
       SIMD3(Σ.0[2], Σ.1[2], Σ.2[2]))
     
-    for i in parameters.atoms.indices {
+    for i in descriptor.masses!.indices {
       let position = descriptor.positions![i]
       var r = position - SIMD3(centerOfMass)
       r = ΣT.0 * r[0] + ΣT.1 * r[1] + ΣT.2 * r[2]

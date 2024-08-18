@@ -4,23 +4,6 @@ import MM4
 // MARK: - Test Execution
 
 final class MM4ParametersTests: XCTestCase {
-  func testMass() throws {
-    let hydrogenMass = MM4Parameters.mass(atomicNumber: 1)
-    let sodiumMass = MM4Parameters.mass(atomicNumber: 11)
-    let galliumMass = MM4Parameters.mass(atomicNumber: 31)
-    let platinumMass = MM4Parameters.mass(atomicNumber: 78)
-    let fleroviumMass = MM4Parameters.mass(atomicNumber: 114)
-    let oganessonMass = MM4Parameters.mass(atomicNumber: 118)
-    
-    // Test using alternative masses from the chemical literature. They differ
-    // slightly from the masses used in MM4 and related projects.
-    XCTAssertEqual(hydrogenMass, 1.00784 * 1.6605, accuracy: 0.001)
-    XCTAssertEqual(sodiumMass, 22.989769 * 1.6605, accuracy: 0.001)
-    XCTAssertEqual(galliumMass, 69.723 * 1.6605, accuracy: 0.01)
-    XCTAssertEqual(platinumMass, 195.084 * 1.6605, accuracy: 0.01)
-    XCTAssertEqual(fleroviumMass, 289 * 1.6605, accuracy: 0.03)
-    XCTAssertEqual(oganessonMass, 294 * 1.6605, accuracy: 0.03)
-  }
   
   func testAdamantane() throws {
     try testAdamantaneVariant(atomCode: .alkaneCarbon)
@@ -45,6 +28,12 @@ final class MM4ParametersTests: XCTestCase {
     XCTAssertEqual([], params.angles.indices)
     XCTAssertEqual([], params.angles.ringTypes)
     XCTAssertEqual(0, params.angles.parameters.count)
+    XCTAssertEqual(0, params.angles.extendedParameters.count)
+    
+    XCTAssertEqual([], params.torsions.indices)
+    XCTAssertEqual([], params.torsions.ringTypes)
+    XCTAssertEqual(0, params.torsions.parameters.count)
+    XCTAssertEqual(0, params.torsions.extendedParameters.count)
   }
   
   func testParametersCombination() throws {
@@ -64,9 +53,14 @@ final class MM4ParametersTests: XCTestCase {
     ])
     let part3 = NCFPart(forces: [
       .bend,
+      .bendBend,
       .nonbonded,
       .stretch,
       .stretchBend,
+      .stretchStretch,
+      .torsion,
+      .torsionBend,
+      .torsionStretch,
     ])
     
     // After testing execution speed, recycle this unit test to judge whether
@@ -77,14 +71,14 @@ final class MM4ParametersTests: XCTestCase {
     let parts = [part0, part1, part2, part3]
     
     for part in parts {
-      let parameters = part.parameters
+      let parameters = part.rigidBody.parameters
       XCTAssertEqual(parameters.atoms.count, 1514)
       XCTAssertEqual(parameters.bonds.indices.count, 2098)
       XCTAssertEqual(parameters.angles.indices.count, 5364)
     }
     
     for partID in parts.indices {
-      let parameters = parts[partID].parameters
+      let parameters = parts[partID].rigidBody.parameters
       
       XCTAssertGreaterThan(parameters.atoms.count, 0)
       for atomID in parameters.atoms.indices {
@@ -130,10 +124,22 @@ final class MM4ParametersTests: XCTestCase {
         let code2 = parameters.atoms.codes[Int(angle[2])]
         let expectParameters = (code0 != .hydrogen || code2 != .hydrogen)
         if partID >= 3, expectParameters {
+          XCTAssertNotEqual(params.bendBendStiffness, 0)
           XCTAssertNotEqual(params.stretchBendStiffness, 0)
         } else {
+          XCTAssertEqual(params.bendBendStiffness, 0)
           XCTAssertEqual(params.stretchBendStiffness, 0)
         }
+      }
+      
+      if partID >= 3 {
+        XCTAssertGreaterThan(parameters.torsions.indices.count, 0)
+        for torsionID in parameters.torsions.indices.indices {
+          let params = parameters.torsions.parameters[torsionID]
+          XCTAssert(params.V3 != 0)
+        }
+      } else {
+        XCTAssertEqual(parameters.torsions.indices.count, 0)
       }
     }
   }
@@ -193,9 +199,12 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   paramsDesc.bonds = adamantane.bonds
   paramsDesc.forces = [
     .bend,
+    .bendBend,
     .nonbonded,
     .stretch,
     .stretchBend,
+    .torsion,
+    .torsionStretch,
   ]
   
   // Check that the number of atoms and their elements are the same.
@@ -314,6 +323,9 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   XCTAssertEqual(adamantane.angleRingTypes.count, params.angles.indices.count)
   XCTAssertEqual(adamantane.angleParameters.count, params.angles.indices.count)
   XCTAssertEqual(params.angles.parameters.count, params.angles.indices.count)
+  XCTAssertEqual(
+    params.angles.extendedParameters.count, params.angles.indices.count)
+  XCTAssert(params.angles.extendedParameters.allSatisfy { $0 == nil })
   
   var angleMarks = [Bool](
     repeating: false, count: params.angles.indices.count)
@@ -328,7 +340,8 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
       let imageParams = adamantane.angleParameters[j]
       if paramsRingType == imageRingType,
          compare(paramsParams.bendingStiffness, imageParams.kθ),
-         compare(paramsParams.equilibriumAngle, imageParams.θ) {
+         compare(paramsParams.equilibriumAngle, imageParams.θ),
+         compare(paramsParams.bendBendStiffness, imageParams.kθθ) {
         angleMarks[j] = true
         succeeded = true
         break
@@ -341,6 +354,55 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   }
   XCTAssert(angleMarks.allSatisfy { $0 == true })
   
+  // Check that torsion parameters match the images in the DocC catalog.
+  XCTAssertEqual(
+    adamantane.torsionRingTypes.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    adamantane.torsionParameters.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    params.torsions.parameters.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    params.torsions.extendedParameters.count, params.torsions.indices.count)
+  XCTAssert(params.torsions.extendedParameters.allSatisfy { $0 == nil })
+  
+  var torsionMarks = [Bool](
+    repeating: false, count: params.torsions.indices.count)
+  for i in params.torsions.indices.indices {
+    let paramsRingType = params.torsions.ringTypes[i]
+    let paramsParams = params.torsions.parameters[i]
+    
+    // There are no V6 terms. All torsions containing 2 hydrogens involve a
+    // 5-ring carbon.
+    XCTAssertEqual(paramsParams.n, 2)
+    
+    var succeeded = false
+    for j in params.torsions.indices.indices where !torsionMarks[j] {
+      // WARNING: This does not validate stretch-bend stiffness.
+      let imageRingType = adamantane.torsionRingTypes[j]
+      let imageParams = adamantane.torsionParameters[j]
+      if paramsRingType == imageRingType,
+         compare(paramsParams.V1, imageParams.V1),
+         compare(paramsParams.Vn, imageParams.V2),
+         compare(paramsParams.V3, imageParams.V3),
+         compare(paramsParams.Kts3, imageParams.Kts) {
+        torsionMarks[j] = true
+        succeeded = true
+        break
+      }
+    }
+    XCTAssert(
+      succeeded,
+      "Torsion \(i) of the MM4Parameters failed: \(paramsRingType), \(paramsParams)")
+  }
+  XCTAssert(torsionMarks.allSatisfy { $0 == true })
+  
+  for i in 0..<torsionMarks.count where !torsionMarks[i] {
+    print("Failed torsion: \(i)")
+    print("-", adamantane.torsionRingTypes[i])
+    print("-", adamantane.torsionParameters[i])
+    print()
+  }
+  
   // Check that nonbonded exceptions are not duplicated.
   for exceptionID in params.nonbondedExceptions13.indices {
     let exception = params.nonbondedExceptions13[exceptionID]
@@ -350,16 +412,24 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
       XCTAssertNotEqual(reversedException, otherException)
     }
   }
+  for exceptionID in params.nonbondedExceptions14.indices {
+    let exception = params.nonbondedExceptions14[exceptionID]
+    let reversedException = SIMD2(exception[1], exception[0])
+    for otherException in params.nonbondedExceptions14[(exceptionID + 1)...] {
+      XCTAssertNotEqual(exception, otherException)
+      XCTAssertNotEqual(reversedException, otherException)
+    }
+  }
 }
 
 private func _testParametersCombination(
-  _ descriptors: [(MM4Parameters, MM4RigidBodyDescriptor)]
+  _ descriptors: [MM4RigidBodyDescriptor]
 ) throws {
   var ranges: [Range<Int>] = []
   var atomCapacity: Int = 0
-  for (params, _) in descriptors {
+  for descriptor in descriptors {
     let oldAtomCapacity = atomCapacity
-    atomCapacity += params.atoms.masses.count
+    atomCapacity += descriptor.parameters!.atoms.count
     ranges.append(oldAtomCapacity..<atomCapacity)
   }
   
@@ -367,8 +437,8 @@ private func _testParametersCombination(
   paramsDesc.atomicNumbers = []
   paramsDesc.bonds = []
   var combinedParameters = try! MM4Parameters(descriptor: paramsDesc)
-  for (params, _) in descriptors {
-    combinedParameters.append(contentsOf: params)
+  for descriptor in descriptors {
+    combinedParameters.append(contentsOf: descriptor.parameters!)
   }
   
   // The objects are expected to be in the order:
@@ -377,31 +447,39 @@ private func _testParametersCombination(
   // - empty
   let adamantane = Adamantane(atomCode: .alkaneCarbon)
   XCTAssertEqual(
-    descriptors[0].0.atoms.count, adamantane.atomicNumbers.count)
+    descriptors[0].parameters!.atoms.count, adamantane.atomicNumbers.count)
   XCTAssertEqual(
-    descriptors[1].0.atoms.count, adamantane.atomicNumbers.count)
+    descriptors[1].parameters!.atoms.count, adamantane.atomicNumbers.count)
   XCTAssertEqual(
-    descriptors[2].0.atoms.count, 0)
-  XCTAssertTrue(descriptors[0].0.atoms.atomicNumbers.contains(6))
-  XCTAssertFalse(descriptors[0].0.atoms.atomicNumbers.contains(14))
-  XCTAssertFalse(descriptors[1].0.atoms.atomicNumbers.contains(6))
-  XCTAssertTrue(descriptors[1].0.atoms.atomicNumbers.contains(14))
-  XCTAssertFalse(descriptors[2].0.atoms.atomicNumbers.contains(6))
-  XCTAssertFalse(descriptors[2].0.atoms.atomicNumbers.contains(14))
+    descriptors[2].parameters!.atoms.count, 0)
+  XCTAssertTrue(descriptors[0].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertFalse(descriptors[0].parameters!.atoms.atomicNumbers.contains(14))
+  XCTAssertFalse(descriptors[1].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertTrue(descriptors[1].parameters!.atoms.atomicNumbers.contains(14))
+  XCTAssertFalse(descriptors[2].parameters!.atoms.atomicNumbers.contains(6))
+  XCTAssertFalse(descriptors[2].parameters!.atoms.atomicNumbers.contains(14))
   
   var atomStart: Int = 0
   var bondStart: Int = 0
   var angleStart: Int = 0
+  var torsionStart: Int = 0
   var ringStart: Int = 0
   var exception13Start: Int = 0
+  var exception14Start: Int = 0
   for rigidBodyID in descriptors.indices {
-    let thisParameters = descriptors[rigidBodyID].0
+    let thisParameters = descriptors[rigidBodyID].parameters!
     
     for thisID in thisParameters.nonbondedExceptions13.indices {
       let combinedID = exception13Start + thisID
       XCTAssertEqual(
         combinedParameters.nonbondedExceptions13[combinedID],
         thisParameters.nonbondedExceptions13[thisID] &+ UInt32(atomStart))
+    }
+    for thisID in thisParameters.nonbondedExceptions14.indices {
+      let combinedID = exception14Start + thisID
+      XCTAssertEqual(
+        combinedParameters.nonbondedExceptions14[combinedID],
+        thisParameters.nonbondedExceptions14[thisID] &+ UInt32(atomStart))
     }
     
     for thisID in thisParameters.atoms.indices {
@@ -452,6 +530,22 @@ private func _testParametersCombination(
         thisParameters.angles.ringTypes[thisID])
     }
     
+    for thisID in thisParameters.torsions.indices.indices {
+      let combinedID = torsionStart + thisID
+      let thisIndices = thisParameters.torsions.indices[thisID]
+      let combinedIndices = combinedParameters.torsions.indices[combinedID]
+      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
+      XCTAssertEqual(
+        combinedParameters.torsions.map[combinedIndices]!,
+        thisParameters.torsions.map[thisIndices]! &+ UInt32(torsionStart))
+      XCTAssertEqual(
+        combinedParameters.torsions.parameters[combinedID].V3,
+        thisParameters.torsions.parameters[thisID].V3)
+      XCTAssertEqual(
+        combinedParameters.torsions.ringTypes[combinedID],
+        thisParameters.torsions.ringTypes[thisID])
+    }
+    
     for thisID in thisParameters.rings.indices.indices {
       let combinedID = ringStart + thisID
       let combinedRing = combinedParameters.rings.indices[combinedID]
@@ -471,7 +565,9 @@ private func _testParametersCombination(
     atomStart += thisParameters.atoms.count
     bondStart += thisParameters.bonds.indices.count
     angleStart += thisParameters.angles.indices.count
+    torsionStart += thisParameters.torsions.indices.count
     ringStart += thisParameters.rings.indices.count
     exception13Start += thisParameters.nonbondedExceptions13.count
+    exception14Start += thisParameters.nonbondedExceptions14.count
   }
 }

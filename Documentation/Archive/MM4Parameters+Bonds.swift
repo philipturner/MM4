@@ -130,6 +130,45 @@ extension MM4Parameters {
         stretchingStiffness = (ringType == 5) ? 4.9900 : 4.5600
         equilibriumLength = (ringType == 5) ? 1.5290 : 1.5270
         
+        // Nitrogen
+      case (1, 8):
+        potentialWellDepth = 1.140
+        stretchingStiffness = 5.20
+        equilibriumLength = 1.4585
+        dipoleMoment = (codes[1] == 8) ? +0.64 : -0.64
+      case (8, 123):
+        potentialWellDepth = 1.140
+        stretchingStiffness = 4.90
+        equilibriumLength = (ringType == 5) ? 1.4640 : 1.4520
+        dipoleMoment = (codes[1] == 123) ? -1.40 : +1.40
+        
+        // Oxygen
+      case (1, 6):
+        // The oxygen well depth seems too low, lower than neighbors nitrogen
+        // and fluorine. In general, all the Morse parameters here are lower
+        // than in Nanosystems, even though they're in the same units (aJ).
+        // Looking through the other oxygen atom types in the Morse parameters
+        // chart, the pattern remains for sp2 carbon (where O also follows the
+        // pattern of being close to H). Either this is an artifact of the
+        // CCSD(T) (highly accurate) simulator, or an actual quantum effect that
+        // cannot be explained rationally.
+        potentialWellDepth = 0.851
+        stretchingStiffness = 4.90
+        equilibriumLength = 1.4190
+        dipoleMoment = (codes[1] == 6) ? +1.160 : -1.160
+      case (6, 123):
+        potentialWellDepth = 0.851
+        stretchingStiffness = 4.90
+        equilibriumLength = (ringType == 5) ? 1.4096 : 1.4199
+        dipoleMoment = (codes[1] == 123) ? -1.160 : +1.160
+        
+        // Fluorine
+      case (1, 11):
+        potentialWellDepth = 0.989
+        stretchingStiffness = 6.10
+        equilibriumLength = 1.3859
+        dipoleMoment = (codes[1] == 11) ? +1.82 : -1.82
+        
         // Silicon
       case (1, 19):
         potentialWellDepth = 0.812
@@ -276,6 +315,54 @@ extension MM4Parameters {
         }
         
         switch (bondCodes.0, bondCodes.1, codeEnd, codeActing) {
+          // Nitrogen
+        case (1, 1, 1, 8):       return (-0.0195, nil, 0.62, 0.20)
+        case (1, 5, 1, 8):       return (-0.0118, nil, 0.62, 0.20)
+        case (1, 8, 8, 1):       return (-0.0015, nil, 0.62, 0.20)
+        case (1, 8, 8, 123):     return (-0.0030, nil, 0.62, 0.40)
+        case (5, 123, 123, 8):   return (-0.0100, nil, 0.62, 0.20)
+        case (8, 123, 8, 1):     return (-0.0200, nil, 0.62, 0.20)
+        case (8, 123, 8, 123):   return (0.0000, nil, 0.62, 0.20)
+        case (123, 123, 123, 8): return (-0.0140, nil, 0.62, 0.20)
+          
+          // Oxygen
+          //
+          // The supplementary information for the oxygen paper has "4%" for the
+          // secondary 1-1-1-6 correction. I have never seen anything this low -
+          // the lowest was 0.20. Given that the 123-123-123 parameter is 40%,
+          // 4% is probably a typo. The correct number should be 40%.
+        case (1, 1, 1, 6):       return (-0.0095, nil, 0.62, 0.40)
+        case (1, 5, 1, 6):       return (-0.0034, nil, 0.62, 0.40)
+        case (1, 6, 1, 6):       return (-0.0217, nil, 0.62, 0.20)
+        case (1, 6, 6, 21):      return (0.0146, nil, 0.62, 0.20)
+        case (5, 123, 123, 6):   return (-0.0034, nil, 0.62, 0.40)
+        case (123, 123, 123, 6): return (-0.0097, nil, 0.62, 0.40)
+          
+          // Fluorine
+        case (1, 1, 1, 11):
+          var sum: Float = 0.00
+          var decay: Float = 1.00
+          var count: Int = 0
+          let neighbors = atomsToAtomsMap[Int(endID)]
+          for lane in 0..<4 where neighbors[lane] != -1 {
+            let atomID = neighbors[lane]
+            let otherElement = atoms.atomicNumbers[Int(atomID)]
+            if otherElement == 6 {
+              count += 1
+              sum += decay
+              decay *= 0.38
+            }
+          }
+          precondition(
+            count > 0,
+            "Carbon with a C-C bond didn't have any carbon neighbors.")
+          
+          let units = sum / Float(count)
+          return (-0.0193 * units, nil, 0.38, 0.05)
+        case (1, 5, 1, 11):  return (-0.0052, 0.0011, 0.55, 0.30)
+        case (1, 11, 1, 1):  return (0.0127, nil, 0.62, 0.40)
+        case (1, 11, 1, 11): return (-0.0268, -0.0028, 0.33, 0.67)
+          
           // Silicon
         case (1, 1, 1, 19):    return (0.009, nil, 0.62, 0.40)
         case (5, 19, 19, 19):  return (0.003, nil, 0.62, 0.40)

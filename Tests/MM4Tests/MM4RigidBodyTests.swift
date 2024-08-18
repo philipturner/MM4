@@ -7,7 +7,7 @@ import QuaternionModule
 final class MM4RigidBodyTests: XCTestCase {
   
   func testInertia() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       // Assert that all quantities are equal within 1e-3 tolerance. This is an
       // internally consistent unit system where the fundamental quantities are
       // roughly 1. Therefore, absolute errors should be on the same order as
@@ -43,22 +43,22 @@ final class MM4RigidBodyTests: XCTestCase {
   }
   
   func testEmptyRigidBody() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
-      XCTAssertNotEqual(descriptor.parameters!.atoms.count, 0)
+    for (params, descriptor) in MM4RigidBodyTests.descriptors {
+      XCTAssertNotEqual(params.atoms.count, 0)
       XCTAssertNoThrow(try MM4RigidBody(descriptor: descriptor))
     }
     do {
-      let descriptor = MM4RigidBodyTests.emptyDescriptor
-      XCTAssertEqual(descriptor.parameters!.atoms.count, 0)
+      let (params, descriptor) = MM4RigidBodyTests.emptyDescriptor
+      XCTAssertEqual(params.atoms.count, 0)
       XCTAssertThrowsError(try MM4RigidBody(descriptor: descriptor))
     }
   }
   
   func testCoW() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (params, descriptor) in MM4RigidBodyTests.descriptors {
       var rigidBody1 = try MM4RigidBody(descriptor: descriptor)
       var rigidBody2 = rigidBody1
-      let parameters = rigidBody1.parameters
+      let parameters = params
       
       let centerOfMass1 = rigidBody1.centerOfMass
       XCTAssertEqual(centerOfMass1, rigidBody1.centerOfMass, accuracy: 1e-3)
@@ -131,7 +131,7 @@ final class MM4RigidBodyTests: XCTestCase {
   }
   
   func testRotate() throws {
-    for descriptor in MM4RigidBodyTests.descriptors {
+    for (_, descriptor) in MM4RigidBodyTests.descriptors {
       var rigidBody = try MM4RigidBody(descriptor: descriptor)
       
       // Rotate 1 radian around the principal axis using three methods:
@@ -153,8 +153,11 @@ final class MM4RigidBodyTests: XCTestCase {
       
       for _ in 0..<5 {
         rigidBody.angularMomentum = SIMD3(1e-6, 0, 0)
-        rigidBody.rotate(angle: 0.1)
-        rigidBody.rotate(angle: 0.1, axis: rigidBody.principalAxes.0)
+        
+        let rotation = Quaternion<Double>(
+          angle: 0.1, axis: rigidBody.principalAxes.0)
+        rigidBody.rotate(quaternion: rotation)
+        rigidBody.rotate(quaternion: rotation)
       }
       
       for i in positions.indices {
@@ -169,11 +172,17 @@ final class MM4RigidBodyTests: XCTestCase {
 // MARK: - Descriptors
 
 extension MM4RigidBodyTests {
+  // These compute properties initially returned just an
+  // 'MM4RigidBodyDescriptor', back when an 'MM4RigidBody' contained a
+  // reference to an 'MM4Parameters'. After removing the dependency of
+  // MM4RigidBody on MM4Parameters, the test had to be changed. It is less
+  // legible now.
+  
   // Lazily cache this property because reinitializing the MM4Parameters takes
   // a long time in debug mode (0.087 seconds -> 0.300 seconds for the entire
   // test suite).
-  static let descriptors: [MM4RigidBodyDescriptor] = {
-    var output: [MM4RigidBodyDescriptor] = []
+  static let descriptors: [(MM4Parameters, MM4RigidBodyDescriptor)] = {
+    var output: [(MM4Parameters, MM4RigidBodyDescriptor)] = []
     for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
       let adamantane = Adamantane(atomCode: atomCode)
       
@@ -183,23 +192,23 @@ extension MM4RigidBodyTests {
       let params = try! MM4Parameters(descriptor: paramsDesc)
       
       var rigidBodyDesc = MM4RigidBodyDescriptor()
-      rigidBodyDesc.parameters = params
+      rigidBodyDesc.masses = params.atoms.masses
       rigidBodyDesc.positions = adamantane.positions
-      output.append(rigidBodyDesc)
+      output.append((params, rigidBodyDesc))
     }
     return output
   }()
   
-  static var emptyDescriptor: MM4RigidBodyDescriptor {
+  static var emptyDescriptor: (MM4Parameters, MM4RigidBodyDescriptor) {
     var paramsDesc = MM4ParametersDescriptor()
     paramsDesc.atomicNumbers = []
     paramsDesc.bonds = []
     let params = try! MM4Parameters(descriptor: paramsDesc)
     
     var rigidBodyDesc = MM4RigidBodyDescriptor()
-    rigidBodyDesc.parameters = params
+    rigidBodyDesc.masses = params.atoms.masses
     rigidBodyDesc.positions = []
-    return rigidBodyDesc
+    return (params, rigidBodyDesc)
   }
 }
 
@@ -207,8 +216,8 @@ extension MM4RigidBodyTests {
 
 private func deriveMass(_ descriptor: MM4RigidBodyDescriptor) -> Double {
   var output: Double = .zero
-  for i in descriptor.parameters!.atoms.indices {
-    output += Double(descriptor.parameters!.atoms.masses[i])
+  for i in descriptor.masses!.indices {
+    output += Double(descriptor.masses![i])
   }
   return output
 }
@@ -217,9 +226,9 @@ private func deriveCenterOfMass(
   _ descriptor: MM4RigidBodyDescriptor
 ) -> SIMD3<Double> {
   var output: SIMD3<Double> = .zero
-  for i in descriptor.parameters!.atoms.indices {
+  for i in descriptor.masses!.indices {
     let position = descriptor.positions![i]
-    let mass = descriptor.parameters!.atoms.masses[i]
+    let mass = descriptor.masses![i]
     output += SIMD3<Double>(mass * position)
   }
   
@@ -240,9 +249,9 @@ private func deriveInertiaTensor(
     SIMD3<Double>, SIMD3<Double>, SIMD3<Double>
   ) = (.zero, .zero, .zero)
   
-  for i in descriptor.parameters!.atoms.indices {
+  for i in descriptor.masses!.indices {
     let delta = descriptor.positions![i] - SIMD3<Float>(centerOfMass)
-    let mass = descriptor.parameters!.atoms.masses[i]
+    let mass = descriptor.masses![i]
     let STS = (delta * delta).sum()
     output.0[0] += Double(mass * STS)
     output.1[1] += Double(mass * STS)

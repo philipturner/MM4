@@ -54,6 +54,21 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 5
   case hydrogen = 5
   
+  /// Oxygen
+  ///
+  /// MM4 atom code: 6
+  case oxygen = 6
+  
+  /// Nitrogen (trivalent)
+  ///
+  /// MM4 atom code: 8
+  case nitrogen = 8
+  
+  /// Fluorine
+  ///
+  /// MM4 atom code: 11
+  case fluorine = 11
+  
   /// Sulfur
   ///
   /// MM4 atom code: 15
@@ -150,6 +165,12 @@ extension MM4Parameters {
         }
         valenceCount = 4
         supportsHydrogen = true
+      case 7:
+        output = .nitrogen
+        valenceCount = 3
+      case 9:
+        output = .fluorine
+        valenceCount = 1
       case 14:
         output = .silicon
         valenceCount = 4
@@ -192,10 +213,26 @@ extension MM4Parameters {
   }
   
   mutating func createMasses(hydrogenMassScale: Float) {
-    // Call the 'MM4Parameters.mass(atomicNumber:)' utility function on all of
-    // the atoms.
-    atoms.masses = atoms.atomicNumbers.map(
-      MM4Parameters.mass(atomicNumber:))
+    atoms.masses = atoms.atomicNumbers.map { atomicNumber in
+      var mass: Float
+      switch atomicNumber {
+      case 1: mass = 1.008
+      case 6: mass = 12.011
+      case 7: mass = 14.007
+      case 8: mass = 15.999
+      case 9: mass = 18.9984031636
+      case 14: mass = 28.085
+      case 15: mass = 30.9737619985
+      case 16: mass = 32.06
+      case 32: mass = 72.6308
+      default:
+        fatalError("Unrecognized atomic number: \(atomicNumber)")
+      }
+      
+      /// Units: amu -> yg
+      mass *= Float(MM4YgPerAmu)
+      return mass
+    }
     
     for atomID in atoms.indices
     where atoms.atomicNumbers[Int(atomID)] == 1 {
@@ -266,6 +303,15 @@ extension MM4Parameters {
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (default: 0.037, hydrogen: 0.024)
         radius = (default: 1.960, hydrogen: hydrogenRadius)
+      case 7:
+        epsilon = (default: 0.054, hydrogen: 0.110)
+        radius = (default: 1.860, hydrogen: 3.110)
+      case 8:
+        epsilon = (default: 0.059, hydrogen: 0.084)
+        radius = (default: 1.820, hydrogen: 3.046)
+      case 9:
+        epsilon = (default: 0.075, hydrogen: 0.092)
+        radius = (default: 1.710, hydrogen: 2.870)
       case 14:
         epsilon = (default: 0.140, hydrogen: -1)
         radius = (default: 2.290, hydrogen: -1)

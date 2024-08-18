@@ -7,6 +7,9 @@
 
 /// Parameters for a group of 3 atoms.
 public struct MM4Angles {
+  /// Each value corresponds to the angle at the same array index.
+  public var extendedParameters: [MM4AngleExtendedParameters?] = []
+  
   /// Groups of atom indices that form an angle.
   public var indices: [SIMD3<UInt32>] = []
   
@@ -21,6 +24,7 @@ public struct MM4Angles {
   
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {
     let angleOffset = UInt32(self.indices.count)
+    self.extendedParameters += other.extendedParameters
     self.indices += other.indices.map {
       $0 &+ atomOffset
     }
@@ -41,6 +45,11 @@ public struct MM4AngleParameters {
   /// Units: millidyne \* angstrom / radian^2
   ///
   /// > WARNING: Convert aJ to kJ/mol.
+  public var bendBendStiffness: Float
+  
+  /// Units: millidyne \* angstrom / radian^2
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
   public var bendingStiffness: Float
   
   /// Units: degree
@@ -52,6 +61,18 @@ public struct MM4AngleParameters {
   ///
   /// > WARNING: Convert aJ to kJ/mol.
   public var stretchBendStiffness: Float
+}
+
+/// Parameters for angle forces unique to highly electronegative elements.
+public struct MM4AngleExtendedParameters {
+  /// Stiffness for type 2 stretch-bend forces, affecting bonds not directly
+  /// involved in this angle.
+  ///
+  /// > WARNING: Convert aJ to kJ/mol.
+  public var stretchBendStiffness: Float
+  
+  /// > WARNING: Convert aJ to kJ/mol.
+  public var stretchStretchStiffness: Float
 }
 
 extension MM4Parameters {
@@ -134,6 +155,88 @@ extension MM4Parameters {
           } else {
             continueAttempt = true
           }
+          
+          // Nitrogen
+        case (1, 1, 8):
+          bendingStiffnesses = SIMD3(1.175, 1.165, 1.145)
+          equilibriumAngles = SIMD3(106.4, 104.0, 104.6)
+        case (5, 1, 8):
+          bendingStiffnesses = SIMD3(0.850, 0.850, 1.110)
+          equilibriumAngles = SIMD3(104.2, 105.0, 104.6)
+        case (1, 8, 1):
+          bendingStiffnesses = SIMD3(1.050, 0.970, .nan)
+          equilibriumAngles = SIMD3(105.8, 106.6, .nan)
+        case (1, 8, 123):
+          bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
+          equilibriumAngles = SIMD3(109.4, 109.4, .nan)
+        case (5, 123, 8):
+          bendingStiffnesses = SIMD3(repeating: 0.500)
+          equilibriumAngles = SIMD3(repeating: 109.4)
+        case (8, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 1.155)
+          equilibriumAngles = SIMD3(repeating: 107.1)
+          if ringType == 5 {
+            equilibriumAngles![2] = 105.9
+          }
+        case (123, 8, 123):
+          bendingStiffnesses = SIMD3(0.880, 0.880, .nan)
+          if ringType == 5 {
+            equilibriumAngles = SIMD3(105.2, 108.6, .nan)
+          } else {
+            continueAttempt = true
+          }
+        case (8, 1, 8):
+          // This was taken from the MM3 parameters.
+          bendingStiffnesses = SIMD3(repeating: 1.045)
+          equilibriumAngles = SIMD3(repeating: 110.74)
+          
+          // Oxygen
+        case (1, 1, 6):
+          bendingStiffnesses = SIMD3(repeating: 1.275)
+          equilibriumAngles = SIMD3(105.5, 106.2, 107.9)
+        case (5, 1, 6):
+          bendingStiffnesses = SIMD3(0.970, 0.870, 1.120)
+          equilibriumAngles = SIMD3(106.9, 107.2, 106.6)
+        case (6, 1, 6):
+          bendingStiffnesses = SIMD3(repeating: 1.050)
+          equilibriumAngles = SIMD3(108.0, 107.0, 107.1)
+        case (1, 6, 1):
+          bendingStiffnesses = SIMD3(repeating: 0.920)
+          equilibriumAngles = SIMD3(repeating: 107.6)
+        case (5, 123, 6):
+          bendingStiffnesses = SIMD3(1.120, .nan, .nan)
+          equilibriumAngles = SIMD3(106.5, .nan, .nan)
+        case (6, 123, 6):
+          bendingStiffnesses = SIMD3(repeating: 1.050)
+          equilibriumAngles = SIMD3(110.0, 110.0, 107.1)
+          if ringType == 5 {
+            equilibriumAngles![2] = 107.7
+          }
+        case (6, 123, 123):
+          bendingStiffnesses = SIMD3(repeating: 1.275)
+          equilibriumAngles = SIMD3(105.5, 106.5, 107.9)
+          if ringType == 5 {
+            equilibriumAngles![1] = 105.5
+            equilibriumAngles![2] = 105.9
+          }
+        case (123, 6, 123):
+          if ringType == 5 {
+            bendingStiffnesses = SIMD3(repeating: 0.920)
+            equilibriumAngles = SIMD3(repeating: 110.0)
+          } else {
+            continueAttempt = true
+          }
+          
+          // Fluorine
+        case (1, 1, 11):
+          bendingStiffnesses = SIMD3(repeating: 0.92)
+          equilibriumAngles = SIMD3(106.90, 108.20, 109.30)
+        case (5, 1, 11):
+          bendingStiffnesses = SIMD3(0.82, 0.88, 0.98)
+          equilibriumAngles = SIMD3(107.95, 107.90, 108.55)
+        case (11, 1, 11):
+          bendingStiffnesses = SIMD3(1.95, 2.05, 1.62)
+          equilibriumAngles = SIMD3(104.30, 105.90, 108.08)
           
           // Silicon
         case (1, 1, 19):
@@ -377,15 +480,81 @@ extension MM4Parameters {
         throw createAngleError()
       }
       
-      // MARK: - Stretch-Bend
+      // MARK: - Bend-Bend, Stretch-Bend, Stretch-Stretch
       
+      let originalCodes = sortedCodes
       sortedCodes.replace(with: .one, where: sortedCodes .== 123)
       sortedCodes = sortAngle(sortedCodes)
       
+      var bendBendStiffness: Float
       var stretchBendStiffness: Float
-      if forces.contains(.stretchBend) {
+      var stretchBendStiffness2: Float?
+      var stretchStretchStiffness: Float?
+      
+      if forces.contains(.bendBend) ||
+          forces.contains(.stretchBend) ||
+          forces.contains(.stretchStretch) {
         if sortedCodes[0] == 5, sortedCodes[2] == 5 {
+          bendBendStiffness = 0.000
           stretchBendStiffness = 0.000
+        } else if any(sortedCodes .== 6) {
+          // Oxygen
+          if sortedCodes[1] == 1 {
+            if sortedCodes[0] == 5 && sortedCodes[2] == 6 {
+              bendBendStiffness = 0.20
+            } else if any(sortedCodes .== 5) {
+              bendBendStiffness = 0.24
+            } else {
+              bendBendStiffness = 0.30
+            }
+          } else {
+            // If oxygen is in the center, it's impossible to have a bend-bend
+            // interaction.
+            bendBendStiffness = 0.00
+          }
+          
+          switch (sortedCodes[0], sortedCodes[1], sortedCodes[2]) {
+          case (1, 1, 6):
+            if ringType == 5 && all(originalCodes .== SIMD3(6, 123, 123)) {
+              stretchBendStiffness = 0.50
+            } else {
+              stretchBendStiffness = 0.02
+            }
+          case (5, 1, 6):
+            stretchBendStiffness = 0.36
+          case (1, 6, 1):
+            if ringType == 5 && all(originalCodes .== SIMD3(123, 6, 123)) {
+              stretchBendStiffness = 0.50
+            } else {
+              stretchBendStiffness = -0.12
+            }
+          default:
+            throw createAngleError()
+          }
+        } else if any(sortedCodes .== 11) {
+          // Fluorine
+          guard sortedCodes[2] == 11 else {
+            throw createAngleError()
+          }
+          switch sortedCodes[0] {
+          case 1:
+            bendBendStiffness = -0.10
+            stretchBendStiffness = 0.160
+            stretchBendStiffness2 = 0.000
+            stretchStretchStiffness = 0.22
+          case 5:
+            bendBendStiffness = 0.00
+            stretchBendStiffness = 0.160
+            stretchBendStiffness2 = 0.000
+            stretchStretchStiffness = -0.45
+          case 11:
+            bendBendStiffness = 0.09
+            stretchBendStiffness = 0.140
+            stretchBendStiffness2 = 0.275
+            stretchStretchStiffness = 1.00
+          default:
+            throw createAngleError()
+          }
         } else {
           switch sortedCodes[1] {
             // Carbon
@@ -393,16 +562,55 @@ extension MM4Parameters {
             // Assume the MM4 paper's parameters for H-C-C/C-C-C also apply to
             // H-C-Si/C-C-Si/Si-C-Si.
             if all(sortedCodes .!= 5) {
+              bendBendStiffness = 0.204
               stretchBendStiffness = (ringType == 5) ? 0.180 : 0.140
+              
+              // Exception for the nitrogen-containing bond C-C-N.
+              if sortedCodes[0] == 1, sortedCodes[2] == 8 {
+                stretchStretchStiffness = -0.10
+              }
             } else {
+              bendBendStiffness = 0.350
               stretchBendStiffness = 0.100
+            }
+            
+            // Nitrogen
+          case 8:
+            bendBendStiffness = 0.204
+            if codes[0] == 1, codes[2] == 1 {
+              stretchBendStiffness = 0.04
+            } else if codes[0] == 1, codes[0] == 123 {
+              stretchBendStiffness = 0.30
+            } else if codes[0] == 123, codes[2] == 123 {
+              // The very large 0.30 parameter for 1-8-123 seems suspicious. I'm
+              // going to set the default to 123-8-123 outside of a 5-membered
+              // ring to that of 1-8-1. Often, the value inside the ring is
+              // larger than in typical bonds. Not an order of magnitude
+              // smaller.
+              //
+              // On second analysis, this parameter seems completely messed up.
+              // It provides zero information, as the fallback would be 1-8-1,
+              // not 1-8-123. Also, the table is malformatted there. Setting it
+              // to 0.04, the same as the fallback, would be the safest choice.
+              //
+              // Perhaps the purpose was to clear up any confusion, as the
+              // fallback rule was described in a different paper. In the
+              // bend-bend section, a 1-8-123 parameter doesn't exist, so no
+              // extra explanation is required to specify the 123-8-123 case.
+              // Still, the presence of the 5-ring restriction is very
+              // ambiguous.
+              stretchBendStiffness = (ringType == 5) ? 0.04 : 0.04
+            } else {
+              throw createAngleError()
             }
             
             // Silicon
           case 19:
             if all(sortedCodes .!= 5) {
+              bendBendStiffness = 0.24
               stretchBendStiffness = 0.10
             } else {
+              bendBendStiffness = 0.30
               stretchBendStiffness = 0.06
             }
             
@@ -417,6 +625,7 @@ extension MM4Parameters {
             // I will reuse the bend-bend and stretch-bend parameters from MM3.
             // They are the same as silicon.
             if all(sortedCodes .!= 5) {
+              bendBendStiffness = 0.24
               stretchBendStiffness = 0.10
             } else {
               throw createAngleError()
@@ -424,6 +633,8 @@ extension MM4Parameters {
             
             // Sulfur
           case 15:
+            // There cannot be a bend-bend interaction around a divalent sulfur.
+            bendBendStiffness = 0.000
             if all(sortedCodes .== SIMD3(1, 15, 1)) {
               stretchBendStiffness = (ringType == 5) ? 0.280 : 0.150
             } else {
@@ -432,6 +643,10 @@ extension MM4Parameters {
             
             // Germanium
           case 31:
+            // The parameters that Allinger created for MM3(2000) do not list
+            // germanium under bend-bend parameters. However, silicon does have
+            // a parameter. I will reuse that.
+            bendBendStiffness = 0.240
             if all(sortedCodes .!= 5) {
               stretchBendStiffness = 0.450
             } else {
@@ -443,11 +658,19 @@ extension MM4Parameters {
           }
         }
       } else {
+        bendBendStiffness = 0
         stretchBendStiffness = 0
       }
       
+      if !forces.contains(.bendBend) {
+        bendBendStiffness = 0
+      }
       if !forces.contains(.stretchBend) {
         stretchBendStiffness = 0
+        stretchBendStiffness2 = nil
+      }
+      if !forces.contains(.stretchStretch) {
+        stretchStretchStiffness = nil
       }
       
       // MARK: - Identify Angle Type
@@ -474,32 +697,43 @@ extension MM4Parameters {
           case 0: angleType = 3
           default: fatalError("Group IV atom had unexpected heavy atom count.")
           }
-        case .phosphorus:
+        case .nitrogen, .phosphorus:
           switch heavyAtomCount {
           case 1: angleType = 1
           case 0: fatalError("Group V atom was bonded to hydrogen.")
           default: fatalError("Group V atom had unexpected heavy atom count.")
           }
-        case .sulfur:
+        case .oxygen, .sulfur:
           switch heavyAtomCount {
           case 0: angleType = 1
           default: fatalError("Group VI atom had unexpected heavy atom count.")
           }
-        case .hydrogen:
+        case .hydrogen, .fluorine:
           fatalError("Group VII atom cannot be the center of an angle.")
         }
       }
       
       guard !bendingStiffnesses[angleType - 1].isNaN,
             !equilibriumAngles[angleType - 1].isNaN else {
+        print("Threw an angle error. angle type = \(angleType), bending stiffness = \(bendingStiffnesses), equilibrium angles = \(equilibriumAngles)")
         // Angle parameter was NaN.
         throw createAngleError()
       }
       angles.parameters.append(
         MM4AngleParameters(
+          bendBendStiffness: bendBendStiffness,
           bendingStiffness: bendingStiffnesses[angleType - 1],
           equilibriumAngle: equilibriumAngles[angleType - 1],
           stretchBendStiffness: stretchBendStiffness))
+      
+      if stretchBendStiffness2 != nil || stretchStretchStiffness != nil {
+        angles.extendedParameters.append(
+          MM4AngleExtendedParameters(
+            stretchBendStiffness: stretchBendStiffness2 ?? 0,
+            stretchStretchStiffness: stretchStretchStiffness ?? 0))
+      } else {
+        angles.extendedParameters.append(nil)
+      }
     }
   }
 }

@@ -33,22 +33,23 @@ final class MM4RigidBodyStorage {
   var velocities: [SIMD3<Float>]?
   
   init(descriptor: MM4RigidBodyDescriptor) throws {
-    let parameters = descriptor.parameters!
-    let atomCount = parameters.atoms.count
+    let masses = descriptor.masses!
+    let atomCount = masses.count
     let vectorCount = (atomCount + MM4VectorWidth - 1) / MM4VectorWidth
     self.atoms = (atomCount, vectorCount)
     
     guard let positions = descriptor.positions else {
       fatalError("Positions were not specified.")
     }
-    createVectorizedMasses(parameters.atoms.masses)
+    createVectorizedMasses(masses)
     createVectorizedPositions(positions)
     createVectorizedVelocities(descriptor.velocities)
     
     // Linear Position
     mass = createMass()
     guard mass > .leastNormalMagnitude else {
-      throw MM4Error.defectiveInertiaTensor((.zero, .zero, .zero), "Zero mass.")
+      throw MM4Error.defectiveInertiaTensor(
+        (.zero, .zero, .zero), "Zero mass.")
     }
     centerOfMass = createCenterOfMass()
     normalizeLinearPositions(to: centerOfMass)
@@ -62,7 +63,8 @@ final class MM4RigidBodyStorage {
     let (Λ, Σ, failureReason) = diagonalize(matrix: inertiaTensor)
     
     guard let Λ, let Σ else {
-      throw MM4Error.defectiveInertiaTensor(inertiaTensor, failureReason!)
+      throw MM4Error.defectiveInertiaTensor(
+        inertiaTensor, failureReason!)
     }
     (momentOfInertia, principalAxes) = (Λ, Σ)
     normalizeOrientation(to: principalAxes)

@@ -5,6 +5,7 @@
 //  Created by Philip Turner on 11/20/23.
 //
 
+import RealModule
 import QuaternionModule
 
 // MARK: - Public API
@@ -50,39 +51,15 @@ extension MM4RigidBody {
   }
   
   /// Rotate the atoms around the center of mass.
-  /// - parameter angle: The angle to rotate, in radians.
-  /// - parameter axis: The normalized vector to rotate around.
-  ///
-  /// If `axis` is not specified, the default value aligns with the current
-  /// angular momentum. If the angular momentum is zero, you must enter zero
-  /// for the angle.
-  public mutating func rotate(angle: Double, axis: SIMD3<Double>? = nil) {
+  public mutating func rotate(quaternion: Quaternion<Double>) {
     ensureUniquelyReferenced()
     storage.invalidatePositions()
     storage.invalidateVelocities()
     
-    var rotationAxis: SIMD3<Double>
-    if let axis {
-      rotationAxis = axis
-    } else {
-      let magnitude = (angularMomentum * angularMomentum).sum().squareRoot()
-      if magnitude < .leastNormalMagnitude {
-        guard angle.magnitude < .leastNormalMagnitude else {
-          fatalError(
-            "Angular momentum (\(magnitude)) was zero, but rotation angle (\(angle)) was nonzero.")
-        }
-        return
-      }
-      
-      let (Σ, axis) = (principalAxes, angularMomentum / magnitude)
-      rotationAxis = Σ.0 * axis.x + Σ.1 * axis.y + Σ.2 * axis.z
-    }
-    
-    let rotation = Quaternion<Double>(angle: angle, axis: rotationAxis)
     storage.principalAxes = (
-      rotation.act(on: principalAxes.0),
-      rotation.act(on: principalAxes.1),
-      rotation.act(on: principalAxes.2))
+      quaternion.act(on: principalAxes.0),
+      quaternion.act(on: principalAxes.1),
+      quaternion.act(on: principalAxes.2))
   }
 }
 

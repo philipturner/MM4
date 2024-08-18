@@ -21,30 +21,14 @@ public struct MM4ForceOptions: OptionSet {
   /// Angle bending with a sextic Taylor expansion.
   public static let bend = MM4ForceOptions(rawValue: 1 << 0)
   
-  /// Coupling of vibrational frequencies of two angles with the same center.
-  public static let bendBend = MM4ForceOptions(rawValue: 1 << 1)
-  
   /// London dispersion, overlap repulsion, and Coulomb forces.
-  public static let nonbonded = MM4ForceOptions(rawValue: 1 << 2)
+  public static let nonbonded = MM4ForceOptions(rawValue: 1 << 1)
   
   /// Morse bond stretching potential.
-  public static let stretch = MM4ForceOptions(rawValue: 1 << 3)
+  public static let stretch = MM4ForceOptions(rawValue: 1 << 2)
   
   /// Increase in covalent bond length as bond angle shrinks.
-  public static let stretchBend = MM4ForceOptions(rawValue: 1 << 4)
-  
-  /// Coupling of adjacent covalent bonds invoked by electronegative atoms.
-  public static let stretchStretch = MM4ForceOptions(rawValue: 1 << 5)
-  
-  /// Torsion and 1-4 nonbonded exception forces.
-  public static let torsion = MM4ForceOptions(rawValue: 1 << 6)
-  
-  /// Torsion-bend and bend-torsion-bend for electronegative atoms.
-  public static let torsionBend = MM4ForceOptions(rawValue: 1 << 7)
-  
-  /// Decrease in covalent bond length as a torsion reaches the eclipsing
-  /// position.
-  public static let torsionStretch = MM4ForceOptions(rawValue: 1 << 8)
+  public static let stretchBend = MM4ForceOptions(rawValue: 1 << 3)
 }
 
 class MM4Force {
@@ -79,50 +63,32 @@ class MM4Force {
 class MM4Forces {
   // Force Group 1
   var electrostatic: MM4ElectrostaticForce
-  var electrostaticException: MM4ElectrostaticExceptionForce
   var external: MM4ExternalForce
   var nonbonded: MM4NonbondedForce
-  var nonbondedException: MM4NonbondedExceptionForce
-  var torsion: MM4TorsionForce
-  var torsionExtended: MM4TorsionExtendedForce
   
   // Force Group 2
   var bend: MM4BendForce
-  var bendBend: MM4BendBendForce
-  var bendExtended: MM4BendExtendedForce
   var stretch: MM4StretchForce
   
   init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
     // Force Group 1
     self.electrostatic = .init(system: system, descriptor: descriptor)
-    self.electrostaticException = .init(system: system, descriptor: descriptor)
     self.external = .init(system: system, descriptor: descriptor)
     self.nonbonded = .init(system: system, descriptor: descriptor)
-    self.nonbondedException = .init(system: system, descriptor: descriptor)
-    self.torsion = .init(system: system, descriptor: descriptor)
-    self.torsionExtended = .init(system: system, descriptor: descriptor)
     
     // Force Group 2
     self.bend = .init(system: system, descriptor: descriptor)
-    self.bendBend = .init(system: system, descriptor: descriptor)
-    self.bendExtended = .init(system: system, descriptor: descriptor)
     self.stretch = .init(system: system, descriptor: descriptor)
   }
   
   func addForces(to system: OpenMM_System) {
     // Force Group 1
     electrostatic.addForces(to: system)
-    electrostaticException.addForces(to: system)
     external.addForces(to: system)
     nonbonded.addForces(to: system)
-    nonbondedException.addForces(to: system)
-    torsion.addForces(to: system)
-    torsionExtended.addForces(to: system)
     
     // Force Group 2
     bend.addForces(to: system)
-    bendBend.addForces(to: system)
-    bendExtended.addForces(to: system)
     stretch.addForces(to: system)
   }
 }
