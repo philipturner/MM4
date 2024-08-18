@@ -362,24 +362,16 @@ extension MM4Parameters {
   mutating func createNonbondedExceptions(forces: MM4ForceOptions) {
     // Create nonbonded exceptions.
     var nonbondedExceptions13Map: [SIMD2<UInt32>: Bool] = [:]
-    var nonbondedExceptions14Map: [SIMD2<UInt32>: Bool] = [:]
-    for torsion in torsions.indices {
-      let pair = sortBond(SIMD2(torsion[0], torsion[3]))
-      nonbondedExceptions14Map[pair] = true
-    }
     for angle in angles.indices {
       let pair = sortBond(SIMD2(angle[0], angle[2]))
       nonbondedExceptions13Map[pair] = true
-      nonbondedExceptions14Map[pair] = nil
     }
     
     // Remove 1,2 interactions from erroneously being in either map. This can
     // often happen with 5-membered rings.
     for bond in bonds.indices {
       nonbondedExceptions13Map[bond] = nil
-      nonbondedExceptions14Map[bond] = nil
     }
     nonbondedExceptions13 = nonbondedExceptions13Map.keys.map { $0 }
-    nonbondedExceptions14 = nonbondedExceptions14Map.keys.map { $0 }
   }
 }

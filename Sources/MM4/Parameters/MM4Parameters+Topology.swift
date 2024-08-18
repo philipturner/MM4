@@ -134,23 +134,11 @@ extension MM4Parameters {
       .allocate(capacity: angleCapacity)
     let angleCounts = UnsafeMutablePointer<UInt16>(
       OpaquePointer(angleAtomics))
-    
-    let includeTorsions = forces.contains(.torsion)
-    let torsionCapacity = includeTorsions ? atoms.count : 1
-    let torsionBuckets: UnsafeMutablePointer<SIMD4<UInt32>> =
-      .allocate(capacity: 36 * torsionCapacity)
-    let torsionAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
-      .allocate(capacity: torsionCapacity)
-    let torsionCounts =  UnsafeMutablePointer<UInt16>(
-      OpaquePointer(torsionAtomics))
-    
     angleCounts.initialize(repeating: .zero, count: angleCapacity)
-    torsionCounts.initialize(repeating: .zero, count: torsionCapacity)
+    
     defer {
       angleAtomics.deallocate()
       angleBuckets.deallocate()
-      torsionAtomics.deallocate()
-      torsionBuckets.deallocate()
     }
     
     @_transparent
@@ -249,17 +237,6 @@ extension MM4Parameters {
               ringType = min(ringType, UInt8(truncatingIfNeeded: maskA.min()))
               
               if atom2 < atom3 {
-                if includeTorsions {
-                  let torsion = SIMD4(atom1, atom2, atom3, atom4)
-                  let atomID = Int(atom2)
-                  let atomic = UnsafeAtomic<UInt16>(
-                    at: torsionAtomics.advanced(by: atomID))
-                  
-                  let count = atomic
-                    .loadThenWrappingIncrement(ordering: .relaxed)
-                  torsionBuckets[36 &* atomID &+ Int(count)] = torsion
-                }
-                
                 var match1: SIMD4<Int32> = .zero
                 var match2: SIMD4<Int32> = .zero
                 var match3: SIMD4<Int32> = .zero
@@ -330,8 +307,8 @@ extension MM4Parameters {
       }
     }
     
-    for atomID in atoms.indices {
-      if includeAngles {
+    if includeAngles {
+      for atomID in atoms.indices {
         var angleBucket = UnsafeMutableBufferPointer(
           start: angleBuckets.advanced(by: 6 &* atomID),
           count: Int(angleCounts[atomID]))
@@ -342,19 +319,6 @@ extension MM4Parameters {
         })
         angles.indices += angleBucket
       }
-      
-      if includeTorsions {
-        var torsionBucket = UnsafeMutableBufferPointer(
-          start: torsionBuckets.advanced(by: 36 &* atomID),
-          count: Int(torsionCounts[atomID]))
-        torsionBucket.sort(by: { x, y in
-          if x[2] != y[2] { return x[2] < y[2] }
-          if x[0] != y[0] { return x[0] < y[0] }
-          if x[3] != y[3] { return x[3] < y[3] }
-          return true
-        })
-        torsions.indices += torsionBucket
-      }
     }
     
     rings.indices = ringsMap.keys.map { $0 }
@@ -363,12 +327,10 @@ extension MM4Parameters {
     atoms.ringTypes = .init(repeating: 6, count: atoms.count)
     bonds.ringTypes = .init(repeating: 6, count: bonds.indices.count)
     angles.ringTypes = .init(repeating: 6, count: angles.indices.count)
-    torsions.ringTypes = .init(repeating: 6, count: torsions.indices.count)
     rings.ringTypes = .init(repeating: 6, count: rings.indices.count)
     
     guard bonds.indices.count < Int32.max,
           angles.indices.count < Int32.max,
-          torsions.indices.count < Int32.max,
           rings.indices.count < Int32.max else {
       fatalError("Too many bonds, angles, torsions, or rings.")
     }
@@ -377,9 +339,6 @@ extension MM4Parameters {
     }
     for (index, angle) in angles.indices.enumerated() {
       angles.map[angle] = UInt32(truncatingIfNeeded: index)
-    }
-    for (index, torsion) in torsions.indices.enumerated() {
-      torsions.map[torsion] = UInt32(truncatingIfNeeded: index)
     }
     for (index, ring) in rings.indices.enumerated() {
       rings.map[ring] = UInt32(truncatingIfNeeded: index)
@@ -391,10 +350,8 @@ extension MM4Parameters {
         let atomID = ring[lane]
         let unsortedBond = SIMD2(atomID, ring[wrap(lane &+ 1)])
         let unsortedAngle = SIMD3(unsortedBond, ring[wrap(lane &+ 2)])
-        let unsortedTorsion = SIMD4(unsortedAngle, ring[wrap(lane &+ 3)])
         let bond = sortBond(unsortedBond)
         let angle = sortAngle(unsortedAngle)
-        let torsion = sortTorsion(unsortedTorsion)
         
         guard atomID < .max, let bondID = bonds.map[bond] else {
           fatalError("Invalid atom or bond in ring.")
@@ -404,9 +361,6 @@ extension MM4Parameters {
         
         if includeAngles, let angleID = angles.map[angle]  {
           angles.ringTypes[Int(angleID)] = 5
-        }
-        if includeTorsions, let torsionID = torsions.map[torsion] {
-          torsions.ringTypes[Int(torsionID)] = 5
         }
       }
       rings.ringTypes[ringID] = 5

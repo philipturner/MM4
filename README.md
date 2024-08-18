@@ -4,9 +4,9 @@ Molecular Mechanics force field, version 4. The simulator used to create _Nanosy
 
 Documentation: [philipturner.github.io/MM4](https://philipturner.github.io/MM4)
 
-### Atoms
+### Supported Parameters
 
-Officially supported:
+Atoms:
 
 | Element | Ring Types |
 | ------- | ---------- |
@@ -17,17 +17,7 @@ Officially supported:
 | S             | 5, 6 |
 | Ge            | 5, 6 |
 
-Experimental:
-
-| Element | Ring Types |
-| ------- | ---------- |
-| N (trivalent) | 5, 6 |
-| O             | 5, 6 |
-| F             | n/a  |
-
-### Bonds
-
-Officially supported:
+Bonds:
 
 | Element | H | C | Si | Ge |
 | ------- | - | - | -- | -- |
@@ -35,20 +25,9 @@ Officially supported:
 | Si      | X | X | X  |    |
 | P       |   | X |    |    |
 | S       |   | X |    |    |
-| Ge      | X | X |    |    |
+| Ge      | X | X |    | X  |
 
-Experimental:
-
-| Element | H | C | Si | Ge |
-| ------- | - | - | -- | -- |
-| N       |   | X |    |    |
-| O       |   | X |    |    |
-| F       |   | X |    |    |
-| Ge      |   |   |    | X  |
-
-### Forces
-
-Officially supported:
+Forces:
 - bend
 - external
 - nonbonded
@@ -57,13 +36,6 @@ Officially supported:
   - electrostatic force
 - stretch
 - stretch-bend
-
-Experimental:
-- bend-bend
-- stretch-stretch
-- torsion
-- torsion-bend
-- torsion-stretch
 
 ### Levels of Theory
 

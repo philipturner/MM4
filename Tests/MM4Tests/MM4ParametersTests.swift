@@ -28,10 +28,6 @@ final class MM4ParametersTests: XCTestCase {
     XCTAssertEqual([], params.angles.indices)
     XCTAssertEqual([], params.angles.ringTypes)
     XCTAssertEqual(0, params.angles.parameters.count)
-    XCTAssertEqual(0, params.angles.extendedParameters.count)
-    
-    XCTAssertEqual([], params.torsions.indices)
-    XCTAssertEqual([], params.torsions.ringTypes)
   }
   
   func testParametersCombination() throws {
@@ -51,14 +47,9 @@ final class MM4ParametersTests: XCTestCase {
     ])
     let part3 = NCFPart(forces: [
       .bend,
-      .bendBend,
       .nonbonded,
       .stretch,
       .stretchBend,
-      .stretchStretch,
-      .torsion,
-      .torsionBend,
-      .torsionStretch,
     ])
     
     // After testing execution speed, recycle this unit test to judge whether
@@ -122,18 +113,10 @@ final class MM4ParametersTests: XCTestCase {
         let code2 = parameters.atoms.codes[Int(angle[2])]
         let expectParameters = (code0 != .hydrogen || code2 != .hydrogen)
         if partID >= 3, expectParameters {
-          XCTAssertNotEqual(params.bendBendStiffness, 0)
           XCTAssertNotEqual(params.stretchBendStiffness, 0)
         } else {
-          XCTAssertEqual(params.bendBendStiffness, 0)
           XCTAssertEqual(params.stretchBendStiffness, 0)
         }
-      }
-      
-      if partID >= 3 {
-        XCTAssertGreaterThan(parameters.torsions.indices.count, 0)
-      } else {
-        XCTAssertEqual(parameters.torsions.indices.count, 0)
       }
     }
   }
@@ -193,12 +176,9 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   paramsDesc.bonds = adamantane.bonds
   paramsDesc.forces = [
     .bend,
-    .bendBend,
     .nonbonded,
     .stretch,
     .stretchBend,
-    .torsion,
-    .torsionStretch,
   ]
   
   // Check that the number of atoms and their elements are the same.
@@ -317,9 +297,6 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   XCTAssertEqual(adamantane.angleRingTypes.count, params.angles.indices.count)
   XCTAssertEqual(adamantane.angleParameters.count, params.angles.indices.count)
   XCTAssertEqual(params.angles.parameters.count, params.angles.indices.count)
-  XCTAssertEqual(
-    params.angles.extendedParameters.count, params.angles.indices.count)
-  XCTAssert(params.angles.extendedParameters.allSatisfy { $0 == nil })
   
   var angleMarks = [Bool](
     repeating: false, count: params.angles.indices.count)
@@ -334,8 +311,7 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
       let imageParams = adamantane.angleParameters[j]
       if paramsRingType == imageRingType,
          compare(paramsParams.bendingStiffness, imageParams.kθ),
-         compare(paramsParams.equilibriumAngle, imageParams.θ),
-         compare(paramsParams.bendBendStiffness, imageParams.kθθ) {
+         compare(paramsParams.equilibriumAngle, imageParams.θ) {
         angleMarks[j] = true
         succeeded = true
         break
@@ -348,25 +324,11 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
   }
   XCTAssert(angleMarks.allSatisfy { $0 == true })
   
-  // Check that torsion parameters match the images in the DocC catalog.
-  XCTAssertEqual(
-    adamantane.torsionRingTypes.count, params.torsions.indices.count)
-  XCTAssertEqual(
-    adamantane.torsionParameters.count, params.torsions.indices.count)
-  
   // Check that nonbonded exceptions are not duplicated.
   for exceptionID in params.nonbondedExceptions13.indices {
     let exception = params.nonbondedExceptions13[exceptionID]
     let reversedException = SIMD2(exception[1], exception[0])
     for otherException in params.nonbondedExceptions13[(exceptionID + 1)...] {
-      XCTAssertNotEqual(exception, otherException)
-      XCTAssertNotEqual(reversedException, otherException)
-    }
-  }
-  for exceptionID in params.nonbondedExceptions14.indices {
-    let exception = params.nonbondedExceptions14[exceptionID]
-    let reversedException = SIMD2(exception[1], exception[0])
-    for otherException in params.nonbondedExceptions14[(exceptionID + 1)...] {
       XCTAssertNotEqual(exception, otherException)
       XCTAssertNotEqual(reversedException, otherException)
     }
@@ -413,10 +375,8 @@ private func _testParametersCombination(
   var atomStart: Int = 0
   var bondStart: Int = 0
   var angleStart: Int = 0
-  var torsionStart: Int = 0
   var ringStart: Int = 0
   var exception13Start: Int = 0
-  var exception14Start: Int = 0
   for rigidBodyID in descriptors.indices {
     let thisParameters = descriptors[rigidBodyID].parameters!
     
@@ -425,12 +385,6 @@ private func _testParametersCombination(
       XCTAssertEqual(
         combinedParameters.nonbondedExceptions13[combinedID],
         thisParameters.nonbondedExceptions13[thisID] &+ UInt32(atomStart))
-    }
-    for thisID in thisParameters.nonbondedExceptions14.indices {
-      let combinedID = exception14Start + thisID
-      XCTAssertEqual(
-        combinedParameters.nonbondedExceptions14[combinedID],
-        thisParameters.nonbondedExceptions14[thisID] &+ UInt32(atomStart))
     }
     
     for thisID in thisParameters.atoms.indices {
@@ -481,19 +435,6 @@ private func _testParametersCombination(
         thisParameters.angles.ringTypes[thisID])
     }
     
-    for thisID in thisParameters.torsions.indices.indices {
-      let combinedID = torsionStart + thisID
-      let thisIndices = thisParameters.torsions.indices[thisID]
-      let combinedIndices = combinedParameters.torsions.indices[combinedID]
-      XCTAssertEqual(combinedIndices, thisIndices &+ UInt32(atomStart))
-      XCTAssertEqual(
-        combinedParameters.torsions.map[combinedIndices]!,
-        thisParameters.torsions.map[thisIndices]! &+ UInt32(torsionStart))
-      XCTAssertEqual(
-        combinedParameters.torsions.ringTypes[combinedID],
-        thisParameters.torsions.ringTypes[thisID])
-    }
-    
     for thisID in thisParameters.rings.indices.indices {
       let combinedID = ringStart + thisID
       let combinedRing = combinedParameters.rings.indices[combinedID]
@@ -513,9 +454,7 @@ private func _testParametersCombination(
     atomStart += thisParameters.atoms.count
     bondStart += thisParameters.bonds.indices.count
     angleStart += thisParameters.angles.indices.count
-    torsionStart += thisParameters.torsions.indices.count
     ringStart += thisParameters.rings.indices.count
     exception13Start += thisParameters.nonbondedExceptions13.count
-    exception14Start += thisParameters.nonbondedExceptions14.count
   }
 }

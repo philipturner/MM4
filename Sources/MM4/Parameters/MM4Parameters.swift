@@ -27,7 +27,6 @@ public struct MM4ParametersDescriptor {
     .nonbonded,
     .stretch,
     .stretchBend,
-    .stretchStretch,
   ]
   
   /// Required. The factor to multiply hydrogen mass by.
@@ -57,17 +56,11 @@ public struct MM4Parameters {
   /// Parameters for a group of 3 atoms.
   public var angles: MM4Angles = MM4Angles()
   
-  /// Parameters for a group of 4 atoms.
-  public var torsions: MM4Torsions = MM4Torsions()
-  
-  /// Parameters for a group of 5 atoms.
+  /// Parameters for a five-membered ring.
   public var rings: MM4Rings = MM4Rings()
   
   /// Atom pairs to be excluded from nonbonded and electrostatic interactions.
   public var nonbondedExceptions13: [SIMD2<UInt32>] = []
-  
-  /// Atom pairs that have reduced nonbonded and electrostatic interactions.
-  public var nonbondedExceptions14: [SIMD2<UInt32>] = []
   
   /// Map from atoms to bonds that requires bounds checking.
   var atomsToBondsMap: [SIMD4<Int32>] = []
@@ -119,13 +112,9 @@ public struct MM4Parameters {
     atoms.append(contentsOf: other.atoms, atomOffset: atomOffset)
     bonds.append(contentsOf: other.bonds, atomOffset: atomOffset)
     angles.append(contentsOf: other.angles, atomOffset: atomOffset)
-    torsions.append(contentsOf: other.torsions, atomOffset: atomOffset)
     rings.append(contentsOf: other.rings, atomOffset: atomOffset)
     
     nonbondedExceptions13 += other.nonbondedExceptions13.map {
-      $0 &+ atomOffset
-    }
-    nonbondedExceptions14 += other.nonbondedExceptions14.map {
       $0 &+ atomOffset
     }
     atomsToBondsMap += other.atomsToBondsMap.map {
@@ -141,26 +130,17 @@ public struct MM4Parameters {
   // Validate that the specified combination of forces is okay. Otherwise,
   // cause a runtime crash.
   static func checkForces(_ forces: MM4ForceOptions) {
-    let includeTorsions =
-    forces.contains(.torsion) ||
-    forces.contains(.torsionBend) ||
-    forces.contains(.torsionStretch)
-    
     // Use a conservative metric to determine whether angles are included. If
     // torsions are included but angles aren't, there's still some torsion
     // cross-terms that depend on equilibrium angle.
     let includeAngles =
     forces.contains(.bend) ||
-    forces.contains(.bendBend) ||
-    forces.contains(.stretchBend) ||
-    forces.contains(.stretchStretch) ||
-    includeTorsions
+    forces.contains(.stretchBend)
     
     // None of the other bonded forces will be stable without bond stretching.
     let includeBonds =
     forces.contains(.stretch) ||
-    includeAngles ||
-    includeTorsions
+    includeAngles
     
     if includeBonds {
       guard forces.contains(.stretch) else {
@@ -172,12 +152,6 @@ public struct MM4Parameters {
       guard forces.contains(.bend) else {
         fatalError(
           "The specified forces cannot be evaluated without '.bend'.")
-      }
-    }
-    if includeTorsions {
-      guard forces.contains(.torsion) else {
-        fatalError(
-          "The specified forces cannot be evaluated without '.torsion'.")
       }
     }
   }
