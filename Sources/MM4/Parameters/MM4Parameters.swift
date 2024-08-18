@@ -108,7 +108,6 @@ public struct MM4Parameters {
     // Bond Parameters
     try createBondParameters(forces: descriptor.forces)
     try createAngleParameters(forces: descriptor.forces)
-    try createTorsionParameters(forces: descriptor.forces)
     createElectronegativityEffectCorrections()
     createPartialCharges()
     removeBondLengths(forces: descriptor.forces)

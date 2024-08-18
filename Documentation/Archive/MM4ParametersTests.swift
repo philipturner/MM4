@@ -32,6 +32,8 @@ final class MM4ParametersTests: XCTestCase {
     
     XCTAssertEqual([], params.torsions.indices)
     XCTAssertEqual([], params.torsions.ringTypes)
+    XCTAssertEqual(0, params.torsions.parameters.count)
+    XCTAssertEqual(0, params.torsions.extendedParameters.count)
   }
   
   func testParametersCombination() throws {
@@ -132,6 +134,10 @@ final class MM4ParametersTests: XCTestCase {
       
       if partID >= 3 {
         XCTAssertGreaterThan(parameters.torsions.indices.count, 0)
+        for torsionID in parameters.torsions.indices.indices {
+          let params = parameters.torsions.parameters[torsionID]
+          XCTAssert(params.V3 != 0)
+        }
       } else {
         XCTAssertEqual(parameters.torsions.indices.count, 0)
       }
@@ -353,6 +359,49 @@ private func testAdamantaneVariant(atomCode: MM4AtomCode) throws {
     adamantane.torsionRingTypes.count, params.torsions.indices.count)
   XCTAssertEqual(
     adamantane.torsionParameters.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    params.torsions.parameters.count, params.torsions.indices.count)
+  XCTAssertEqual(
+    params.torsions.extendedParameters.count, params.torsions.indices.count)
+  XCTAssert(params.torsions.extendedParameters.allSatisfy { $0 == nil })
+  
+  var torsionMarks = [Bool](
+    repeating: false, count: params.torsions.indices.count)
+  for i in params.torsions.indices.indices {
+    let paramsRingType = params.torsions.ringTypes[i]
+    let paramsParams = params.torsions.parameters[i]
+    
+    // There are no V6 terms. All torsions containing 2 hydrogens involve a
+    // 5-ring carbon.
+    XCTAssertEqual(paramsParams.n, 2)
+    
+    var succeeded = false
+    for j in params.torsions.indices.indices where !torsionMarks[j] {
+      // WARNING: This does not validate stretch-bend stiffness.
+      let imageRingType = adamantane.torsionRingTypes[j]
+      let imageParams = adamantane.torsionParameters[j]
+      if paramsRingType == imageRingType,
+         compare(paramsParams.V1, imageParams.V1),
+         compare(paramsParams.Vn, imageParams.V2),
+         compare(paramsParams.V3, imageParams.V3),
+         compare(paramsParams.Kts3, imageParams.Kts) {
+        torsionMarks[j] = true
+        succeeded = true
+        break
+      }
+    }
+    XCTAssert(
+      succeeded,
+      "Torsion \(i) of the MM4Parameters failed: \(paramsRingType), \(paramsParams)")
+  }
+  XCTAssert(torsionMarks.allSatisfy { $0 == true })
+  
+  for i in 0..<torsionMarks.count where !torsionMarks[i] {
+    print("Failed torsion: \(i)")
+    print("-", adamantane.torsionRingTypes[i])
+    print("-", adamantane.torsionParameters[i])
+    print()
+  }
   
   // Check that nonbonded exceptions are not duplicated.
   for exceptionID in params.nonbondedExceptions13.indices {
@@ -489,6 +538,9 @@ private func _testParametersCombination(
       XCTAssertEqual(
         combinedParameters.torsions.map[combinedIndices]!,
         thisParameters.torsions.map[thisIndices]! &+ UInt32(torsionStart))
+      XCTAssertEqual(
+        combinedParameters.torsions.parameters[combinedID].V3,
+        thisParameters.torsions.parameters[thisID].V3)
       XCTAssertEqual(
         combinedParameters.torsions.ringTypes[combinedID],
         thisParameters.torsions.ringTypes[thisID])

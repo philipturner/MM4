@@ -83,8 +83,6 @@ class MM4Forces {
   var external: MM4ExternalForce
   var nonbonded: MM4NonbondedForce
   var nonbondedException: MM4NonbondedExceptionForce
-  var torsion: MM4TorsionForce
-  var torsionExtended: MM4TorsionExtendedForce
   
   // Force Group 2
   var bend: MM4BendForce
@@ -99,8 +97,6 @@ class MM4Forces {
     self.external = .init(system: system, descriptor: descriptor)
     self.nonbonded = .init(system: system, descriptor: descriptor)
     self.nonbondedException = .init(system: system, descriptor: descriptor)
-    self.torsion = .init(system: system, descriptor: descriptor)
-    self.torsionExtended = .init(system: system, descriptor: descriptor)
     
     // Force Group 2
     self.bend = .init(system: system, descriptor: descriptor)
@@ -116,8 +112,6 @@ class MM4Forces {
     external.addForces(to: system)
     nonbonded.addForces(to: system)
     nonbondedException.addForces(to: system)
-    torsion.addForces(to: system)
-    torsionExtended.addForces(to: system)
     
     // Force Group 2
     bend.addForces(to: system)

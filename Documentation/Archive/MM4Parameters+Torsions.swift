@@ -7,17 +7,24 @@
 
 /// Parameters for a group of 4 atoms.
 public struct MM4Torsions {
+  /// Each value corresponds to the torsion at the same array index.
+  public var extendedParameters: [MM4TorsionExtendedParameters?] = []
+  
   /// Groups of atom indices that form a torsion.
   public var indices: [SIMD4<UInt32>] = []
   
   /// Map from a group of atoms to a torsion index.
   public var map: [SIMD4<UInt32>: UInt32] = [:]
   
+  /// Each value corresponds to the torsion at the same array index.
+  public var parameters: [MM4TorsionParameters] = []
+  
   /// The smallest ring each torsion is involved in.
   public var ringTypes: [UInt8] = []
   
   mutating func append(contentsOf other: Self, atomOffset: UInt32) {
     let torsionOffset = UInt32(self.indices.count)
+    self.extendedParameters += other.extendedParameters
     self.indices += other.indices.map {
       $0 &+ atomOffset
     }
@@ -25,11 +32,123 @@ public struct MM4Torsions {
       let value = other.map[key].unsafelyUnwrapped
       self.map[key &+ atomOffset] = value &+ torsionOffset
     }
+    self.parameters += other.parameters
     self.ringTypes += other.ringTypes
   }
 }
 
-/*
+/// Parameters for a torsion between three nonpolar bonds.
+///
+/// V1 term:
+/// - zeroed out for X-C-C-H
+/// - present for C-C-C-C
+/// - present for 5-membered rings
+/// - present for X-C-C-F
+///
+/// V3 term:
+/// - present for X-C-C-H
+/// - present for C-C-C-C
+/// - present for 5-membered rings
+/// - present for X-C-C-F
+///
+/// Vn term:
+/// - 6 for some cases of X-C-C-H
+/// - 2 for some cases of C-C-C-C
+/// - zeroed out for 5-membered rings
+/// - 2 for X-C-C-F
+///
+/// 1-term torsion-stretch:
+/// - present for X-C-C-H
+/// - present for C-C-C-C
+/// - present for 5-membered rings
+/// - zeroed out for X-C-C-F, to prioritize conciseness over performance
+public struct MM4TorsionParameters {
+  /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var V1: Float
+  
+  /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Vn: Float
+  
+  /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var V3: Float
+  
+  /// The factor to multiply the angle with, inside the cosine term for Vn.
+  ///
+  /// The value of `n` is most often 2. It must be an even integer.
+  public var n: Float
+  
+  /// Units: kilocalorie / angstrom \* mole
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Kts3: Float
+}
+
+/// Parameters for torsion forces unique to highly electronegative elements.
+///
+/// The parameters include V4, V6, 3-term torsion-stretch, and torsion-bend. In
+/// addition, parameters for the bend-torsion-bend force. This force is omitted
+/// from C-H torsions for efficiency.
+public struct MM4TorsionExtendedParameters {
+  /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var V4: Float
+  
+  /// Units: kilocalorie / mole
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var V6: Float
+  
+  /// The V1-like term contributing to torsion-stretch stiffness.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Kts1: (left: Float, central: Float, right: Float)
+  
+  /// The V2-like term contributing to torsion-stretch stiffness.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Kts2: (left: Float, central: Float, right: Float)
+  
+  /// The V3-like term contributing to torsion-stretch stiffness.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Kts3: (left: Float, central: Float, right: Float)
+  
+  /// The V1-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert radians to degrees.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Ktb1: (left: Float, right: Float)
+  
+  /// The V2-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert radians to degrees.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Ktb2: (left: Float, right: Float)
+  
+  /// The V3-like term contributing to torsion-bend stiffness.
+  ///
+  /// > WARNING: Convert radians to degrees.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Ktb3: (left: Float, right: Float)
+  
+  /// Bend-torsion-bend constant.
+  ///
+  /// > WARNING: Convert radians to degrees.
+  ///
+  /// > WARNING: Convert kcal/mol to kJ/mol.
+  public var Kbtb: Float
+}
+
 extension MM4Parameters {
   /// - throws: `.missingParameter`
   mutating func createTorsionParameters(forces: MM4ForceOptions) throws {
@@ -671,4 +790,3 @@ extension MM4Parameters {
     }
   }
 }
-*/
