@@ -54,21 +54,6 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
   /// MM4 atom code: 5
   case hydrogen = 5
   
-  /// Oxygen
-  ///
-  /// MM4 atom code: 6
-  case oxygen = 6
-  
-  /// Nitrogen (trivalent)
-  ///
-  /// MM4 atom code: 8
-  case nitrogen = 8
-  
-  /// Fluorine
-  ///
-  /// MM4 atom code: 11
-  case fluorine = 11
-  
   /// Sulfur
   ///
   /// MM4 atom code: 15
@@ -165,12 +150,6 @@ extension MM4Parameters {
         }
         valenceCount = 4
         supportsHydrogen = true
-      case 7:
-        output = .nitrogen
-        valenceCount = 3
-      case 9:
-        output = .fluorine
-        valenceCount = 1
       case 14:
         output = .silicon
         valenceCount = 4
@@ -287,15 +266,6 @@ extension MM4Parameters {
         let hydrogenRadius = t * (3.410 - 3.440) + 3.440
         epsilon = (default: 0.037, hydrogen: 0.024)
         radius = (default: 1.960, hydrogen: hydrogenRadius)
-      case 7:
-        epsilon = (default: 0.054, hydrogen: 0.110)
-        radius = (default: 1.860, hydrogen: 3.110)
-      case 8:
-        epsilon = (default: 0.059, hydrogen: 0.084)
-        radius = (default: 1.820, hydrogen: 3.046)
-      case 9:
-        epsilon = (default: 0.075, hydrogen: 0.092)
-        radius = (default: 1.710, hydrogen: 2.870)
       case 14:
         epsilon = (default: 0.140, hydrogen: -1)
         radius = (default: 2.290, hydrogen: -1)
