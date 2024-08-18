@@ -7,8 +7,8 @@
 
 /// A configuration for a rigid body.
 public struct MM4RigidBodyDescriptor {
-  /// Required. The parameters that define each atom's mass.
-  public var parameters: MM4Parameters?
+  /// The mass (in yoctograms) of each atom.
+  public var masses: [Float]?
   
   /// Required. The position (in nanometers) of each atom's nucleus.
   ///
@@ -39,18 +39,18 @@ public struct MM4RigidBodyDescriptor {
 /// body mechanics. It stores atoms in a memory layout optimized for
 /// the vector units on modern CPUs.
 public struct MM4RigidBody {
-  /// The force field parameters cached for this rigid body.
-  public let parameters: MM4Parameters
+  /// The mass (in yoctograms) of each atom.
+  public let masses: [Float]
   
   /// The backing storage object.
   var storage: MM4RigidBodyStorage
   
   /// Create a rigid body using the specified configuration.
   public init(descriptor: MM4RigidBodyDescriptor) throws {
-    guard let parameters = descriptor.parameters else {
-      fatalError("Parameters were not specified.")
+    guard let masses = descriptor.masses else {
+      fatalError("Messes were not specified.")
     }
-    self.parameters = parameters
+    self.masses = masses
     self.storage = try MM4RigidBodyStorage(descriptor: descriptor)
   }
   

@@ -8,6 +8,7 @@
 import MM4
 
 struct NCFPart {
+  var parameters: MM4Parameters
   var rigidBody: MM4RigidBody
   
   init(forces: MM4ForceOptions = [.bend, .stretch, .nonbonded]) {
@@ -22,12 +23,12 @@ struct NCFPart {
     paramsDesc.bonds = bonds
     paramsDesc.forces = forces
     paramsDesc.hydrogenMassScale = 1
-    let parameters = try! MM4Parameters(descriptor: paramsDesc)
+    parameters = try! MM4Parameters(descriptor: paramsDesc)
     
     var rigidBodyDesc = MM4RigidBodyDescriptor()
-    rigidBodyDesc.parameters = parameters
+    rigidBodyDesc.masses = parameters.atoms.masses
     rigidBodyDesc.positions = atoms.map { SIMD3($0.x, $0.y, $0.z) }
-    self.rigidBody = try! MM4RigidBody(descriptor: rigidBodyDesc)
+    rigidBody = try! MM4RigidBody(descriptor: rigidBodyDesc)
   }
   
   static let base64Atoms = """
