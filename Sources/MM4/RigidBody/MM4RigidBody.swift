@@ -7,7 +7,7 @@
 
 /// A configuration for a rigid body.
 public struct MM4RigidBodyDescriptor {
-  /// The mass (in yoctograms) of each atom.
+  /// Required. The mass (in yoctograms) of each atom.
   public var masses: [Float]?
   
   /// Required. The position (in nanometers) of each atom's nucleus.
