@@ -20,7 +20,6 @@ Other unsorted tasks for MM4
 - Link the OpenMM issue explaining the exact bottlenecks, to the README
   note about performance.
 - Remove the part of the README discussing DLLs on Windows
-- Migrate this entire bullet list to the MM4 branch and check it off there
 - Update the Swift package to use the latest version of swift-atomics
 
 # MM4
