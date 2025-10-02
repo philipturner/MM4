@@ -14,9 +14,6 @@ public struct MM4ForceFieldDescriptor {
   /// The default value is 1.0 nm. This is 2.86σ for carbon and 2.45σ for
   /// silicon.
   ///
-  /// > NOTE: This documentation page is still a draft. It may be inconsistent or
-  ///   difficult to understand.
-  ///
   /// Since germanium will rarely be used, use the 2.5σ cutoff for silicon. The
   /// slightly greater sigma for carbon allows greater accuracy in vdW forces
   /// for bulk diamond. 1.0 nm is also sufficient for charge-charge
