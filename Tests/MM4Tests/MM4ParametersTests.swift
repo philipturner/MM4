@@ -371,6 +371,7 @@ private func _testParametersCombination(
   for (params, _) in descriptors {
     combinedParameters.append(contentsOf: params)
   }
+  print(descriptors.count)
   
   // The objects are expected to be in the order:
   // - adamantane
