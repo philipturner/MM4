@@ -6,7 +6,7 @@
 //
 
 /// Parameters for a group of 3 atoms.
-public struct MM4Angles {
+public struct MM4Angles: Sendable {
   /// Groups of atom indices that form an angle.
   public var indices: [SIMD3<UInt32>] = []
   
@@ -37,7 +37,7 @@ public struct MM4Angles {
 ///
 /// The parameters include bending stiffness and the multiplicative contribution
 /// to bend-bend stiffness.
-public struct MM4AngleParameters {
+public struct MM4AngleParameters: Sendable {
   /// Units: millidyne \* angstrom / radian^2
   ///
   /// > WARNING: Convert aJ to kJ/mol.

@@ -9,7 +9,7 @@ import Atomics
 import Dispatch
 
 /// Parameters for a group of 2 atoms.
-public struct MM4Bonds {
+public struct MM4Bonds: Sendable {
   /// Each value corresponds to the bond at the same array index.
   public var extendedParameters: [MM4BondExtendedParameters?] = []
   
@@ -41,7 +41,7 @@ public struct MM4Bonds {
 }
 
 /// Morse stretching parameters for a covalent bond.
-public struct MM4BondParameters {
+public struct MM4BondParameters: Sendable {
   /// Units: millidyne \* angstrom
   ///
   /// The parameter's name originates from its description in
@@ -62,7 +62,7 @@ public struct MM4BondParameters {
 }
 
 /// Parameters for covalent bonds that create partial charges.
-public struct MM4BondExtendedParameters {
+public struct MM4BondExtendedParameters: Sendable {
   /// Units: debye
   public var dipoleMoment: Float
 }

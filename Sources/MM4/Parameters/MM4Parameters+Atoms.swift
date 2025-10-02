@@ -6,7 +6,7 @@
 //
 
 /// Parameters for one atom.
-public struct MM4Atoms {
+public struct MM4Atoms: Sendable {
   /// The number of protons in each atom's nucleus.
   public var atomicNumbers: [UInt8] = []
   
@@ -43,7 +43,7 @@ public struct MM4Atoms {
 }
 
 /// MM4 codes for an element or an atom in a specific functional group.
-public enum MM4AtomCode: UInt8, RawRepresentable {
+public enum MM4AtomCode: UInt8, RawRepresentable, Sendable {
   /// Carbon
   ///
   /// MM4 atom code: 1
@@ -90,7 +90,7 @@ public enum MM4AtomCode: UInt8, RawRepresentable {
 /// carbon tetrafluoride, and HMR creates the nonphysical carbon-8 isotope. In
 /// general, primary sp3 carbons are also discouraged, for the same reasons
 /// that methane is prohibited.
-public enum MM4CenterType: UInt8 {
+public enum MM4CenterType: UInt8, Sendable {
   case primary = 1
   case secondary = 2
   case tertiary = 3
@@ -103,7 +103,7 @@ public enum MM4CenterType: UInt8 {
 /// Interactions containing Si, Ge are treated with MM3 heuristics:
 /// - Dispersion factors for 1,4 nonbonded exceptions are eliminated.
 /// - Hydrogen reduction factors for bonded hydrogens change from 0.94 to 0.923.
-public struct MM4AtomParameters {
+public struct MM4AtomParameters: Sendable {
   /// Partial charge in units of proton charge.
   public var charge: Float
   

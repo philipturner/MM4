@@ -1,5 +1,5 @@
 //
-//  MM4Parameters+Topology.swift
+//  MM4Parameters+Rings.swift
 //  MM4
 //
 //  Created by Philip Turner on 10/7/23.
@@ -9,7 +9,7 @@ import Atomics
 import Dispatch
 
 /// Parameters for a group of 3 to 5 atoms.
-public struct MM4Rings {
+public struct MM4Rings: Sendable {
   /// Groups of atom indices that form a ring.
   ///
   /// The unused vector lanes are set to `UInt32.max`.
@@ -123,6 +123,7 @@ extension MM4Parameters {
   // Workaround for Swift concurrency errors.
   private func _createTopology() throws -> _CreateTopology {
     // Map from atoms to connected atoms that can be efficiently traversed.
+    nonisolated(unsafe)
     var vAtomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
     vAtomsToAtomsMap = .allocate(capacity: atoms.count + 1)
     vAtomsToAtomsMap += 1
@@ -133,8 +134,10 @@ extension MM4Parameters {
     }
     
     let angleCapacity = atoms.count
+    nonisolated(unsafe)
     let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
       .allocate(capacity: 6 * angleCapacity)
+    nonisolated(unsafe)
     let angleAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
       .allocate(capacity: angleCapacity)
     let angleCounts = UnsafeMutablePointer<UInt16>(
@@ -144,12 +147,6 @@ extension MM4Parameters {
     defer {
       angleAtomics.deallocate()
       angleBuckets.deallocate()
-    }
-    
-    @Sendable
-    @_transparent
-    func wrap(_ index: Int) -> Int {
-      (index + 5) % 5
     }
     
     // Scope the rings map into a local dictionary per-thread. Merge the
@@ -201,7 +198,7 @@ extension MM4Parameters {
           for lane3 in 0..<4 where map2[lane3] != -1 {
             let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
             if atom1 == atom3 { continue }
-            if includeAngles, atom1 < atom3 {
+            if atom1 < atom3 {
               let angle = SIMD3(atom1, atom2, atom3)
               let atomID = Int(atom2)
               let atomic = UnsafeAtomic<UInt16>(
@@ -272,6 +269,11 @@ extension MM4Parameters {
                     if array[lane] < array[minIndex] {
                       minIndex = lane
                     }
+                  }
+                  
+                  @_transparent
+                  func wrap(_ index: Int) -> Int {
+                    (index + 5) % 5
                   }
                   
                   let prev = array[wrap(minIndex &- 1)]

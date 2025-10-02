@@ -181,6 +181,7 @@ extension MM4RigidBodyTests {
   // Lazily cache this property because reinitializing the MM4Parameters takes
   // a long time in debug mode (0.087 seconds -> 0.300 seconds for the entire
   // test suite).
+  nonisolated(unsafe)
   static let descriptors: [(MM4Parameters, MM4RigidBodyDescriptor)] = {
     var output: [(MM4Parameters, MM4RigidBodyDescriptor)] = []
     for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
