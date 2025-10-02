@@ -471,11 +471,13 @@ extension MM4Parameters {
     }
   }
   
+  // Workaround for Swift concurrency errors.
   private struct Corrections {
     var electronegative: [Float] = []
     var electropositive: [Float] = []
   }
   
+  // Workaround for Swift concurrency errors.
   private func createCorrections() -> Corrections {
     // Add electronegativity corrections to bond length.
     nonisolated(unsafe)

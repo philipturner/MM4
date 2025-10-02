@@ -54,6 +54,7 @@ final class MM4ParametersTests: XCTestCase {
   }
   
 #if RELEASE
+  // Should be ~61 ms on M1 Max.
   func testParametersSpeed() throws {
     let part0 = NCFPart(forces: [])
     let part1 = NCFPart(forces: [.nonbonded])
