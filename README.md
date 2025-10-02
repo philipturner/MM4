@@ -63,7 +63,7 @@ MM4 offloads all molecular dynamics calculations to OpenMM. Rigid body dynamics 
 
 For large atom counts and lower-end hardware, the $O(n)$ term will dominate. This term is around the compute cost of biomolecular force fields (e.g. AMBER). However, GPU hardware allows several thousand calculations to occur each clock cycle. This fact makes MM4 much faster than CPU-based simulators (GROMACS, LAMMPS) running the same type of force field.
 
-> NOTE: There is currently a massive bottleneck in the $O(n)$ term for nonbonded forces. It makes MM4 roughly 3x slower than it should be. The current performance of MM4 w/ GPU could equate to GROMACS w/ CPU, until the bottleneck is fixed.
+> There is currently a massive bottleneck in the $O(n)$ term for nonbonded forces. It makes MM4 roughly 3x slower than it should be. The current performance of MM4 w/ GPU could equate to GROMACS w/ CPU, until the bottleneck is fixed.
 >
 > Explained in more detail here: https://github.com/openmm/openmm/issues/5095
 
