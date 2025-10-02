@@ -13,7 +13,8 @@ MM4
     even for Nvidia GPUs, for simplicity.
   - Access a non-thread-safe lazy global variable, so we don't load
     plugins multiple times in the same program execution.
-  - Add an option to the MM4ForceField initializer to skip plugin loading.
+  - MM4ForceField initializer skips plugin loading, only if you've done
+    the work to load plugins on your end, and supply a custom platform.
 - Once the entire software stack works on macOS, repeat the process on Windows.
 - Push an updated version of DocC that lacks the minimizer
 
