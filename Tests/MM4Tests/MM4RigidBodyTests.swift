@@ -201,15 +201,12 @@ extension MM4RigidBodyTests {
   }()
   
   static var emptyDescriptor: (MM4Parameters, MM4RigidBodyDescriptor) {
-    var paramsDesc = MM4ParametersDescriptor()
-    paramsDesc.atomicNumbers = []
-    paramsDesc.bonds = []
-    let params = try! MM4Parameters(descriptor: paramsDesc)
+    let parameters = MM4Parameters()
     
     var rigidBodyDesc = MM4RigidBodyDescriptor()
-    rigidBodyDesc.masses = params.atoms.masses
+    rigidBodyDesc.masses = parameters.atoms.masses
     rigidBodyDesc.positions = []
-    return (params, rigidBodyDesc)
+    return (parameters, rigidBodyDesc)
   }
 }
 
