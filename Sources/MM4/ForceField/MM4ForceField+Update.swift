@@ -25,7 +25,6 @@ extension MM4ForceField {
   func ensurePositionsAndVelocitiesCached() {
     if cachedState.positions == nil ||
         cachedState.velocities == nil {
-      print("Fetching positions and velocities.")
       if updateRecord.active() {
         fatalError(
           "Fetched new positions or velocities while previous updates were not flushed.")
@@ -42,19 +41,15 @@ extension MM4ForceField {
   
   func ensureForcesAndEnergyCached() {
     if updateRecord.active() {
-      print("ensureForcesAndEnergyCached - updateRecord.active()")
       // Forces and energies must be computed using the most recent system
       // state.
       flushUpdateRecord()
       invalidateForcesAndEnergy()
-    } else {
-      print("ensureForcesAndEnergyCached - update record not active")
     }
     
     if cachedState.forces == nil ||
         cachedState.kineticEnergy == nil ||
         cachedState.potentialEnergy == nil {
-      print("retrieving new forces, kinetic, and potential")
       var descriptor = MM4StateDescriptor()
       descriptor.forces = true
       descriptor.energy = true
@@ -67,7 +62,6 @@ extension MM4ForceField {
   }
   
   func flushUpdateRecord() {
-    print("flushing update record: \(updateRecord.positions), \(updateRecord.velocities)")
     if updateRecord.positions || updateRecord.velocities {
       guard let positions = cachedState.positions,
             let velocities = cachedState.velocities else {
