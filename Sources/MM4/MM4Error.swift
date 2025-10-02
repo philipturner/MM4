@@ -8,7 +8,7 @@
 import OpenMM
 
 /// Identifying information for an atom.
-public struct MM4Address {
+public struct MM4Address: Sendable {
   /// The atom's position within the object.
   public var index: UInt32
   
@@ -42,8 +42,7 @@ public enum MM4Error: Error {
   /// to.
   case openValenceShell(MM4Address, [MM4Address])
   
-  /// Lone atom centers such as methane, silane, germane, and tetrafluoromethane
-  /// are not supported.
+  /// Lone atom centers such as methane, silane, and germane are not supported.
   ///
   /// Includes the address of the atom center, and the atoms it was detected as
   /// bonding to.

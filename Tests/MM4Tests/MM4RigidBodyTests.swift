@@ -172,7 +172,7 @@ final class MM4RigidBodyTests: XCTestCase {
 // MARK: - Descriptors
 
 extension MM4RigidBodyTests {
-  // These compute properties initially returned just an
+  // These computed properties initially returned just an
   // 'MM4RigidBodyDescriptor', back when an 'MM4RigidBody' contained a
   // reference to an 'MM4Parameters'. After removing the dependency of
   // MM4RigidBody on MM4Parameters, the test had to be changed. It is less
