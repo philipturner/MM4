@@ -59,7 +59,7 @@ Forces:
 
 ### Levels of Theory
 
-MM4 offloads all molecular dynamics calculations to OpenMM. Rigid body dynamics must be integrated on the CPU by the library user. Any communication between CPU and GPU causes a latency bottleneck. This bottleneck manifests as a large $O(1)$ term in the polynomial for algorithmic complexity.
+MM4 currently offloads molecular dynamics calculations to OpenMM. Rigid body dynamics must be integrated on the CPU by the library user. Any communication between CPU and GPU causes a latency bottleneck. This bottleneck manifests as a large $O(1)$ term in the polynomial for algorithmic complexity.
 
 |  | Stable Time Step | Minimum Latency/Step | Maximum ns/day | Scaling | Force Computation | Integration |
 | :-----------------: | :--------: | :--------: | :-----: | :-: | :-: | :-: |

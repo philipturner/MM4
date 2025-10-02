@@ -45,6 +45,9 @@ public struct MM4ForceFieldDescriptor {
   public var parameters: MM4Parameters?
   
   /// Optional. The OpenMM platform to use for simulation.
+  ///
+  /// If not specified, the library loads plugins at the default plugin
+  /// path and selects OpenCL.
   public var platform: OpenMM_Platform?
   
   /// Create a descriptor with the default properties.
@@ -95,5 +98,47 @@ public class MM4ForceField {
       _timeStep = 2.5 * OpenMM_PsPerFs
     }
     _energy = MM4ForceFieldEnergy(forceField: self)
+  }
+  
+  // Lazily initialized if users don't load OpenMM in client code and specify
+  // a platform to prove they loaded OpenMM. Enables a more ergonomic API for
+  // scripting workflows, where boilerplate for plugin loading no longer needs
+  // to occur at the top of each script.
+  //
+  // It is a very easy hazard that OpenMM could fall back to the "Reference"
+  // platform, without the user ever knowing. This could be especially
+  // problematic for people without much experience using or benchmarking
+  // OpenMM.
+  nonisolated(unsafe)
+  private static var defaultPlatform: OpenMM_Platform?
+  
+  private static func createDefaultPlatform() -> OpenMM_Platform {
+    let pluginsDirectory = OpenMM_Platform.defaultPluginsDirectory
+    guard let pluginsDirectory else {
+      fatalError("Could not find the OpenMM plugins directory.")
+    }
+    
+    #if os(macOS)
+    let pluginFile = pluginsDirectory + "/" + "libOpenMMOpenCL.dylib"
+    #elseif os(Windows)
+    let pluginFile = pluginsDirectory + "/" + "OpenMMOpenCL.dll"
+    #else
+    #error("Linux is no longer supported.")
+    #endif
+    OpenMM_Platform.loadPluginLibrary(file: pluginFile)
+    
+    let platforms = OpenMM_Platform.platforms
+    for platform in platforms {
+      if platform.name == "OpenCL" {
+        return platform
+      }
+    }
+    
+    fatalError("""
+      Could not find the OpenCL platform.
+      Plugins directory: \(pluginsDirectory)
+      Platform count: \(platforms.count)
+      Platforms: \(platforms.map(\.name))
+      """)
   }
 }
