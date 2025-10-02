@@ -1,14 +1,11 @@
 # TODO List
 
 MM4
-- Attempt to test with the OpenMM binary not downloaded
-- Upgrade to Swift 6.1, fix the concurrent code. Do this after the compiler
-  headaches from C dylibs/DLLs are figured out.
-- Update the Swift package to use the latest version of swift-atomics
+- Attempt to test with the OpenMM binary not downloaded or properly configured.
 - Test integration with molecular-renderer, with the package's
  'add-simulators' branch downloading the branch of MM4 for the time being.
-  - Open the 'add-simulators' branch exactly at this point. You'll be
-    working solely inside the MM4 repo for quite a while.
+  - Start with just swift-openmm, get it correctly reporting the available
+    backends. This isolates the true problem from the MM4 code base.
 - Once the entire software stack works on macOS, repeat the process on Windows.
 - Push an updated version of DocC that lacks the minimizer
 
