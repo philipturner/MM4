@@ -85,9 +85,17 @@ public class MM4ForceField {
     guard let parameters = descriptor.parameters else {
       fatalError("No force field parameters were specified.")
     }
+    let platform = Self.fallback(descriptor.platform)
     
+    // TODO: Create a better descriptor API for system initialization.
     system = MM4System(parameters: parameters, descriptor: descriptor)
-    context = MM4Context(system: system, descriptor: descriptor)
+    
+    var contextDesc = MM4ContextDescriptor()
+    contextDesc.integratorOptions = descriptor.integrator
+    contextDesc.platform = platform
+    contextDesc.system = system
+    context = MM4Context(descriptor: contextDesc)
+    
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
     
@@ -98,47 +106,5 @@ public class MM4ForceField {
       _timeStep = 2.5 * OpenMM_PsPerFs
     }
     _energy = MM4ForceFieldEnergy(forceField: self)
-  }
-  
-  // Lazily initialized if users don't load OpenMM in client code and specify
-  // a platform to prove they loaded OpenMM. Enables a more ergonomic API for
-  // scripting workflows, where boilerplate for plugin loading no longer needs
-  // to occur at the top of each script.
-  //
-  // It is a very easy hazard that OpenMM could fall back to the "Reference"
-  // platform, without the user ever knowing. This could be especially
-  // problematic for people without much experience using or benchmarking
-  // OpenMM.
-  nonisolated(unsafe)
-  private static var defaultPlatform: OpenMM_Platform?
-  
-  private static func createDefaultPlatform() -> OpenMM_Platform {
-    let pluginsDirectory = OpenMM_Platform.defaultPluginsDirectory
-    guard let pluginsDirectory else {
-      fatalError("Could not find the OpenMM plugins directory.")
-    }
-    
-    #if os(macOS)
-    let pluginFile = pluginsDirectory + "/" + "libOpenMMOpenCL.dylib"
-    #elseif os(Windows)
-    let pluginFile = pluginsDirectory + "/" + "OpenMMOpenCL.dll"
-    #else
-    #error("Linux is no longer supported.")
-    #endif
-    OpenMM_Platform.loadPluginLibrary(file: pluginFile)
-    
-    let platforms = OpenMM_Platform.platforms
-    for platform in platforms {
-      if platform.name == "OpenCL" {
-        return platform
-      }
-    }
-    
-    fatalError("""
-      Could not find the OpenCL platform.
-      Plugins directory: \(pluginsDirectory)
-      Platform count: \(platforms.count)
-      Platforms: \(platforms.map(\.name))
-      """)
   }
 }

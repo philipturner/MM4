@@ -15,8 +15,8 @@ public enum MM4IntegratorOptions {
   ///
   /// This integrator uses a multiple time-stepping (MTS) scheme. Cheaper bonded
   /// forces, such as bond-stretch and bond-bend, are only stable at ~2 fs
-  /// without constraints. Expensive forces like torsions, nonbonded, and
-  /// electrostatic can execute at ~4 fs.
+  /// without constraints. Expensive forces like nonbonded and electrostatic
+  /// can execute at ~4 fs.
   ///
   /// MTS has a smaller coefficient to O(n) scaling than the
   /// Verlet integrator. However, it has a larger O(1) prefactor. Only use
