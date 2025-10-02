@@ -31,6 +31,17 @@ public struct MM4ForceOptions: OptionSet, Sendable {
   public static let stretchBend = MM4ForceOptions(rawValue: 1 << 3)
 }
 
+struct MM4ForceDescriptor {
+  /// Optional.
+  var cutoffDistance: Float?
+  
+  /// Required.
+  var dielectricConstant: Float?
+  
+  /// Required.
+  var system: MM4System?
+}
+
 class MM4Force {
   /// The OpenMM objects containing the forces.
   var forces: [OpenMM_Force]
@@ -47,7 +58,7 @@ class MM4Force {
     self.forceGroup = forceGroup
   }
   
-  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+  required init(descriptor: MM4ForceDescriptor) {
     fatalError("Not implemented.")
   }
   
@@ -70,15 +81,15 @@ class MM4Forces {
   var bend: MM4BendForce
   var stretch: MM4StretchForce
   
-  init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+  init(descriptor: MM4ForceDescriptor) {
     // Force Group 1
-    self.electrostatic = .init(system: system, descriptor: descriptor)
-    self.external = .init(system: system, descriptor: descriptor)
-    self.nonbonded = .init(system: system, descriptor: descriptor)
+    self.electrostatic = .init(descriptor: descriptor)
+    self.external = .init(descriptor: descriptor)
+    self.nonbonded = .init(descriptor: descriptor)
     
     // Force Group 2
-    self.bend = .init(system: system, descriptor: descriptor)
-    self.stretch = .init(system: system, descriptor: descriptor)
+    self.bend = .init(descriptor: descriptor)
+    self.stretch = .init(descriptor: descriptor)
   }
   
   func addForces(to system: OpenMM_System) {
