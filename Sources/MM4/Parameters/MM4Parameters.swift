@@ -45,8 +45,17 @@ public struct MM4ParametersDescriptor {
   }
 }
 
+// TODO: Add option to initialize from an empty descriptor, or perhaps
+// an empty array literal initializer. This makes it easier to glob up the
+// parameters from multiple distinct nano-parts in a simulation.
+//
+// Best option: make the default initializer public, so that calling
+// 'MM4Parameters()' returns an empty parameters object for appending. Add
+// a unit test for the use case of globbing multiple parameters into a single
+// one.
+
 /// A set of force field parameters.
-public struct MM4Parameters {
+public struct MM4Parameters: Sendable {
   /// Parameters for one atom.
   public var atoms: MM4Atoms = MM4Atoms()
   

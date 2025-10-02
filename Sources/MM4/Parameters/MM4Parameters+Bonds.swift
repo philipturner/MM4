@@ -238,6 +238,7 @@ extension MM4Parameters {
   }
   
   private func electrostaticEffect(sign: Float) -> [Float] {
+    @Sendable
     func correction(
       atomID: Int32, endID: Int32, bondID: Int32
     ) -> (
@@ -306,18 +307,24 @@ extension MM4Parameters {
     }
     
     let bondCapacity = bonds.indices.count
+    nonisolated(unsafe)
     let primaryNeighborContributions: UnsafeMutablePointer<SIMD2<Float>> =
       .allocate(capacity: 64 * bondCapacity)
+    nonisolated(unsafe)
     let secondaryNeighborContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
+    nonisolated(unsafe)
     let bohlmannEffectContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
     
     typealias AtomicPointer = UnsafeMutablePointer<UInt16.AtomicRepresentation>
+    nonisolated(unsafe)
     let primaryNeighborAtomics: AtomicPointer =
       .allocate(capacity: bondCapacity)
+    nonisolated(unsafe)
     let secondaryNeighborAtomics: AtomicPointer =
       .allocate(capacity: bondCapacity)
+    nonisolated(unsafe)
     let bohlmannEffectAtomics: AtomicPointer =
       .allocate(capacity: bondCapacity)
     let primaryNeighborCounts = UnsafeMutablePointer<UInt16>(
@@ -345,6 +352,7 @@ extension MM4Parameters {
       execute(taskID: z)
     }
     
+    @Sendable
     func execute(taskID: Int) {
       let atomStart = taskID * taskSize
       let atomEnd = min(atomStart + taskSize, atoms.count)
@@ -463,9 +471,16 @@ extension MM4Parameters {
     }
   }
   
-  mutating func createElectronegativityEffectCorrections() {
+  private struct Corrections {
+    var electronegative: [Float] = []
+    var electropositive: [Float] = []
+  }
+  
+  private func createCorrections() -> Corrections {
     // Add electronegativity corrections to bond length.
+    nonisolated(unsafe)
     var electronegativeCorrections: [Float] = []
+    nonisolated(unsafe)
     var electropositiveCorrections: [Float] = []
     DispatchQueue.concurrentPerform(iterations: 2) { z in
       if z == 0 {
@@ -474,6 +489,15 @@ extension MM4Parameters {
         electropositiveCorrections = electrostaticEffect(sign: +1)
       }
     }
+    
+    var output = Corrections()
+    output.electronegative = electronegativeCorrections
+    output.electropositive = electropositiveCorrections
+    return output
+  }
+  
+  mutating func createElectronegativityEffectCorrections() {
+    let corrections = createCorrections()
     
     for i in bonds.indices.indices {
       // We are not adding electronegativity effects to bond stiffness, due to
@@ -488,8 +512,8 @@ extension MM4Parameters {
       // which structures would be affected by the term. The greatest example
       // may be hydrofluorocarbon storage tapes.
       var correction: Float = 0
-      correction += electronegativeCorrections[i]
-      correction += electropositiveCorrections[i]
+      correction += corrections.electronegative[i]
+      correction += corrections.electropositive[i]
       bonds.parameters[i].equilibriumLength += correction
     }
   }
