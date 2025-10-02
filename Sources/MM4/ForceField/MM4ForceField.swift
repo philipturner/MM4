@@ -87,8 +87,11 @@ public class MM4ForceField {
     }
     let platform = Self.fallback(descriptor.platform)
     
-    // TODO: Create a better descriptor API for system initialization.
-    system = MM4System(parameters: parameters, descriptor: descriptor)
+    var systemDesc = MM4SystemDescriptor()
+    systemDesc.cutoffDistance = descriptor.cutoffDistance
+    systemDesc.dielectricConstant = descriptor.dielectricConstant
+    systemDesc.parameters = parameters
+    system = MM4System(descriptor: systemDesc)
     
     var contextDesc = MM4ContextDescriptor()
     contextDesc.integratorOptions = descriptor.integrator
