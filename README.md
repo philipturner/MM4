@@ -109,7 +109,7 @@ Download Anaconda
 - Under <b>Free Download</b>, click <b>Skip registration</b>
 - Choose <b>Miniconda Installers</b> and not <b>Distribution Installers</b>
 - Install the Windows 64-Bit Graphical Installer
-- Press the Windows key on the keyboard for applications. Open <b>Anaconda Prompt</b>, not <b>Miniforge Prompt</b>
+- Press the Windows key on the keyboard, opening up <b>Type here to search</b>. Open <b>Anaconda Prompt</b>, not <b>Miniforge Prompt</b>.
 - In the Anaconda terminal, type `conda install -c conda-forge openmm`
 
 Move binaries into repo directory
