@@ -18,16 +18,6 @@ MM4
 - Once the entire software stack works on macOS, repeat the process on Windows.
 - Push an updated version of DocC that lacks the minimizer
 
-## Windows Steps
-
-Download Anaconda
-- Start with this link: https://www.anaconda.com/download
-- Under <b>Free Download</b>, click <b>Skip registration</b>
-- Choose <b>Miniconda Installers</b> and not <b>Distribution Installers</b>
-- Install the Windows 64-Bit Graphical Installer
-- Press the Windows key on the keyboard for applications. Open <b>Anaconda Prompt</b>, not <b>Miniforge Prompt</b>
-- In the Anaconda terminal, type `conda install -c conda-forge openmm`
-
 # MM4
 
 Molecular Mechanics force field, version 4. The simulator used to create _Nanosystems (1992)_, but updated with modern ab initio parameters.
@@ -111,3 +101,22 @@ force = dU / dx = zJ / nm = pN
 | Length            | m       | 1e-9  | 1e-9      |
 | Speed             | m/s     | 1000  | 1000      |
 | Time              | s       | 1e-12 | 1e-12     |
+
+### Reproducible Windows Testing
+
+Download Anaconda
+- Start with this link: https://www.anaconda.com/download
+- Under <b>Free Download</b>, click <b>Skip registration</b>
+- Choose <b>Miniconda Installers</b> and not <b>Distribution Installers</b>
+- Install the Windows 64-Bit Graphical Installer
+- Press the Windows key on the keyboard for applications. Open <b>Anaconda Prompt</b>, not <b>Miniforge Prompt</b>
+- In the Anaconda terminal, type `conda install -c conda-forge openmm`
+
+Move binaries into repo directory
+- In the File Manager, locate "/C:/Users/\<your username\>/miniconda3/Library/lib"
+- Copy the files `OpenMM.dll` and `OpenMM.lib` into the cloned MM4 repo
+
+Purge Anaconda OpenMM for reproducibility
+- In the Anaconda terminal, type `conda uninstall openmm`
+
+Now, run `./test.bat` in the VS Code terminal.
