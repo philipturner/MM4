@@ -317,14 +317,13 @@ extension MM4Parameters {
     let bohlmannEffectContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
     
-    
     func bypassNameConflict<T: Atomics.AtomicValue>(
       type: T.Type
     ) -> UnsafeMutablePointer<T.AtomicRepresentation> {
       UnsafeMutablePointer<T.AtomicRepresentation>
         .allocate(capacity: bondCapacity)
     }
-
+    
     nonisolated(unsafe)
     let primaryNeighborAtomics = bypassNameConflict(type: UInt16.self)
     nonisolated(unsafe)
