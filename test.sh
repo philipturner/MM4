@@ -1,5 +1,5 @@
 # Activate the library linking mechanism in swift-openmm.
-export OPENMM_LIBRARY_PATH="/C:/Users/phili/miniconda3/Library/lib"
+export OPENMM_LIBRARY_PATH="$(pwd)"
 
 # Run in release mode with incremental compilation.
 swift test -Xswiftc -Ounchecked -Xswiftc -DRELEASE
