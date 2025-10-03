@@ -58,7 +58,12 @@ class MM4ElectrostaticForce: MM4Force {
     return (reactionFieldK, reactionFieldC)
   }
   
-  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+  required init(descriptor: MM4ForceDescriptor) {
+    guard let dielectricConstant = descriptor.dielectricConstant,
+          let system = descriptor.system else {
+      fatalError("Descriptor was incomplete.")
+    }
+    
     var includeElectrostatic = false
     for params in system.parameters.atoms.parameters {
       if params.charge != 0 {
@@ -89,7 +94,7 @@ class MM4ElectrostaticForce: MM4Force {
     if let cutoffDistance = descriptor.cutoffDistance {
       (K, C) = MM4ElectrostaticForce.reactionFieldConstants(
         cutoffDistance: cutoffDistance,
-        dielectricConstant: descriptor.dielectricConstant)
+        dielectricConstant: dielectricConstant)
     } else {
       (K, C) = (.zero, .zero)
     }

@@ -39,7 +39,7 @@ Forces:
 
 ### Levels of Theory
 
-MM4 offloads all molecular dynamics calculations to OpenMM. Rigid body dynamics must be integrated on the CPU by the library user. Any communication between CPU and GPU causes a latency bottleneck. This bottleneck manifests as a large $O(1)$ term in the polynomial for algorithmic complexity.
+MM4 currently offloads molecular dynamics calculations to OpenMM. Rigid body dynamics must be integrated on the CPU by the library user. Any communication between CPU and GPU causes a latency bottleneck. This bottleneck manifests as a large $O(1)$ term in the polynomial for algorithmic complexity.
 
 |  | Stable Time Step | Minimum Latency/Step | Maximum ns/day | Scaling | Force Computation | Integration |
 | :-----------------: | :--------: | :--------: | :-----: | :-: | :-: | :-: |
@@ -49,7 +49,9 @@ MM4 offloads all molecular dynamics calculations to OpenMM. Rigid body dynamics 
 
 For large atom counts and lower-end hardware, the $O(n)$ term will dominate. This term is around the compute cost of biomolecular force fields (e.g. AMBER). However, GPU hardware allows several thousand calculations to occur each clock cycle. This fact makes MM4 much faster than CPU-based simulators (GROMACS, LAMMPS) running the same type of force field.
 
-> NOTE: There is currently a massive bottleneck in the $O(n)$ term for nonbonded forces. It makes MM4 roughly 3x slower than it should be. The current performance of MM4 w/ GPU could equate to GROMACS w/ CPU, until the bottleneck is fixed.
+> There is currently a massive bottleneck in the $O(n)$ term for nonbonded forces. It makes MM4 roughly 3x slower than it should be. The current performance of MM4 w/ GPU could equate to GROMACS w/ CPU, until the bottleneck is fixed.
+>
+> Explained in more detail here: https://github.com/openmm/openmm/issues/5095
 
 ### Units
 
@@ -80,23 +82,21 @@ force = dU / dx = zJ / nm = pN
 | Speed             | m/s     | 1000  | 1000      |
 | Time              | s       | 1e-12 | 1e-12     |
 
-## Linker
+### Reproducible Windows Testing
 
-MM4 needs to link against OpenMM, which can be problematic for the Swift compiler. On Unix platforms, the easiest method is by setting the environment variable, `OPENMM_LIBRARY_PATH`. This activates a piece of code in the package manifest for `swift-openmm`. On Windows (especially through the VSCode terminal), this does not work. An alternative is to modify your VSCode project's package manifest. Copy `OpenMM.dll` into the same folder as `Package.swift`, then explicitly link it in the manifest:
+Download Anaconda
+- Start with this link: https://www.anaconda.com/download
+- Under <b>Free Download</b>, click <b>Skip registration</b>
+- Choose <b>Miniconda Installers</b> and not <b>Distribution Installers</b>
+- Install the Windows 64-Bit Graphical Installer
+- Press the Windows key on the keyboard, opening up <b>Type here to search</b>. Open <b>Anaconda Prompt</b>, not <b>Miniforge Prompt</b>.
+- In the Anaconda terminal, type `conda install -c conda-forge openmm`
 
-```swift
-targets: [
-  .executableTarget(
-    name: "CLI",
-    dependencies: [
-       // Also add other necessary dependencies, such as 'HDL'.
-      .product(name: "MM4", package: "MM4"),
-    ],
-    linkerSettings: [
-      // In this example, the computer's user is 'username'. The
-      // package manifest is located in the folder 'workspace'.
-      .unsafeFlags(["-LC:/Users/username/Documents/.../workspace"]),
-      .linkedLibrary("OpenMM"),
-    ]),
-],
-```
+Move binaries into repo directory
+- In the File Manager, locate "/C:/Users/\<your username\>/miniconda3/Library/lib"
+- Copy the files `OpenMM.dll` and `OpenMM.lib` into the cloned MM4 repo
+
+Purge Anaconda OpenMM for reproducibility
+- In the Anaconda terminal, type `conda uninstall openmm`
+
+Now, run `./test.bat` in the VS Code terminal.

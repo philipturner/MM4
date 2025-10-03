@@ -9,7 +9,7 @@ import Atomics
 import Dispatch
 
 /// Parameters for a group of 2 atoms.
-public struct MM4Bonds {
+public struct MM4Bonds: Sendable {
   /// Each value corresponds to the bond at the same array index.
   public var extendedParameters: [MM4BondExtendedParameters?] = []
   
@@ -41,7 +41,7 @@ public struct MM4Bonds {
 }
 
 /// Morse stretching parameters for a covalent bond.
-public struct MM4BondParameters {
+public struct MM4BondParameters: Sendable {
   /// Units: millidyne \* angstrom
   ///
   /// The parameter's name originates from its description in
@@ -62,7 +62,7 @@ public struct MM4BondParameters {
 }
 
 /// Parameters for covalent bonds that create partial charges.
-public struct MM4BondExtendedParameters {
+public struct MM4BondExtendedParameters: Sendable {
   /// Units: debye
   public var dipoleMoment: Float
 }
@@ -238,6 +238,7 @@ extension MM4Parameters {
   }
   
   private func electrostaticEffect(sign: Float) -> [Float] {
+    @Sendable
     func correction(
       atomID: Int32, endID: Int32, bondID: Int32
     ) -> (
@@ -306,20 +307,29 @@ extension MM4Parameters {
     }
     
     let bondCapacity = bonds.indices.count
+    nonisolated(unsafe)
     let primaryNeighborContributions: UnsafeMutablePointer<SIMD2<Float>> =
       .allocate(capacity: 64 * bondCapacity)
+    nonisolated(unsafe)
     let secondaryNeighborContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
+    nonisolated(unsafe)
     let bohlmannEffectContributions: UnsafeMutablePointer<Float> =
       .allocate(capacity: 64 * bondCapacity)
     
-    typealias AtomicPointer = UnsafeMutablePointer<UInt16.AtomicRepresentation>
-    let primaryNeighborAtomics: AtomicPointer =
-      .allocate(capacity: bondCapacity)
-    let secondaryNeighborAtomics: AtomicPointer =
-      .allocate(capacity: bondCapacity)
-    let bohlmannEffectAtomics: AtomicPointer =
-      .allocate(capacity: bondCapacity)
+    func bypassNameConflict<T: Atomics.AtomicValue>(
+      type: T.Type
+    ) -> UnsafeMutablePointer<T.AtomicRepresentation> {
+      UnsafeMutablePointer<T.AtomicRepresentation>
+        .allocate(capacity: bondCapacity)
+    }
+    
+    nonisolated(unsafe)
+    let primaryNeighborAtomics = bypassNameConflict(type: UInt16.self)
+    nonisolated(unsafe)
+    let secondaryNeighborAtomics = bypassNameConflict(type: UInt16.self)
+    nonisolated(unsafe)
+    let bohlmannEffectAtomics = bypassNameConflict(type: UInt16.self)
     let primaryNeighborCounts = UnsafeMutablePointer<UInt16>(
       OpaquePointer(primaryNeighborAtomics))
     let secondaryNeighborCounts = UnsafeMutablePointer<UInt16>(
@@ -345,6 +355,7 @@ extension MM4Parameters {
       execute(taskID: z)
     }
     
+    @Sendable
     func execute(taskID: Int) {
       let atomStart = taskID * taskSize
       let atomEnd = min(atomStart + taskSize, atoms.count)
@@ -463,9 +474,18 @@ extension MM4Parameters {
     }
   }
   
-  mutating func createElectronegativityEffectCorrections() {
+  // Workaround for Swift concurrency errors.
+  private struct Corrections {
+    var electronegative: [Float] = []
+    var electropositive: [Float] = []
+  }
+  
+  // Workaround for Swift concurrency errors.
+  private func createCorrections() -> Corrections {
     // Add electronegativity corrections to bond length.
+    nonisolated(unsafe)
     var electronegativeCorrections: [Float] = []
+    nonisolated(unsafe)
     var electropositiveCorrections: [Float] = []
     DispatchQueue.concurrentPerform(iterations: 2) { z in
       if z == 0 {
@@ -474,6 +494,15 @@ extension MM4Parameters {
         electropositiveCorrections = electrostaticEffect(sign: +1)
       }
     }
+    
+    var output = Corrections()
+    output.electronegative = electronegativeCorrections
+    output.electropositive = electropositiveCorrections
+    return output
+  }
+  
+  mutating func createElectronegativityEffectCorrections() {
+    let corrections = createCorrections()
     
     for i in bonds.indices.indices {
       // We are not adding electronegativity effects to bond stiffness, due to
@@ -488,8 +517,8 @@ extension MM4Parameters {
       // which structures would be affected by the term. The greatest example
       // may be hydrofluorocarbon storage tapes.
       var correction: Float = 0
-      correction += electronegativeCorrections[i]
-      correction += electropositiveCorrections[i]
+      correction += corrections.electronegative[i]
+      correction += corrections.electropositive[i]
       bonds.parameters[i].equilibriumLength += correction
     }
   }

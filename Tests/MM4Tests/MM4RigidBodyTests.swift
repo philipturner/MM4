@@ -172,7 +172,7 @@ final class MM4RigidBodyTests: XCTestCase {
 // MARK: - Descriptors
 
 extension MM4RigidBodyTests {
-  // These compute properties initially returned just an
+  // These computed properties initially returned just an
   // 'MM4RigidBodyDescriptor', back when an 'MM4RigidBody' contained a
   // reference to an 'MM4Parameters'. After removing the dependency of
   // MM4RigidBody on MM4Parameters, the test had to be changed. It is less
@@ -181,6 +181,7 @@ extension MM4RigidBodyTests {
   // Lazily cache this property because reinitializing the MM4Parameters takes
   // a long time in debug mode (0.087 seconds -> 0.300 seconds for the entire
   // test suite).
+  nonisolated(unsafe)
   static let descriptors: [(MM4Parameters, MM4RigidBodyDescriptor)] = {
     var output: [(MM4Parameters, MM4RigidBodyDescriptor)] = []
     for atomCode in [MM4AtomCode.alkaneCarbon, .silicon] {
@@ -200,15 +201,12 @@ extension MM4RigidBodyTests {
   }()
   
   static var emptyDescriptor: (MM4Parameters, MM4RigidBodyDescriptor) {
-    var paramsDesc = MM4ParametersDescriptor()
-    paramsDesc.atomicNumbers = []
-    paramsDesc.bonds = []
-    let params = try! MM4Parameters(descriptor: paramsDesc)
+    let parameters = MM4Parameters()
     
     var rigidBodyDesc = MM4RigidBodyDescriptor()
-    rigidBodyDesc.masses = params.atoms.masses
+    rigidBodyDesc.masses = parameters.atoms.masses
     rigidBodyDesc.positions = []
-    return (params, rigidBodyDesc)
+    return (parameters, rigidBodyDesc)
   }
 }
 

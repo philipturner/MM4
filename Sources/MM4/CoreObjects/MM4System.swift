@@ -7,6 +7,17 @@
 
 import OpenMM
 
+struct MM4SystemDescriptor {
+  // Optional.
+  var cutoffDistance: Float?
+  
+  // Required.
+  var dielectricConstant: Float?
+  
+  // Required.
+  var parameters: MM4Parameters?
+}
+
 /// Encapsulates an OpenMM system and the associated force objects.
 ///
 /// This object takes ownership of the `parameters` passed in.
@@ -26,7 +37,12 @@ class MM4System {
   /// The number of virtual sites in the system.
   var virtualSiteCount: Int = 0
   
-  init(parameters: MM4Parameters, descriptor: MM4ForceFieldDescriptor) {
+  init(descriptor: MM4SystemDescriptor) {
+    guard let dielectricConstant = descriptor.dielectricConstant,
+          let parameters = descriptor.parameters else {
+      fatalError("Descriptor was incomplete.")
+    }
+    
     // Initialize base properties.
     self.system = OpenMM_System()
     self.parameters = parameters
@@ -37,7 +53,11 @@ class MM4System {
     self.createVirtualSites()
     
     // Create force objects.
-    self.forces = MM4Forces(system: self, descriptor: descriptor)
+    var forceDesc = MM4ForceDescriptor()
+    forceDesc.cutoffDistance = descriptor.cutoffDistance
+    forceDesc.dielectricConstant = dielectricConstant
+    forceDesc.system = self
+    self.forces = MM4Forces(descriptor: forceDesc)
     forces.addForces(to: system)
   }
 }

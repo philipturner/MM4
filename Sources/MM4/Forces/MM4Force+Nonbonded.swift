@@ -9,7 +9,11 @@ import Foundation
 import OpenMM
 
 class MM4NonbondedForce: MM4Force {
-  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+  required init(descriptor: MM4ForceDescriptor) {
+    guard let system = descriptor.system else {
+      fatalError("Descriptor was incomplete.")
+    }
+    
     var includeNonbonded = false
     for params in system.parameters.atoms.parameters {
       if params.epsilon.default != 0 || params.epsilon.hydrogen != 0 {
@@ -87,7 +91,6 @@ class MM4NonbondedForce: MM4Force {
     } else {
       force.nonbondedMethod = .noCutoff
     }
-    
     
     let array = OpenMM_DoubleArray(size: 4)
     let atoms = system.parameters.atoms

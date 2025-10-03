@@ -46,7 +46,7 @@ public struct MM4ParametersDescriptor {
 }
 
 /// A set of force field parameters.
-public struct MM4Parameters {
+public struct MM4Parameters: Sendable {
   /// Parameters for one atom.
   public var atoms: MM4Atoms = MM4Atoms()
   
@@ -67,6 +67,11 @@ public struct MM4Parameters {
   
   /// Map from atoms to connected atoms that requires bounds checking.
   var atomsToAtomsMap: [SIMD4<Int32>] = []
+  
+  /// Create an empty set of parameters.
+  public init() {
+    
+  }
   
   /// Create a set of parameters using the specified configuration.
   public init(descriptor: MM4ParametersDescriptor) throws {

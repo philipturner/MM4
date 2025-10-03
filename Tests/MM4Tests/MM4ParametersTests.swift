@@ -27,24 +27,21 @@ final class MM4ParametersTests: XCTestCase {
   }
   
   func testEmptyParameters() throws {
-    var paramsDesc = MM4ParametersDescriptor()
-    paramsDesc.atomicNumbers = []
-    paramsDesc.bonds = []
-    let params = try MM4Parameters(descriptor: paramsDesc)
+    let parameters = MM4Parameters()
     
-    XCTAssertEqual([], params.atoms.atomicNumbers)
-    XCTAssertEqual(0, params.atoms.count)
-    XCTAssertEqual(0..<0, params.atoms.indices)
-    XCTAssertEqual([], params.rings.indices)
+    XCTAssertEqual([], parameters.atoms.atomicNumbers)
+    XCTAssertEqual(0, parameters.atoms.count)
+    XCTAssertEqual(0..<0, parameters.atoms.indices)
+    XCTAssertEqual([], parameters.rings.indices)
     
-    XCTAssertEqual([], params.bonds.indices)
-    XCTAssertEqual([], params.bonds.ringTypes)
-    XCTAssertEqual(0, params.bonds.parameters.count)
-    XCTAssertEqual(0, params.bonds.extendedParameters.count)
+    XCTAssertEqual([], parameters.bonds.indices)
+    XCTAssertEqual([], parameters.bonds.ringTypes)
+    XCTAssertEqual(0, parameters.bonds.parameters.count)
+    XCTAssertEqual(0, parameters.bonds.extendedParameters.count)
     
-    XCTAssertEqual([], params.angles.indices)
-    XCTAssertEqual([], params.angles.ringTypes)
-    XCTAssertEqual(0, params.angles.parameters.count)
+    XCTAssertEqual([], parameters.angles.indices)
+    XCTAssertEqual([], parameters.angles.ringTypes)
+    XCTAssertEqual(0, parameters.angles.parameters.count)
   }
   
   func testParametersCombination() throws {
@@ -54,6 +51,7 @@ final class MM4ParametersTests: XCTestCase {
   }
   
 #if RELEASE
+  // Should be ~61 ms on M1 Max.
   func testParametersSpeed() throws {
     let part0 = NCFPart(forces: [])
     let part1 = NCFPart(forces: [.nonbonded])
@@ -363,10 +361,7 @@ private func _testParametersCombination(
     ranges.append(oldAtomCapacity..<atomCapacity)
   }
   
-  var paramsDesc = MM4ParametersDescriptor()
-  paramsDesc.atomicNumbers = []
-  paramsDesc.bonds = []
-  var combinedParameters = try! MM4Parameters(descriptor: paramsDesc)
+  var combinedParameters = MM4Parameters()
   for (params, _) in descriptors {
     combinedParameters.append(contentsOf: params)
   }

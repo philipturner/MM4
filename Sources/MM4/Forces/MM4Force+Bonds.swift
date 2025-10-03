@@ -9,7 +9,11 @@ import OpenMM
 
 /// Morse bond stretch force.
 class MM4StretchForce: MM4Force {
-  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+  required init(descriptor: MM4ForceDescriptor) {
+    guard let system = descriptor.system else {
+      fatalError("Descriptor was incomplete.")
+    }
+    
     // Using "beta" instead of "alpha", as it's the character used in
     // Nanosystems 3.3.3(a).
     //

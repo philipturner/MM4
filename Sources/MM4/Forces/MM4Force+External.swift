@@ -8,7 +8,11 @@
 import OpenMM
 
 class MM4ExternalForce: MM4Force {
-  required init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
+  required init(descriptor: MM4ForceDescriptor) {
+    guard let system = descriptor.system else {
+      fatalError("Descriptor was incomplete.")
+    }
+    
     // There is no need to convert from kJ/mol to zJ here.
     let force = OpenMM_CustomExternalForce(energy: """
       x * slope_x + y * slope_y + z * slope_z;

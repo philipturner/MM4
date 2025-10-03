@@ -1,5 +1,5 @@
 //
-//  MM4Parameters+Topology.swift
+//  MM4Parameters+Rings.swift
 //  MM4
 //
 //  Created by Philip Turner on 10/7/23.
@@ -9,7 +9,7 @@ import Atomics
 import Dispatch
 
 /// Parameters for a group of 3 to 5 atoms.
-public struct MM4Rings {
+public struct MM4Rings: Sendable {
   /// Groups of atom indices that form a ring.
   ///
   /// The unused vector lanes are set to `UInt32.max`.
@@ -114,9 +114,16 @@ extension MM4Parameters {
     }
   }
   
-  /// - throws: `.unsupportedRing`
-  mutating func createTopology(forces: MM4ForceOptions) throws {
+  // Workaround for Swift concurrency errors.
+  private struct _CreateTopology {
+    var ringsMap: [SIMD8<UInt32>: Bool] = [:]
+    var angleIndices: [SIMD3<UInt32>] = []
+  }
+  
+  // Workaround for Swift concurrency errors.
+  private func _createTopology() throws -> _CreateTopology {
     // Map from atoms to connected atoms that can be efficiently traversed.
+    nonisolated(unsafe)
     var vAtomsToAtomsMap: UnsafeMutablePointer<SIMD4<Int32>>
     vAtomsToAtomsMap = .allocate(capacity: atoms.count + 1)
     vAtomsToAtomsMap += 1
@@ -126,12 +133,20 @@ extension MM4Parameters {
       (vAtomsToAtomsMap - 1).deallocate()
     }
     
-    let includeAngles = true
     let angleCapacity = atoms.count
+    nonisolated(unsafe)
     let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
       .allocate(capacity: 6 * angleCapacity)
-    let angleAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
-      .allocate(capacity: angleCapacity)
+    
+    func bypassNameConflict<T: Atomics.AtomicValue>(
+      type: T.Type
+    ) -> UnsafeMutablePointer<T.AtomicRepresentation> {
+      UnsafeMutablePointer<T.AtomicRepresentation>
+        .allocate(capacity: angleCapacity)
+    }
+    
+    nonisolated(unsafe)
+    let angleAtomics = bypassNameConflict(type: UInt16.self)
     let angleCounts = UnsafeMutablePointer<UInt16>(
       OpaquePointer(angleAtomics))
     angleCounts.initialize(repeating: .zero, count: angleCapacity)
@@ -141,17 +156,14 @@ extension MM4Parameters {
       angleBuckets.deallocate()
     }
     
-    @_transparent
-    func wrap(_ index: Int) -> Int {
-      (index + 5) % 5
-    }
-    
     // Scope the rings map into a local dictionary per-thread. Merge the
     // partial results on single-core after the loop is over.
     let taskSize = 128
     let taskCount = (atoms.count + taskSize - 1) / taskSize
+    nonisolated(unsafe)
     var localRingsMaps = [[SIMD8<UInt32>: Bool]](
       repeating: [:], count: taskCount)
+    nonisolated(unsafe)
     var localErrors = [MM4Error?](repeating: nil, count: taskCount)
     
     DispatchQueue.concurrentPerform(iterations: taskCount) { z in
@@ -173,6 +185,7 @@ extension MM4Parameters {
       }
     }
     
+    @Sendable
     func execute(taskID: Int) throws {
       var ringsMap: [SIMD8<UInt32>: Bool] = [:]
       defer {
@@ -192,7 +205,7 @@ extension MM4Parameters {
           for lane3 in 0..<4 where map2[lane3] != -1 {
             let atom3 = UInt32(truncatingIfNeeded: map2[lane3])
             if atom1 == atom3 { continue }
-            if includeAngles, atom1 < atom3 {
+            if atom1 < atom3 {
               let angle = SIMD3(atom1, atom2, atom3)
               let atomID = Int(atom2)
               let atomic = UnsafeAtomic<UInt16>(
@@ -265,6 +278,11 @@ extension MM4Parameters {
                     }
                   }
                   
+                  @_transparent
+                  func wrap(_ index: Int) -> Int {
+                    (index + 5) % 5
+                  }
+                  
                   let prev = array[wrap(minIndex &- 1)]
                   let next = array[wrap(minIndex &+ 1)]
                   let increment = (next > prev) ? +1 : -1
@@ -307,21 +325,31 @@ extension MM4Parameters {
       }
     }
     
-    if includeAngles {
-      for atomID in atoms.indices {
-        var angleBucket = UnsafeMutableBufferPointer(
-          start: angleBuckets.advanced(by: 6 &* atomID),
-          count: Int(angleCounts[atomID]))
-        angleBucket.sort(by: { x, y in
-          if x[0] != y[0] { return x[0] < y[0] }
-          if x[2] != y[2] { return x[2] < y[2] }
-          return true
-        })
-        angles.indices += angleBucket
-      }
+    var angleIndices: [SIMD3<UInt32>] = []
+    for atomID in atoms.indices {
+      var angleBucket = UnsafeMutableBufferPointer(
+        start: angleBuckets.advanced(by: 6 &* atomID),
+        count: Int(angleCounts[atomID]))
+      angleBucket.sort(by: { x, y in
+        if x[0] != y[0] { return x[0] < y[0] }
+        if x[2] != y[2] { return x[2] < y[2] }
+        return true
+      })
+      angleIndices += angleBucket
     }
     
-    rings.indices = ringsMap.keys.map { $0 }
+    var output = _CreateTopology()
+    output.ringsMap = ringsMap
+    output.angleIndices = angleIndices
+    return output
+  }
+  
+  /// - throws: `.unsupportedRing`
+  mutating func createTopology(forces: MM4ForceOptions) throws {
+    let _createTopology = try _createTopology()
+    
+    angles.indices += _createTopology.angleIndices
+    rings.indices = _createTopology.ringsMap.keys.map { $0 }
     rings.indices.sort(by: compareRing)
     
     atoms.ringTypes = .init(repeating: 6, count: atoms.count)
@@ -344,6 +372,11 @@ extension MM4Parameters {
       rings.map[ring] = UInt32(truncatingIfNeeded: index)
     }
     
+    @_transparent
+    func wrap(_ index: Int) -> Int {
+      (index + 5) % 5
+    }
+    
     for ringID in rings.indices.indices {
       let ring = rings.indices[ringID]
       for lane in 0..<5 {
@@ -359,7 +392,7 @@ extension MM4Parameters {
         atoms.ringTypes[Int(atomID)] = 5
         bonds.ringTypes[Int(bondID)] = 5
         
-        if includeAngles, let angleID = angles.map[angle]  {
+        if let angleID = angles.map[angle]  {
           angles.ringTypes[Int(angleID)] = 5
         }
       }

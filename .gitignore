@@ -96,3 +96,10 @@ xcuserdata/
 DerivedData/
 .swiftpm/xcode
 Package.resolved
+/.vscode
+
+# Binaries must all reside in the top-level folder.
+/*.dll
+/*.dylib
+/*.exp
+/*.lib

@@ -7,6 +7,12 @@
 
 import OpenMM
 
+struct MM4ContextDescriptor {
+  var integratorOptions: MM4IntegratorOptions?
+  var platform: OpenMM_Platform?
+  var system: MM4System?
+}
+
 /// Encapsulates an OpenMM context and the various integrators.
 class MM4Context {
   var compoundIntegrator: OpenMM_CompoundIntegrator?
@@ -15,8 +21,14 @@ class MM4Context {
   var integrator: OpenMM_Integrator
   var verletIntegrator: OpenMM_VerletIntegrator?
   
-  init(system: MM4System, descriptor: MM4ForceFieldDescriptor) {
-    switch descriptor.integrator {
+  init(descriptor: MM4ContextDescriptor) {
+    guard let integratorOptions = descriptor.integratorOptions,
+          let platform = descriptor.platform,
+          let system = descriptor.system else {
+      fatalError("Descriptor was incomplete.")
+    }
+    
+    switch integratorOptions {
     case .multipleTimeStep:
       self.compoundIntegrator = OpenMM_CompoundIntegrator()
       self.integrator = compoundIntegrator!
@@ -38,16 +50,10 @@ class MM4Context {
       self.integrator = verletIntegrator!
     }
     
-    if let platform = descriptor.platform {
-      self.context = OpenMM_Context(
-        system: system.system,
-        integrator: integrator,
-        platform: platform)
-    } else {
-      self.context = OpenMM_Context(
-        system: system.system,
-        integrator: integrator)
-    }
+    self.context = OpenMM_Context(
+      system: system.system,
+      integrator: integrator,
+      platform: platform)
   }
   
   var currentIntegrator: MM4CustomIntegratorDescriptor {

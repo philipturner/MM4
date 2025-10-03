@@ -14,9 +14,6 @@ public struct MM4ForceFieldDescriptor {
   /// The default value is 1.0 nm. This is 2.86σ for carbon and 2.45σ for
   /// silicon.
   ///
-  /// > NOTE: This documentation page is still a draft. It may be inconsistent or
-  ///   difficult to understand.
-  ///
   /// Since germanium will rarely be used, use the 2.5σ cutoff for silicon. The
   /// slightly greater sigma for carbon allows greater accuracy in vdW forces
   /// for bulk diamond. 1.0 nm is also sufficient for charge-charge
@@ -48,6 +45,9 @@ public struct MM4ForceFieldDescriptor {
   public var parameters: MM4Parameters?
   
   /// Optional. The OpenMM platform to use for simulation.
+  ///
+  /// If not specified, the library loads plugins at the default plugin
+  /// path and selects OpenCL.
   public var platform: OpenMM_Platform?
   
   /// Create a descriptor with the default properties.
@@ -85,9 +85,20 @@ public class MM4ForceField {
     guard let parameters = descriptor.parameters else {
       fatalError("No force field parameters were specified.")
     }
+    let platform = Self.fallback(descriptor.platform)
     
-    system = MM4System(parameters: parameters, descriptor: descriptor)
-    context = MM4Context(system: system, descriptor: descriptor)
+    var systemDesc = MM4SystemDescriptor()
+    systemDesc.cutoffDistance = descriptor.cutoffDistance
+    systemDesc.dielectricConstant = descriptor.dielectricConstant
+    systemDesc.parameters = parameters
+    system = MM4System(descriptor: systemDesc)
+    
+    var contextDesc = MM4ContextDescriptor()
+    contextDesc.integratorOptions = descriptor.integrator
+    contextDesc.platform = platform
+    contextDesc.system = system
+    context = MM4Context(descriptor: contextDesc)
+    
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
     

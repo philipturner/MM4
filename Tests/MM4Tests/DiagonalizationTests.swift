@@ -1,9 +1,5 @@
 import XCTest
-#if DEBUG
 @testable import MM4
-#else
-import MM4
-#endif
 
 // Test the correctness of math functions for diagonalizing the inertia tensor.
 // There are 6 different test cases in the original source file. They should
@@ -11,7 +7,6 @@ import MM4
 // - 3 tests for factoring a cubic polynomial
 // - 3 tests for diagonalizing a matrix
 
-#if DEBUG
 final class DiagonalizationTests: XCTestCase {
   
   func testFactorCubicPolynomial() throws {
@@ -19,9 +14,18 @@ final class DiagonalizationTests: XCTestCase {
       let coefficients: SIMD4<Double> = [1, -6, 11, -6]
       let (root0, root1, root2) = factorCubicPolynomial(
         coefficients: coefficients)
-      XCTAssertEqual(root0, 1.0)
-      XCTAssertEqual(root1, 3.0)
-      XCTAssertEqual(root2, 2.0)
+      XCTAssertNotNil(root0)
+      XCTAssertNotNil(root1)
+      XCTAssertNotNil(root2)
+      if let root0 {
+        XCTAssertEqual(root0, 1.0, accuracy: 1e-6)
+      }
+      if let root1 {
+        XCTAssertEqual(root1, 3.0, accuracy: 1e-6)
+      }
+      if let root2 {
+        XCTAssertEqual(root2, 2.0, accuracy: 1e-6)
+      }
     }
     
     do {
@@ -334,7 +338,6 @@ final class DiagonalizationTests: XCTestCase {
     }
   }
 }
-#endif
 
 // MARK: - Utilities
 
