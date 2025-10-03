@@ -1,23 +1,3 @@
-# TODO List
-
-MM4
-- Attempt to test with the OpenMM binary not downloaded or properly configured.
-- Test integration with molecular-renderer, with the package's
- 'add-simulators' branch downloading the branch of MM4 for the time being.
-  - Start with just swift-openmm, get it correctly reporting the available
-    backends. This isolates the true problem from the MM4 code base.
-- In the MM4ForceField initializer, automatically invoke the OpenMM plugin
-  loading.
-  - It should not print to the console under normal circumstances.
-  - It should fail if it doesn't detect OpenCL. Force it to use OpenCL,
-    even for Nvidia GPUs, for simplicity.
-  - Access a non-thread-safe lazy global variable, so we don't load
-    plugins multiple times in the same program execution.
-  - MM4ForceField initializer skips plugin loading, only if you've done
-    the work to load plugins on your end, and supply a custom platform.
-- Once the entire software stack works on macOS, repeat the process on Windows.
-- Push an updated version of DocC that lacks the minimizer
-
 # MM4
 
 Molecular Mechanics force field, version 4. The simulator used to create _Nanosystems (1992)_, but updated with modern ab initio parameters.
