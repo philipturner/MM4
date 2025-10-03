@@ -137,9 +137,16 @@ extension MM4Parameters {
     nonisolated(unsafe)
     let angleBuckets: UnsafeMutablePointer<SIMD3<UInt32>> =
       .allocate(capacity: 6 * angleCapacity)
+    
+    func bypassNameConflict<T: Atomics.AtomicValue>(
+      type: T.Type
+    ) -> UnsafeMutablePointer<T.AtomicRepresentation> {
+      UnsafeMutablePointer<T.AtomicRepresentation>
+        .allocate(capacity: angleCapacity)
+    }
+    
     nonisolated(unsafe)
-    let angleAtomics: UnsafeMutablePointer<UInt16.AtomicRepresentation> =
-      .allocate(capacity: angleCapacity)
+    let angleAtomics = bypassNameConflict(type: UInt16.self)
     let angleCounts = UnsafeMutablePointer<UInt16>(
       OpaquePointer(angleAtomics))
     angleCounts.initialize(repeating: .zero, count: angleCapacity)
