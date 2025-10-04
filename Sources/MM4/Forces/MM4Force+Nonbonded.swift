@@ -36,7 +36,7 @@ class MM4NonbondedForce: MM4Force {
     //
     // Luckily, there are no polarized atom-hydrogen bonds in this MM4
     // implementation. No dipole-dipole interactions or projected charge-charge
-    // interactions can involve a virtual sites. Hydrogens have 0 partial
+    // interactions can involve a virtual site. Hydrogens have 0 partial
     // charge. Computing the coulomb interaction on their virtual sites creates
     // zero energy, removing the need to account for the position being
     // different.
