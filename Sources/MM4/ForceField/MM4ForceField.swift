@@ -6,6 +6,7 @@
 //
 
 import OpenMM
+import func QuartzCore.CACurrentMediaTime
 
 /// A configuration for a force field.
 public struct MM4ForceFieldDescriptor {
@@ -87,17 +88,25 @@ public class MM4ForceField {
     }
     let platform = Self.fallback(descriptor.platform)
     
+    let checkpoint0 = CACurrentMediaTime()
+    
     var systemDesc = MM4SystemDescriptor()
     systemDesc.cutoffDistance = descriptor.cutoffDistance
     systemDesc.dielectricConstant = descriptor.dielectricConstant
     systemDesc.parameters = parameters
     system = MM4System(descriptor: systemDesc)
     
+    let checkpoint1 = CACurrentMediaTime()
+    
     var contextDesc = MM4ContextDescriptor()
     contextDesc.integratorOptions = descriptor.integrator
     contextDesc.platform = platform
     contextDesc.system = system
     context = MM4Context(descriptor: contextDesc)
+    
+    let checkpoint2 = CACurrentMediaTime()
+    print("0 -> 1", checkpoint1 - checkpoint0)
+    print("1 -> 2", checkpoint2 - checkpoint1)
     
     cachedState = MM4State()
     updateRecord = MM4UpdateRecord()
