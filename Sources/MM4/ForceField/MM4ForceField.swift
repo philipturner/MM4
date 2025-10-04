@@ -119,4 +119,14 @@ public class MM4ForceField {
     }
     _energy = MM4ForceFieldEnergy(forceField: self)
   }
+  
+  /// Temporary utility for XML serialization.
+  public func openmmIntegrator() -> OpenMM_Integrator {
+    return context.integrator
+  }
+  
+  /// Temporary utility for XML serialization.
+  public func openmmSystem() -> OpenMM_System {
+    return system.system
+  }
 }

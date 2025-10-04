@@ -107,4 +107,28 @@ extension MM4ForceField {
     }
     return state
   }
+  
+  /// Temporary utility for XML serialization.
+  public func openmmState(descriptor: MM4StateDescriptor) -> OpenMM_State {
+    if updateRecord.active() {
+      flushUpdateRecord()
+    }
+    
+    var dataTypes: OpenMM_State.DataType = []
+    if descriptor.energy {
+      dataTypes = [dataTypes, .energy]
+    }
+    if descriptor.forces {
+      dataTypes = [dataTypes, .forces]
+    }
+    if descriptor.positions {
+      dataTypes = [dataTypes, .positions]
+    }
+    if descriptor.velocities {
+      dataTypes = [dataTypes, .velocities]
+    }
+    
+    let query = context.context.state(types: dataTypes)
+    return query
+  }
 }
